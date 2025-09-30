@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { CreateTab } from "@/components/tabs/CreateTab";
 import { FixedCodeTab } from "@/components/tabs/FixedCodeTab";
+import { HistoryModal } from "@/components/HistoryModal";
+import { ImproveGoalModal } from "@/components/ImproveGoalModal";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import type { MindboxState } from "@/types/mindbox";
-
-const HISTORY_KEY = 'mbx_history_v3';
+import type { MindboxState, HistoryItem } from "@/types/mindbox";
 
 const initialState: MindboxState = {
   goal: '',
@@ -26,6 +28,27 @@ const initialState: MindboxState = {
 const Index = () => {
   const [state, setState] = useState<MindboxState>(initialState);
   const [activeTab, setActiveTab] = useState("create");
+  const [showHistory, setShowHistory] = useState(false);
+  const [showImproveGoal, setShowImproveGoal] = useState(false);
+
+  // Проверяем URL на наличие shared data
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('data');
+    
+    if (sharedData) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(sharedData))));
+        setState(prev => ({ ...prev, ...decoded }));
+        toast.success("Данные загружены из ссылки");
+        // Очищаем URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (error) {
+        console.error('Error loading shared data:', error);
+        toast.error("Не удалось загрузить данные из ссылки");
+      }
+    }
+  }, []);
 
   const updateState = (updates: Partial<MindboxState>) => {
     setState(prev => ({ ...prev, ...updates }));
@@ -47,10 +70,6 @@ const Index = () => {
     } catch {
       toast.error("Не удалось создать ссылку");
     }
-  };
-
-  const handleHistoryClick = () => {
-    toast.info("История будет доступна в следующей версии");
   };
 
   const handleDownloadState = () => {
@@ -85,15 +104,36 @@ const Index = () => {
     reader.readAsText(file);
   };
 
+  const handleRestoreHistory = (item: HistoryItem) => {
+    setState(prev => ({ ...prev, ...item.data }));
+  };
+
+  const handleAcceptImprovedGoal = (improvedGoal: string) => {
+    updateState({ goal: improvedGoal });
+    toast.success("Цель обновлена");
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <Header
           onShareClick={handleShareClick}
-          onHistoryClick={handleHistoryClick}
+          onHistoryClick={() => setShowHistory(true)}
           onDownloadState={handleDownloadState}
           onUploadState={handleUploadState}
         />
+
+        <div className="mb-4 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowImproveGoal(true)}
+            disabled={!state.goal.trim()}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Улучшить формулировку цели
+          </Button>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
@@ -109,6 +149,19 @@ const Index = () => {
             <FixedCodeTab state={state} />
           </TabsContent>
         </Tabs>
+
+        <HistoryModal
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          onRestore={handleRestoreHistory}
+        />
+
+        <ImproveGoalModal
+          isOpen={showImproveGoal}
+          onClose={() => setShowImproveGoal(false)}
+          currentGoal={state.goal}
+          onAccept={handleAcceptImprovedGoal}
+        />
       </div>
     </div>
   );

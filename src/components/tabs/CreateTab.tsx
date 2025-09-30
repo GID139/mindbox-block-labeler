@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CodeEditor } from "@/components/CodeEditor";
-import { Loader2, Sparkles } from "lucide-react";
+import { DiagnosticLog } from "@/components/DiagnosticLog";
+import { ComponentSettings } from "@/components/ComponentSettings";
+import { ZipUpload } from "@/components/ZipUpload";
+import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { callGeminiAPI, estimateTokens } from "@/lib/gemini-api";
 import { buildStep1, buildStep2, buildStep4 } from "@/lib/mindbox-prompts";
+import { saveToHistory } from "@/lib/history-manager";
+import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
 import { Progress } from "@/components/ui/progress";
 
@@ -22,6 +27,18 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tokenEstimate, setTokenEstimate] = useState(0);
+  const [outputPrompt, setOutputPrompt] = useState("");
+  const [selectedSettings, setSelectedSettings] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    updatePrompt();
+  }, [state.goal, state.html, state.json, state.quickFix, state.isDynamicGrid, state.isEditable]);
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
+    const logEntry = `[${timestamp}] ${message}`;
+    updateState({ log: [...state.log, logEntry] });
+  };
 
   const updateGoal = (goal: string) => {
     updateState({ goal });
@@ -43,6 +60,23 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
     setTokenEstimate(estimateTokens(combinedText));
   };
 
+  const updatePrompt = () => {
+    if (!state.html.trim() || !state.json.trim()) {
+      setOutputPrompt("");
+      return;
+    }
+
+    const prompt = buildStep4({
+      goal: state.goal,
+      html: state.html,
+      json: state.json,
+      quickFix: state.quickFix
+    });
+    
+    setOutputPrompt(prompt);
+    setTokenEstimate(estimateTokens(prompt));
+  };
+
   const parseCodeBlocks = (text: string) => {
     const htmlMatch = text.match(/```\s*html[\r\n]+([\s\S]*?)```/i);
     const jsonMatch = text.match(/```\s*json[\r\n]+([\s\S]*?)```/i);
@@ -55,6 +89,48 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
     };
   };
 
+  const handleSettingChange = (component: string, setting: string, checked: boolean) => {
+    const settingId = `${component}-${setting}`;
+    setSelectedSettings(prev => ({ ...prev, [settingId]: checked }));
+
+    // Добавляем/удаляем умные подсказки
+    const hint = smartHints[setting];
+    if (hint) {
+      let newGoal = state.goal;
+      if (checked && !newGoal.includes(hint)) {
+        newGoal = (newGoal.trim() + '\n' + hint).trim();
+      } else if (!checked && newGoal.includes(hint)) {
+        newGoal = newGoal.replace('\n' + hint, '').replace(hint, '').trim();
+      }
+      updateState({ goal: newGoal });
+    }
+  };
+
+  const generateGoalFromSettings = () => {
+    const selected = Object.entries(selectedSettings)
+      .filter(([_, checked]) => checked)
+      .map(([settingId]) => {
+        const [component, setting] = settingId.split('-');
+        const componentTitle = components[component]?.title || component;
+        const settingName = friendlyNames[setting] || setting;
+        return `- ${componentTitle}: ${settingName}`;
+      });
+
+    if (selected.length === 0) {
+      toast.error("Выберите хотя бы одну настройку");
+      return;
+    }
+
+    const goal = `Создать блок с следующими настройками:\n\n${selected.join('\n')}`;
+    updateState({ goal });
+    toast.success("Цель сгенерирована из настроек");
+  };
+
+  const handleZipParsed = (html: string, json: string) => {
+    updateState({ html, json });
+    addLog("ZIP файл загружен и распарсен");
+  };
+
   const handleAnalyze = async () => {
     if (!state.goal.trim() && !state.html.trim() && !state.json.trim()) {
       toast.error("Заполните хотя бы одно поле");
@@ -63,38 +139,50 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
 
     setIsProcessing(true);
     setProgress(0);
+    addLog("Начало анализа");
 
     try {
       // Шаг 1: Генерация HTML (если нужно)
       let html = state.html;
       if (!html.trim() && state.goal.trim()) {
         setProgress(25);
+        addLog("Шаг 1/4: Генерация HTML");
+        
+        const settingsList = Object.entries(selectedSettings)
+          .filter(([_, checked]) => checked)
+          .map(([settingId]) => settingId)
+          .join(', ');
+
         const prompt1 = buildStep1({
           goal: state.goal,
           isDynamicGrid: state.isDynamicGrid,
           isEditable: state.isEditable,
-          settingsList: ''
+          settingsList
         });
         
         const response1 = await callGeminiAPI(prompt1);
         const parsed1 = parseCodeBlocks(response1);
         html = parsed1.html;
         updateState({ html });
+        addLog("HTML сгенерирован");
       }
 
       // Шаг 2: Генерация JSON (если нужно)
       let json = state.json;
       if (!json.trim() && html.trim()) {
         setProgress(50);
+        addLog("Шаг 2/4: Генерация JSON");
         const prompt2 = buildStep2({ html });
         const response2 = await callGeminiAPI(prompt2);
         const parsed2 = parseCodeBlocks(response2);
         json = parsed2.json;
         updateState({ json });
+        addLog("JSON сгенерирован");
       }
 
       // Шаг 4: Финальная валидация и исправление
       setProgress(75);
+      addLog("Шаг 4/4: Валидация и исправление");
       const prompt4 = buildStep4({
         goal: state.goal,
         html,
@@ -112,6 +200,18 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
       });
 
       setProgress(100);
+      addLog("Анализ завершен успешно");
+      
+      // Сохраняем в историю
+      saveToHistory("Автосохранение", {
+        goal: state.goal,
+        html,
+        json,
+        fixedHtml: parsed4.html,
+        fixedJson: parsed4.json,
+        reportMarkdown: parsed4.report
+      });
+
       toast.success("Анализ завершен успешно");
       
       setTimeout(() => {
@@ -119,6 +219,7 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
       }, 500);
     } catch (error) {
       console.error('Analysis error:', error);
+      addLog("Ошибка: " + (error instanceof Error ? error.message : "Неизвестная ошибка"));
       toast.error("Ошибка при анализе кода");
     } finally {
       setIsProcessing(false);
@@ -130,9 +231,20 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
         <Card className="p-6">
-          <h2 className="text-lg font-bold mb-4">Настройки</h2>
+          <h2 className="text-lg font-bold mb-4">Начало работы</h2>
           
           <div className="space-y-4">
+            <ZipUpload onZipParsed={handleZipParsed} isLoading={isProcessing} />
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">или</span>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="goal">Цель/Описание блока</Label>
               <Textarea
@@ -142,6 +254,15 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
                 placeholder="Опишите, какой блок нужно создать..."
                 className="min-h-[120px]"
               />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generateGoalFromSettings}
+                className="w-full"
+              >
+                <Wand2 className="mr-2 h-3.5 w-3.5" />
+                Сгенерировать цель из настроек
+              </Button>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -185,6 +306,13 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
           </div>
         </Card>
 
+        <ComponentSettings
+          html={state.html}
+          json={state.json}
+          selectedSettings={selectedSettings}
+          onSettingChange={handleSettingChange}
+        />
+
         <Card className="p-6">
           <CodeEditor
             value={state.html}
@@ -212,6 +340,19 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
           </p>
         </Card>
 
+        {outputPrompt && (
+          <Card className="p-6">
+            <CodeEditor
+              value={outputPrompt}
+              onChange={setOutputPrompt}
+              label="Промпт для отправки (редактируемый)"
+              placeholder=""
+              showCopy={true}
+              className="min-h-[200px]"
+            />
+          </Card>
+        )}
+
         <Button
           onClick={handleAnalyze}
           disabled={isProcessing}
@@ -234,21 +375,27 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
           <Card className="p-4">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-muted-foreground mt-2 text-center">
-              {progress === 25 && "Генерация HTML..."}
-              {progress === 50 && "Генерация JSON..."}
-              {progress === 75 && "Валидация и исправление..."}
+              {progress === 25 && "Шаг 1/4: Генерация HTML..."}
+              {progress === 50 && "Шаг 2/4: Генерация JSON..."}
+              {progress === 75 && "Шаг 4/4: Валидация и исправление..."}
               {progress === 100 && "Готово!"}
             </p>
           </Card>
         )}
 
+        <DiagnosticLog 
+          logs={state.log}
+          onClear={() => updateState({ log: [] })}
+        />
+
         <Card className="p-6">
           <h3 className="font-semibold mb-3">Как использовать:</h3>
           <ol className="text-sm space-y-2 text-muted-foreground list-decimal list-inside">
-            <li>Опишите цель или вставьте существующий HTML/JSON</li>
-            <li>Настройте параметры блока (динамическая сетка, редактируемость)</li>
+            <li>Загрузите ZIP файл или опишите цель</li>
+            <li>Выберите нужные настройки компонентов</li>
+            <li>Настройте параметры блока</li>
             <li>Нажмите кнопку анализа</li>
-            <li>Получите исправленный код во вкладке "Исправленный код"</li>
+            <li>Получите исправленный код</li>
           </ol>
         </Card>
       </div>

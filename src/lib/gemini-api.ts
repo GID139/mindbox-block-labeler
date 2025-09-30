@@ -2,7 +2,7 @@
 import { toast } from "sonner";
 
 const GEMINI_API_KEY = 'AIzaSyBQsJJZUEBWYCtEQQpexcHb57JJBHdS8Lo';
-const DEFAULT_MODEL = 'gemini-1.5-pro';
+const DEFAULT_MODEL = 'gemini-1.5-flash';
 
 interface GeminiOptions {
   model?: string;
@@ -19,7 +19,9 @@ export async function callGeminiAPI(
   if (onStart) onStart();
 
   const requestOnce = async (currentModel: string): Promise<string> => {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${GEMINI_API_KEY}`;
+    // Для моделей Gemini 2.5 используем старый API endpoint с именами моделей без префикса
+    const modelName = currentModel.replace('google/', '');
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
     
     try {
       const response = await fetch(url, {
@@ -31,10 +33,10 @@ export async function callGeminiAPI(
       });
 
       if (!response.ok) {
-        if (response.status === 503 && currentModel === DEFAULT_MODEL) {
-          console.log('Gemini-1.5-pro unavailable, fallback to flash');
+        if (response.status === 503 && modelName === 'gemini-1.5-flash') {
+          console.log('Gemini-1.5-flash unavailable, fallback to pro');
           await new Promise(resolve => setTimeout(resolve, 1200));
-          return requestOnce('gemini-1.5-flash');
+          return requestOnce('gemini-1.5-pro');
         }
         throw new Error(`Gemini API error ${response.status}`);
       }
