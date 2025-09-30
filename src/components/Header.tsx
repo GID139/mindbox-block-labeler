@@ -1,0 +1,120 @@
+import { Download, History, Share2, Upload } from "lucide-react";
+import { Button } from "./ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+
+interface HeaderProps {
+  onShareClick: () => void;
+  onHistoryClick: () => void;
+  onDownloadState: () => void;
+  onUploadState: (file: File) => void;
+}
+
+export function Header({
+  onShareClick,
+  onHistoryClick,
+  onDownloadState,
+  onUploadState,
+}: HeaderProps) {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onUploadState(file);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <header className="text-center mb-8">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex-1">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
+            Генератор блоков для <span className="text-primary">Mindbox</span>
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Создавайте и редактируйте HTML-блоки для конструктора Mindbox
+          </p>
+        </div>
+        
+        <TooltipProvider>
+          <div className="flex items-center gap-2 ml-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onShareClick}
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Поделиться</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onHistoryClick}
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>История</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onDownloadState}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Скачать состояние</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Загрузить состояние</TooltipContent>
+            </Tooltip>
+            
+            <input
+              id="file-upload"
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+          </div>
+        </TooltipProvider>
+      </div>
+      
+      <div className="mt-4">
+        <a
+          href="https://help.mindbox.ru/docs/email-editor-upload-blocks"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          Документация по разметке блоков →
+        </a>
+      </div>
+    </header>
+  );
+}
