@@ -21,9 +21,10 @@ interface CreateTabProps {
   state: MindboxState;
   updateState: (updates: Partial<MindboxState>) => void;
   setActiveTab: (tab: string) => void;
+  onImproveGoalClick: () => void;
 }
 
-export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) {
+export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick }: CreateTabProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tokenEstimate, setTokenEstimate] = useState(0);
@@ -262,6 +263,16 @@ export function CreateTab({ state, updateState, setActiveTab }: CreateTabProps) 
               >
                 <Wand2 className="mr-2 h-3.5 w-3.5" />
                 Сгенерировать цель из настроек
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImproveGoalClick}
+                disabled={!state.goal.trim()}
+                className="w-full"
+              >
+                <Sparkles className="mr-2 h-3.5 w-3.5" />
+                Улучшить формулировку цели
               </Button>
             </div>
 

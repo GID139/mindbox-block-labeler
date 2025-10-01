@@ -123,18 +123,6 @@ const Index = () => {
           onUploadState={handleUploadState}
         />
 
-        <div className="mb-4 flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImproveGoal(true)}
-            disabled={!state.goal.trim()}
-          >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Улучшить формулировку цели
-          </Button>
-        </div>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="create">Создание и Редактирование</TabsTrigger>
@@ -142,7 +130,12 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="create" className="mt-0">
-            <CreateTab state={state} updateState={updateState} setActiveTab={setActiveTab} />
+            <CreateTab 
+              state={state} 
+              updateState={updateState} 
+              setActiveTab={setActiveTab}
+              onImproveGoalClick={() => setShowImproveGoal(true)}
+            />
           </TabsContent>
 
           <TabsContent value="fixed" className="mt-0">
