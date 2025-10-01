@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { CreateTab } from "@/components/tabs/CreateTab";
 import { FixedCodeTab } from "@/components/tabs/FixedCodeTab";
+import { N8nChatTab } from "@/components/tabs/N8nChatTab";
 import { HistoryModal } from "@/components/HistoryModal";
 import { ImproveGoalModal } from "@/components/ImproveGoalModal";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { MindboxState, HistoryItem } from "@/types/mindbox";
@@ -124,9 +126,10 @@ const Index = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="create">Создание и Редактирование</TabsTrigger>
             <TabsTrigger value="fixed">Исправленный код</TabsTrigger>
+            <TabsTrigger value="n8n">n8n Chat</TabsTrigger>
           </TabsList>
 
           <TabsContent value="create" className="mt-0">
@@ -141,7 +144,13 @@ const Index = () => {
           <TabsContent value="fixed" className="mt-0">
             <FixedCodeTab state={state} />
           </TabsContent>
+
+          <TabsContent value="n8n" className="mt-0">
+            <N8nChatTab />
+          </TabsContent>
         </Tabs>
+
+        <FeedbackButton />
 
         <HistoryModal
           isOpen={showHistory}

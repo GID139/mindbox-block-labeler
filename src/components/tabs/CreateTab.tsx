@@ -16,6 +16,8 @@ import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
 import { Progress } from "@/components/ui/progress";
+import { applySettingsToCode } from "@/lib/code-sync";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CreateTabProps {
   state: MindboxState;
@@ -27,9 +29,11 @@ interface CreateTabProps {
 export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick }: CreateTabProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [outputPrompt, setOutputPrompt] = useState("");
   const [selectedSettings, setSelectedSettings] = useState<Record<string, boolean>>({});
+  const [isApplyingSettings, setIsApplyingSettings] = useState(false);
 
   useEffect(() => {
     updatePrompt();
@@ -90,7 +94,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
     };
   };
 
-  const handleSettingChange = (component: string, setting: string, checked: boolean) => {
+  const handleSettingChange = async (component: string, setting: string, checked: boolean) => {
     const settingId = `${component}-${setting}`;
     setSelectedSettings(prev => ({ ...prev, [settingId]: checked }));
 
@@ -104,6 +108,27 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         newGoal = newGoal.replace('\n' + hint, '').replace(hint, '').trim();
       }
       updateState({ goal: newGoal });
+    }
+
+    // Интерактивное редактирование: применяем изменения к коду
+    if (state.html.trim() || state.json.trim()) {
+      setIsApplyingSettings(true);
+      try {
+        const { html: newHtml, json: newJson } = applySettingsToCode(
+          state.html,
+          state.json,
+          settingId,
+          checked
+        );
+        
+        updateState({ html: newHtml, json: newJson });
+        addLog(`Настройка ${settingId} ${checked ? 'включена' : 'отключена'}`);
+      } catch (error) {
+        console.error('Error applying settings:', error);
+        toast.error("Ошибка при применении настройки");
+      } finally {
+        setIsApplyingSettings(false);
+      }
     }
   };
 
@@ -147,6 +172,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       let html = state.html;
       if (!html.trim() && state.goal.trim()) {
         setProgress(25);
+        setProgressMessage("Шаг 1/4: Генерация HTML кода блока");
         addLog("Шаг 1/4: Генерация HTML");
         
         const settingsList = Object.entries(selectedSettings)
@@ -172,6 +198,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       let json = state.json;
       if (!json.trim() && html.trim()) {
         setProgress(50);
+        setProgressMessage("Шаг 2/4: Генерация JSON настроек");
         addLog("Шаг 2/4: Генерация JSON");
         const prompt2 = buildStep2({ html });
         const response2 = await callGeminiAPI(prompt2);
@@ -183,6 +210,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
       // Шаг 4: Финальная валидация и исправление
       setProgress(75);
+      setProgressMessage("Шаг 4/4: Валидация и исправление ошибок");
       addLog("Шаг 4/4: Валидация и исправление");
       const prompt4 = buildStep4({
         goal: state.goal,
@@ -201,6 +229,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       });
 
       setProgress(100);
+      setProgressMessage("Анализ завершен успешно!");
       addLog("Анализ завершен успешно");
       
       // Сохраняем в историю
@@ -225,12 +254,21 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
     } finally {
       setIsProcessing(false);
       setProgress(0);
+      setProgressMessage("");
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-6">
+        {isApplyingSettings && (
+          <Alert>
+            <AlertDescription>
+              Применение настроек к коду...
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Card className="p-6">
           <h2 className="text-lg font-bold mb-4">Начало работы</h2>
           
@@ -289,30 +327,42 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
               </Label>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isDynamicGrid"
-                checked={state.isDynamicGrid}
-                onCheckedChange={(checked) => 
-                  updateState({ isDynamicGrid: checked as boolean })
-                }
-              />
-              <Label htmlFor="isDynamicGrid" className="text-sm font-normal cursor-pointer">
-                Динамическая сетка товаров
-              </Label>
-            </div>
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold mb-3 text-sm">Специальные настройки</h3>
+              
+              <div className="flex items-center space-x-2 mb-3">
+                <Checkbox
+                  id="isDynamicGrid"
+                  checked={state.isDynamicGrid}
+                  onCheckedChange={(checked) => 
+                    updateState({ isDynamicGrid: checked as boolean })
+                  }
+                />
+                <Label htmlFor="isDynamicGrid" className="text-sm font-normal cursor-pointer">
+                  Динамическая сетка товаров
+                </Label>
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isEditable"
-                checked={state.isEditable}
-                onCheckedChange={(checked) => 
-                  updateState({ isEditable: checked as boolean })
-                }
-              />
-              <Label htmlFor="isEditable" className="text-sm font-normal cursor-pointer">
-                Редактируемый блок
-              </Label>
+              {state.isDynamicGrid && (
+                <Alert className="mb-3">
+                  <AlertDescription className="text-xs">
+                    Включена поддержка динамической генерации товаров в сетке
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isEditable"
+                  checked={state.isEditable}
+                  onCheckedChange={(checked) => 
+                    updateState({ isEditable: checked as boolean })
+                  }
+                />
+                <Label htmlFor="isEditable" className="text-sm font-normal cursor-pointer">
+                  Редактируемый блок
+                </Label>
+              </div>
             </div>
           </div>
         </Card>
@@ -366,7 +416,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
         <Button
           onClick={handleAnalyze}
-          disabled={isProcessing}
+          disabled={isProcessing || isApplyingSettings}
           className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary-hover"
         >
           {isProcessing ? (
@@ -384,13 +434,19 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
         {isProcessing && progress > 0 && (
           <Card className="p-4">
-            <Progress value={progress} className="w-full" />
-            <p className="text-sm text-muted-foreground mt-2 text-center">
-              {progress === 25 && "Шаг 1/4: Генерация HTML..."}
-              {progress === 50 && "Шаг 2/4: Генерация JSON..."}
-              {progress === 75 && "Шаг 4/4: Валидация и исправление..."}
-              {progress === 100 && "Готово!"}
-            </p>
+            <div className="space-y-3">
+              <Progress value={progress} className="w-full" />
+              {progressMessage && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-center">
+                    {progressMessage}
+                  </p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Прогресс: {progress}%
+                  </p>
+                </div>
+              )}
+            </div>
           </Card>
         )}
 
