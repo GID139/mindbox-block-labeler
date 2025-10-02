@@ -28,6 +28,9 @@ export const components: Record<string, Component> = {
       size: { group: 'Размеры', tooltip: 'Ширина изображения' },
       height: { group: 'Размеры', tooltip: 'Высота изображения' },
       align: { group: 'Позиционирование', tooltip: 'Выравнивание изображения' },
+      borderRadius: { group: 'Стили', tooltip: 'Скругление углов' },
+      border: { group: 'Стили', tooltip: 'Рамка изображения' },
+      innerSpacing: { group: 'Отступы', tooltip: 'Внутренние отступы' },
       spacing: { group: 'Отступы', tooltip: 'Внешние отступы' }
     }
   },
@@ -39,7 +42,11 @@ export const components: Record<string, Component> = {
       textStyles: { group: 'Стили', tooltip: 'Стили текста' },
       simpleTextStyles: { group: 'Стили', tooltip: 'Упрощенные стили текста' },
       align: { group: 'Позиционирование', tooltip: 'Выравнивание текста' },
-      size: { group: 'Размеры', tooltip: 'Размер контейнера текста' },
+      size: { group: 'Размеры', tooltip: 'Ширина контейнера текста' },
+      height: { group: 'Размеры', tooltip: 'Высота контейнера текста' },
+      borderRadius: { group: 'Стили', tooltip: 'Скругление углов' },
+      border: { group: 'Стили', tooltip: 'Рамка контейнера' },
+      innerSpacing: { group: 'Отступы', tooltip: 'Внутренние отступы' },
       spacing: { group: 'Отступы', tooltip: 'Внешние отступы' }
     }
   },
@@ -53,6 +60,9 @@ export const components: Record<string, Component> = {
       size: { group: 'Размеры', tooltip: 'Ширина логотипа' },
       height: { group: 'Размеры', tooltip: 'Высота логотипа' },
       align: { group: 'Позиционирование', tooltip: 'Выравнивание' },
+      borderRadius: { group: 'Стили', tooltip: 'Скругление углов' },
+      border: { group: 'Стили', tooltip: 'Рамка логотипа' },
+      innerSpacing: { group: 'Отступы', tooltip: 'Внутренние отступы' },
       spacing: { group: 'Отступы', tooltip: 'Внешние отступы' }
     }
   },
@@ -60,6 +70,8 @@ export const components: Record<string, Component> = {
     title: 'Контейнер',
     settings: {
       displayToggle: { group: 'Видимость', tooltip: 'Показывать/скрывать контейнер' },
+      size: { group: 'Размеры', tooltip: 'Ширина контейнера' },
+      height: { group: 'Размеры', tooltip: 'Высота контейнера' },
       background: { group: 'Стили', tooltip: 'Фон контейнера' },
       borderRadius: { group: 'Стили', tooltip: 'Скругление углов' },
       border: { group: 'Стили', tooltip: 'Рамка' },
@@ -79,7 +91,13 @@ export const components: Record<string, Component> = {
       oldPrice: { group: 'Информация о товаре', tooltip: 'Старая цена' },
       link: { group: 'Информация о товаре', tooltip: 'Ссылка на товар' },
       buttonText: { group: 'Кнопка', tooltip: 'Текст кнопки' },
-      buttonUrl: { group: 'Кнопка', tooltip: 'URL кнопки' }
+      buttonUrl: { group: 'Кнопка', tooltip: 'URL кнопки' },
+      size: { group: 'Размеры', tooltip: 'Ширина блока товара' },
+      height: { group: 'Размеры', tooltip: 'Высота блока товара' },
+      borderRadius: { group: 'Стили', tooltip: 'Скругление углов' },
+      border: { group: 'Стили', tooltip: 'Рамка блока' },
+      innerSpacing: { group: 'Отступы', tooltip: 'Внутренние отступы' },
+      spacing: { group: 'Отступы', tooltip: 'Внешние отступы' }
     }
   }
 };

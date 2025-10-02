@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { ChevronDown, ChevronUp, Download } from "lucide-react";
 import { toast } from "sonner";
 import type { MindboxState } from "@/types/mindbox";
+import { CodeEditor } from "@/components/CodeEditor";
+import JSZip from "jszip";
 
 interface FixedCodeTabProps {
   state: MindboxState;
@@ -12,13 +14,43 @@ interface FixedCodeTabProps {
 export function FixedCodeTab({ state }: FixedCodeTabProps) {
   const [showHtml, setShowHtml] = useState(true);
   const [showJson, setShowJson] = useState(true);
+  const [showReport, setShowReport] = useState(true);
+  const [collapsedBlocks, setCollapsedBlocks] = useState<Record<number, boolean>>({});
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const downloadFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Файл ${filename} скачан`);
+  };
+
+  const downloadZip = async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} скопирован в буфер обмена`);
-    } catch {
-      toast.error("Не удалось скопировать");
+      const zip = new JSZip();
+      if (state.fixedHtml) {
+        zip.file("fixed.html", state.fixedHtml);
+      }
+      if (state.fixedJson) {
+        zip.file("fixed.json", state.fixedJson);
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fixed-code.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Архив скачан");
+    } catch (error) {
+      toast.error("Не удалось создать архив");
     }
   };
 
@@ -33,13 +65,39 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
 
     return (
       <div className="space-y-4">
-        {markdown.split(/\n\n+/).map((block, index) => (
-          <Card key={index} className="p-4">
-            <pre className="text-sm whitespace-pre-wrap text-foreground">
-              {block}
-            </pre>
-          </Card>
-        ))}
+        {markdown.split(/\n\n+/).map((block, index) => {
+          const isCollapsed = collapsedBlocks[index];
+
+          return (
+            <Card key={index} className="overflow-hidden">
+              <div
+                className="flex items-center justify-between p-3 bg-muted cursor-pointer hover:bg-muted/80"
+                onClick={() =>
+                  setCollapsedBlocks((prev) => ({
+                    ...prev,
+                    [index]: !prev[index],
+                  }))
+                }
+              >
+                <span className="text-sm font-medium">
+                  Блок {index + 1}
+                </span>
+                {isCollapsed ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </div>
+              {!isCollapsed && (
+                <div className="p-4">
+                  <pre className="text-sm whitespace-pre-wrap text-foreground">
+                    {block}
+                  </pre>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
     );
   };
@@ -59,6 +117,41 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {(state.fixedHtml || state.fixedJson) && (
+        <div className="flex justify-end gap-2">
+          {state.fixedHtml && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadFile(state.fixedHtml, "fixed.html")}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Скачать HTML
+            </Button>
+          )}
+          {state.fixedJson && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadFile(state.fixedJson, "fixed.json")}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Скачать JSON
+            </Button>
+          )}
+          {state.fixedHtml && state.fixedJson && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadZip}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Скачать архив
+            </Button>
+          )}
+        </div>
+      )}
+
       {state.fixedHtml && (
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between p-4 bg-muted">
@@ -74,20 +167,16 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
                 <ChevronDown className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => copyToClipboard(state.fixedHtml, "HTML")}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Копировать
-            </Button>
           </div>
           {showHtml && (
             <div className="p-4 bg-card">
-              <pre className="text-sm font-mono overflow-x-auto p-4 bg-editor-bg text-foreground rounded-lg">
-                {state.fixedHtml}
-              </pre>
+              <CodeEditor
+                value={state.fixedHtml}
+                onChange={() => {}}
+                language="html"
+                showCopy={true}
+                readOnly={false}
+              />
             </div>
           )}
         </Card>
@@ -108,28 +197,41 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
                 <ChevronDown className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => copyToClipboard(state.fixedJson, "JSON")}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Копировать
-            </Button>
           </div>
           {showJson && (
             <div className="p-4 bg-card">
-              <pre className="text-sm font-mono overflow-x-auto p-4 bg-editor-bg text-foreground rounded-lg">
-                {state.fixedJson}
-              </pre>
+              <CodeEditor
+                value={state.fixedJson}
+                onChange={() => {}}
+                language="json"
+                showCopy={true}
+                readOnly={false}
+              />
             </div>
           )}
         </Card>
       )}
 
-      <Card className="p-6">
-        <h2 className="text-xl font-bold mb-4">Отчет об изменениях</h2>
-        {renderReport(state.reportMarkdown)}
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between p-4 bg-muted">
+          <Button
+            variant="ghost"
+            onClick={() => setShowReport(!showReport)}
+            className="flex items-center gap-2"
+          >
+            <h2 className="text-xl font-bold">Отчет об изменениях</h2>
+            {showReport ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        {showReport && (
+          <div className="p-6">
+            {renderReport(state.reportMarkdown)}
+          </div>
+        )}
       </Card>
     </div>
   );

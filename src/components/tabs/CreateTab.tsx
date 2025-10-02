@@ -391,6 +391,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
             onChange={updateHtml}
             label="HTML код"
             placeholder="Вставьте HTML код или оставьте пустым для генерации..."
+            language="html"
           />
         </Card>
 
@@ -400,6 +401,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
             onChange={updateJson}
             label="JSON настройки"
             placeholder="Вставьте JSON настройки или оставьте пустым для генерации..."
+            language="json"
           />
         </Card>
       </div>
