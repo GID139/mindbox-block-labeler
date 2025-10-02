@@ -1,7 +1,7 @@
 // Mindbox Prompts System v2.0
 // Adaptive prompts based on input state (HTML/JSON presence)
 
-import knowledgeBase from './knowledge-base/mindbox-complete-kb.md?raw';
+import { MINDBOX_KB_CONTENT } from './knowledge-base/mindbox-kb-content';
 
 /**
  * Determines the scenario based on what data is present
@@ -46,7 +46,7 @@ export function buildStep1Generate({ goal, isDynamicGrid, isEditable, settingsLi
 You are an expert Mindbox email template developer. Your task is to generate complete, valid, production-ready HTML code based on the user's goal.
 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
-${knowledgeBase}
+${MINDBOX_KB_CONTENT}
 
 ## USER'S GOAL
 ${goal}
@@ -157,7 +157,7 @@ export function buildStep1Validate({ goal, html, isDynamicGrid, isEditable, sett
 You are an expert Mindbox email template validator. Your task is to thoroughly validate the provided HTML code against Mindbox standards and correct any issues.
 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
-${knowledgeBase}
+${MINDBOX_KB_CONTENT}
 
 ## USER'S ORIGINAL GOAL
 ${goal}
@@ -258,7 +258,7 @@ export function buildStep2Generate({ html }: Step2Params): string {
 You are an expert Mindbox JSON configuration generator. Your task is to analyze the provided HTML code and generate a complete, valid JSON settings file that exposes all editable parameters to the Mindbox email editor interface.
 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
-${knowledgeBase}
+${MINDBOX_KB_CONTENT}
 
 ## HTML CODE TO ANALYZE
 \`\`\`html
@@ -402,7 +402,7 @@ export function buildStep2Validate({ html, json }: Step2Params): string {
 You are an expert Mindbox JSON validator. Your task is to validate the provided JSON configuration against the HTML code and Mindbox standards, then correct any issues.
 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
-${knowledgeBase}
+${MINDBOX_KB_CONTENT}
 
 ## HTML CODE (REFERENCE)
 \`\`\`html
@@ -522,7 +522,7 @@ export function buildStep3({ goal, html, json, quickFix }: Step3Params): string 
 You are a senior Mindbox quality assurance engineer. Your task is to perform a comprehensive final audit of both HTML and JSON files, ensure perfect synchronization, and verify they meet the user's original goal.
 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
-${knowledgeBase}
+${MINDBOX_KB_CONTENT}
 
 ## USER'S ORIGINAL GOAL
 ${goal}

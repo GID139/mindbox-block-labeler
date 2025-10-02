@@ -11,7 +11,15 @@ import { ZipUpload } from "@/components/ZipUpload";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { callGeminiAPI, estimateTokens } from "@/lib/gemini-api";
-import { buildStep1, buildStep2, buildStep4 } from "@/lib/mindbox-prompts";
+import { 
+  buildStep1, 
+  buildStep2, 
+  buildStep3, 
+  detectScenario, 
+  getStepName,
+  getPipelineDescription,
+  type Scenario 
+} from "@/lib/mindbox-prompts-v2";
 import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
@@ -29,6 +37,8 @@ interface CreateTabProps {
 export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick }: CreateTabProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [currentScenario, setCurrentScenario] = useState<Scenario>('generate-from-scratch');
   const [progressMessage, setProgressMessage] = useState("");
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [outputPrompt, setOutputPrompt] = useState("");
@@ -66,20 +76,17 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
   };
 
   const updatePrompt = () => {
-    if (!state.html.trim() || !state.json.trim()) {
-      setOutputPrompt("");
-      return;
-    }
-
-    const prompt = buildStep4({
-      goal: state.goal,
-      html: state.html,
-      json: state.json,
-      quickFix: state.quickFix
-    });
+    // Определяем сценарий на основе наличия HTML/JSON
+    const scenario = detectScenario(state.html, state.json);
+    setCurrentScenario(scenario);
     
-    setOutputPrompt(prompt);
-    setTokenEstimate(estimateTokens(prompt));
+    // Для предпросмотра показываем описание пайплайна
+    const description = getPipelineDescription(scenario);
+    setOutputPrompt(`Текущий сценарий: ${description}\n\nПромпты будут сгенерированы автоматически на каждом шаге.`);
+    
+    // Оцениваем токены для всех данных
+    const combinedText = [state.goal, state.html, state.json].join('\n');
+    setTokenEstimate(estimateTokens(combinedText) * 3); // Умножаем на 3 шага
   };
 
   const parseCodeBlocks = (text: string) => {
@@ -176,96 +183,169 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
     setIsProcessing(true);
     setProgress(0);
-    addLog("Начало анализа");
+    setCurrentStep(0);
+    
+    // Определяем сценарий
+    const scenario = detectScenario(state.html, state.json);
+    setCurrentScenario(scenario);
+    
+    const pipelineDesc = getPipelineDescription(scenario);
+    addLog(`Начало анализа: ${pipelineDesc}`);
 
     try {
-      // Шаг 1: Генерация HTML (если нужно)
-      let html = state.html;
-      if (!html.trim() && state.goal.trim()) {
-        setProgress(25);
-        setProgressMessage("Шаг 1/4: Генерация HTML кода блока");
-        addLog("Шаг 1/4: Генерация HTML");
-        
-        const settingsList = Object.entries(selectedSettings)
-          .filter(([_, checked]) => checked)
-          .map(([settingId]) => settingId)
-          .join(', ');
+      const settingsList = Object.entries(selectedSettings)
+        .filter(([_, checked]) => checked)
+        .map(([settingId]) => settingId)
+        .join(', ');
 
-        const prompt1 = buildStep1({
-          goal: state.goal,
-          isDynamicGrid: state.isDynamicGrid,
-          isEditable: state.isEditable,
-          settingsList
-        });
-        
-        const response1 = await callGeminiAPI(prompt1);
-        const parsed1 = parseCodeBlocks(response1);
-        html = parsed1.html;
-        updateState({ html });
-        addLog("HTML сгенерирован");
+      // ============================================================
+      // ШАГ 1: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ HTML (всегда выполняется)
+      // ============================================================
+      setCurrentStep(1);
+      setProgress(33);
+      const step1Name = getStepName(1, scenario);
+      setProgressMessage(step1Name);
+      addLog(`Шаг 1/3: ${step1Name}`);
+      
+      const prompt1 = buildStep1({
+        goal: state.goal,
+        html: state.html, // Передаем существующий HTML для валидации
+        isDynamicGrid: state.isDynamicGrid,
+        isEditable: state.isEditable,
+        settingsList
+      });
+      
+      const response1 = await callGeminiAPI(prompt1, {
+        model: "gemini-2.0-flash-exp"
+      });
+      
+      // Парсим HTML из ответа
+      let html = response1.trim();
+      // Если AI обернул в код-блоки, извлекаем
+      const htmlMatch = html.match(/```\s*html[\r\n]+([\s\S]*?)```/i);
+      if (htmlMatch) {
+        html = htmlMatch[1].trim();
       }
+      
+      updateState({ html });
+      addLog("Шаг 1 завершен: HTML обработан");
 
-      // Шаг 2: Генерация JSON (если нужно)
-      let json = state.json;
-      if (!json.trim() && html.trim()) {
-        setProgress(50);
-        setProgressMessage("Шаг 2/4: Генерация JSON настроек");
-        addLog("Шаг 2/4: Генерация JSON");
-        const prompt2 = buildStep2({ html });
-        const response2 = await callGeminiAPI(prompt2);
-        const parsed2 = parseCodeBlocks(response2);
-        json = parsed2.json;
-        updateState({ json });
-        addLog("JSON сгенерирован");
+      // ============================================================
+      // ШАГ 2: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ JSON (всегда выполняется)
+      // ============================================================
+      setCurrentStep(2);
+      setProgress(66);
+      const step2Name = getStepName(2, scenario);
+      setProgressMessage(step2Name);
+      addLog(`Шаг 2/3: ${step2Name}`);
+      
+      const prompt2 = buildStep2({
+        html,
+        json: state.json // Передаем существующий JSON для валидации
+      });
+      
+      const response2 = await callGeminiAPI(prompt2, {
+        model: "gemini-2.0-flash-exp"
+      });
+      
+      // Парсим JSON из ответа
+      let json = response2.trim();
+      // Если AI обернул в код-блоки, извлекаем
+      const jsonMatch = json.match(/```\s*json[\r\n]+([\s\S]*?)```/i);
+      if (jsonMatch) {
+        json = jsonMatch[1].trim();
       }
+      
+      updateState({ json });
+      addLog("Шаг 2 завершен: JSON обработан");
 
-      // Шаг 4: Финальная валидация и исправление (выполняется всегда, даже если код уже был)
-      // Промпт проверяет код на соответствие правилам Mindbox
-      setProgress(75);
-      setProgressMessage("Шаг 4/4: Валидация и исправление ошибок");
-      addLog("Шаг 4/4: Валидация и исправление");
-      const prompt4 = buildStep4({
+      // ============================================================
+      // ШАГ 3: ФИНАЛЬНАЯ ОТЛАДКА И СИНХРОНИЗАЦИЯ (всегда выполняется)
+      // ============================================================
+      setCurrentStep(3);
+      setProgress(90);
+      const step3Name = getStepName(3, scenario);
+      setProgressMessage(step3Name);
+      addLog(`Шаг 3/3: ${step3Name}`);
+      
+      const prompt3 = buildStep3({
         goal: state.goal,
         html,
         json,
         quickFix: state.quickFix
       });
       
-      const response4 = await callGeminiAPI(prompt4);
-      const parsed4 = parseCodeBlocks(response4);
+      const response3 = await callGeminiAPI(prompt3, {
+        model: "gemini-2.0-flash-exp"
+      });
+      
+      // Парсим результаты Step 3
+      let fixedHtml = '';
+      let fixedJson = '';
+      let reportMarkdown = '';
+      
+      if (state.quickFix) {
+        // В режиме quickFix ответ в формате: HTML ---JSON--- JSON
+        const parts = response3.split('---JSON---');
+        if (parts.length === 2) {
+          fixedHtml = parts[0].trim();
+          fixedJson = parts[1].trim();
+          
+          // Убираем код-блоки если есть
+          const htmlMatch = fixedHtml.match(/```\s*html[\r\n]+([\s\S]*?)```/i);
+          if (htmlMatch) fixedHtml = htmlMatch[1].trim();
+          
+          const jsonMatch = fixedJson.match(/```\s*json[\r\n]+([\s\S]*?)```/i);
+          if (jsonMatch) fixedJson = jsonMatch[1].trim();
+          
+          reportMarkdown = '✅ Быстрое исправление выполнено';
+        }
+      } else {
+        // Полный режим: извлекаем HTML, JSON и отчет
+        const htmlMatch = response3.match(/```\s*html[\r\n]+([\s\S]*?)```/i);
+        const jsonMatch = response3.match(/```\s*json[\r\n]+([\s\S]*?)```/i);
+        
+        fixedHtml = htmlMatch ? htmlMatch[1].trim() : html;
+        fixedJson = jsonMatch ? jsonMatch[1].trim() : json;
+        
+        // Извлекаем отчет (всё после JSON блока или с маркером отчета)
+        const reportMatch = response3.match(/```\s*json[\r\n]+[\s\S]*?```[\r\n]+([\s\S]*)/i);
+        reportMarkdown = reportMatch ? reportMatch[1].trim() : '✅ Валидация завершена';
+      }
 
       updateState({
-        fixedHtml: parsed4.html,
-        fixedJson: parsed4.json,
-        reportMarkdown: parsed4.report
+        fixedHtml,
+        fixedJson,
+        reportMarkdown
       });
 
       setProgress(100);
-      setProgressMessage("Анализ завершен успешно!");
-      addLog("Анализ завершен успешно");
+      setProgressMessage("✅ Все 3 шага завершены успешно!");
+      addLog("Анализ завершен: все 3 шага выполнены");
       
       // Сохраняем в историю
       saveToHistory("Автосохранение", {
         goal: state.goal,
         html,
         json,
-        fixedHtml: parsed4.html,
-        fixedJson: parsed4.json,
-        reportMarkdown: parsed4.report
+        fixedHtml,
+        fixedJson,
+        reportMarkdown
       });
 
-      toast.success("Анализ завершен успешно");
+      toast.success("Все 3 шага выполнены успешно");
       
       setTimeout(() => {
         setActiveTab('fixed');
       }, 500);
     } catch (error) {
       console.error('Analysis error:', error);
-      addLog("Ошибка: " + (error instanceof Error ? error.message : "Неизвестная ошибка"));
-      toast.error("Ошибка при анализе кода");
+      addLog(`Ошибка на шаге ${currentStep}: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`);
+      toast.error(`Ошибка на шаге ${currentStep}`);
     } finally {
       setIsProcessing(false);
       setProgress(0);
+      setCurrentStep(0);
       setProgressMessage("");
     }
   };
@@ -449,14 +529,20 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         {isProcessing && progress > 0 && (
           <Card className="p-4">
             <div className="space-y-3">
-              <Progress value={progress} className="w-full" />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <span>Шаг {currentStep}/3</span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} className="w-full" />
+              </div>
               {progressMessage && (
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-center">
                     {progressMessage}
                   </p>
                   <p className="text-xs text-muted-foreground text-center">
-                    Прогресс: {progress}%
+                    {getPipelineDescription(currentScenario)}
                   </p>
                 </div>
               )}
@@ -470,11 +556,12 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         />
 
         <Card className="p-6">
-          <h3 className="font-semibold mb-3">Как использовать:</h3>
+          <h3 className="font-semibold mb-3">Как работает пайплайн:</h3>
           <ol className="text-sm space-y-2 text-muted-foreground list-decimal list-inside">
-            <li>Загрузите ZIP файл или опишите цель</li>
-            <li>Выберите нужные настройки компонентов</li>
-            <li>Настройте параметры блока</li>
+            <li><strong>Шаг 1</strong>: Генерация или валидация HTML кода</li>
+            <li><strong>Шаг 2</strong>: Генерация или валидация JSON настроек</li>
+            <li><strong>Шаг 3</strong>: Финальная отладка и синхронизация</li>
+            <li className="pt-2 border-t">Все 3 шага выполняются всегда, независимо от наличия кода</li>
             <li>Нажмите кнопку анализа</li>
             <li>Получите исправленный код</li>
           </ol>
