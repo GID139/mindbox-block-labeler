@@ -105,15 +105,21 @@ export function Header({
         </TooltipProvider>
       </div>
       
-      <div className="mt-4">
-        <a
-          href="https://help.mindbox.ru/docs/email-editor-upload-blocks"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+      <div className="mt-4 flex justify-center">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
         >
-          Документация по разметке блоков →
-        </a>
+          <a
+            href="https://help.mindbox.ru/docs/email-editor-upload-blocks"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2"
+          >
+            Документация по разметке блоков →
+          </a>
+        </Button>
       </div>
     </header>
   );

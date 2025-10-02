@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
-const N8N_CHAT_URL = "https://mindbox-assistant.app.n8n.cloud/chat";
+const N8N_CHAT_URL = "https://n8n.mindbox.cloud/webhook/2982e424-ede3-4d1d-924e-49e2f8f6be0c/chat";
 
 export function N8nChatTab() {
   const [isOnline, setIsOnline] = useState<boolean | null>(null);

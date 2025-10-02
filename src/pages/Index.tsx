@@ -29,7 +29,7 @@ const initialState: MindboxState = {
 
 const Index = () => {
   const [state, setState] = useState<MindboxState>(initialState);
-  const [activeTab, setActiveTab] = useState("create");
+  const [activeTab, setActiveTab] = useState("n8n");
   const [showHistory, setShowHistory] = useState(false);
   const [showImproveGoal, setShowImproveGoal] = useState(false);
 
@@ -127,10 +127,14 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="n8n">n8n Chat</TabsTrigger>
             <TabsTrigger value="create">Создание и Редактирование</TabsTrigger>
             <TabsTrigger value="fixed">Исправленный код</TabsTrigger>
-            <TabsTrigger value="n8n">n8n Chat</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="n8n" className="mt-0">
+            <N8nChatTab />
+          </TabsContent>
 
           <TabsContent value="create" className="mt-0">
             <CreateTab 
@@ -143,10 +147,6 @@ const Index = () => {
 
           <TabsContent value="fixed" className="mt-0">
             <FixedCodeTab state={state} />
-          </TabsContent>
-
-          <TabsContent value="n8n" className="mt-0">
-            <N8nChatTab />
           </TabsContent>
         </Tabs>
 

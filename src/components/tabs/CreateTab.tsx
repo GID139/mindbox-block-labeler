@@ -147,7 +147,18 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       return;
     }
 
-    const goal = `Создать блок с следующими настройками:\n\n${selected.join('\n')}`;
+    // Сохраняем существующие AI подсказки
+    const existingHints = Object.values(smartHints).filter(hint => 
+      state.goal.includes(hint)
+    );
+
+    let goal = `Создать блок с следующими настройками:\n\n${selected.join('\n')}`;
+    
+    // Добавляем сохраненные подсказки обратно
+    if (existingHints.length > 0) {
+      goal = goal + '\n\n' + existingHints.join('\n');
+    }
+
     updateState({ goal });
     toast.success("Цель сгенерирована из настроек");
   };

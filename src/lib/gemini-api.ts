@@ -2,7 +2,7 @@
 import { toast } from "sonner";
 
 const GEMINI_API_KEY = 'AIzaSyBQsJJZUEBWYCtEQQpexcHb57JJBHdS8Lo';
-const DEFAULT_MODEL = 'gemini-1.5-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash-exp';
 
 interface GeminiOptions {
   model?: string;
@@ -33,12 +33,15 @@ export async function callGeminiAPI(
       });
 
       if (!response.ok) {
-        if (response.status === 503 && modelName === 'gemini-1.5-flash') {
-          console.log('Gemini-1.5-flash unavailable, fallback to pro');
+        const errorText = await response.text();
+        console.error('Gemini API error:', response.status, errorText);
+        
+        if (response.status === 503 || response.status === 404) {
+          console.log('Model unavailable, trying gemini-1.5-flash');
           await new Promise(resolve => setTimeout(resolve, 1200));
-          return requestOnce('gemini-1.5-pro');
+          return requestOnce('gemini-1.5-flash');
         }
-        throw new Error(`Gemini API error ${response.status}`);
+        throw new Error(`Gemini API error ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();

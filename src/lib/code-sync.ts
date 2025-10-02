@@ -56,16 +56,6 @@ export function applySettingsToCode(
   const variable = settingKey; // Используем ключ настройки как имя переменной
 
   if (enabled) {
-    // Проверяем, есть ли переменная в HTML
-    const htmlPattern = `\${editor.${variable}}`;
-    if (!newHtml.includes(htmlPattern)) {
-      // Добавляем заглушку для переменной в конец блока
-      const placeholder = `<!-- TODO: Добавить \${editor.${variable}} -->`;
-      if (!newHtml.includes(placeholder)) {
-        newHtml = newHtml.trim() + `\n${placeholder}`;
-      }
-    }
-
     // Проверяем, есть ли переменная в JSON
     try {
       const jsonArray = JSON.parse(newJson);
@@ -87,12 +77,7 @@ export function applySettingsToCode(
       console.error('Error parsing JSON:', e);
     }
   } else {
-    // Комментируем в HTML
-    const htmlPattern = `\${editor.${variable}}`;
-    const commentedPattern = `<!-- \${editor.${variable}} -->`;
-    newHtml = newHtml.replace(new RegExp(htmlPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), commentedPattern);
-
-    // Удаляем из JSON или помечаем
+    // Удаляем из JSON
     try {
       const jsonArray = JSON.parse(newJson);
       if (Array.isArray(jsonArray)) {

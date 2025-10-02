@@ -65,12 +65,25 @@ export function FeedbackButton() {
             placeholder="Что вам понравилось или что можно улучшить?"
             className="min-h-[150px]"
           />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className="flex-1"
+            >
               {isSubmitting ? "Отправка..." : "Отправить"}
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+            >
+              <a
+                href="https://mindbox.loop.ru/mindbox/channels/gid_ai"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Открыть ОС
+              </a>
             </Button>
           </div>
         </div>

@@ -14,13 +14,24 @@ export async function parseZipFile(file: File): Promise<ParsedZipData> {
     let html = '';
     let json = '';
     
-    // Ищем HTML файл
-    const htmlFile = Object.keys(contents.files).find(name => 
+    // Ищем HTML файлы - приоритет для файла с суффиксом editor
+    const allHtmlFiles = Object.keys(contents.files).filter(name => 
       name.toLowerCase().endsWith('.html') || name.toLowerCase().endsWith('.htm')
     );
     
-    if (htmlFile) {
-      html = await contents.files[htmlFile].async('text');
+    // Файл с суффиксом editor идет в блок кода (html), остальные в цель
+    const editorHtmlFile = allHtmlFiles.find(name => 
+      name.toLowerCase().includes('editor')
+    );
+    
+    const regularHtmlFile = allHtmlFiles.find(name => 
+      !name.toLowerCase().includes('editor')
+    );
+    
+    if (editorHtmlFile) {
+      html = await contents.files[editorHtmlFile].async('text');
+    } else if (regularHtmlFile) {
+      html = await contents.files[regularHtmlFile].async('text');
     }
     
     // Ищем JSON файл
