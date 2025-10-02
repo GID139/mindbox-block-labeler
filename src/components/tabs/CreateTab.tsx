@@ -219,7 +219,8 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         addLog("JSON сгенерирован");
       }
 
-      // Шаг 4: Финальная валидация и исправление
+      // Шаг 4: Финальная валидация и исправление (выполняется всегда, даже если код уже был)
+      // Промпт проверяет код на соответствие правилам Mindbox
       setProgress(75);
       setProgressMessage("Шаг 4/4: Валидация и исправление ошибок");
       addLog("Шаг 4/4: Валидация и исправление");

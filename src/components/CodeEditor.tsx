@@ -109,25 +109,29 @@ export function CodeEditor({
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           placeholder={placeholder}
-          className={`w-full font-mono text-sm min-h-[300px] bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-lg border border-input focus:outline-none focus:ring-2 focus:ring-ring ${className}`}
+          className={`w-full font-mono text-sm bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-lg border border-input focus:outline-none focus:ring-2 focus:ring-ring overflow-y-auto ${className}`}
+          style={{ height: "480px", maxHeight: "480px" }}
           spellCheck={false}
         />
       ) : (
-        <div className="relative rounded-lg overflow-hidden border border-input">
-          <SyntaxHighlighter
-            language={language}
-            style={vscDarkPlus}
-            customStyle={{
-              margin: 0,
-              padding: "1rem",
-              fontSize: "0.875rem",
-              minHeight: "300px",
-              background: "#1e1e1e",
-            }}
-            showLineNumbers
-          >
-            {value || placeholder || ""}
-          </SyntaxHighlighter>
+        <div className="relative rounded-lg overflow-hidden border border-input" style={{ maxHeight: "480px" }}>
+          <div className="overflow-y-auto" style={{ maxHeight: "480px" }}>
+            <SyntaxHighlighter
+              language={language}
+              style={vscDarkPlus}
+              customStyle={{
+                margin: 0,
+                padding: "1rem",
+                fontSize: "0.875rem",
+                background: "#1e1e1e",
+              }}
+              showLineNumbers
+              wrapLines={false}
+              wrapLongLines={false}
+            >
+              {value || placeholder || ""}
+            </SyntaxHighlighter>
+          </div>
         </div>
       )}
     </div>

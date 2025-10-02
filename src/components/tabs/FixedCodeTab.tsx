@@ -9,9 +9,10 @@ import JSZip from "jszip";
 
 interface FixedCodeTabProps {
   state: MindboxState;
+  updateState: (updates: Partial<MindboxState>) => void;
 }
 
-export function FixedCodeTab({ state }: FixedCodeTabProps) {
+export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
   const [showHtml, setShowHtml] = useState(true);
   const [showJson, setShowJson] = useState(true);
   const [showReport, setShowReport] = useState(true);
@@ -172,7 +173,7 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
             <div className="p-4 bg-card">
               <CodeEditor
                 value={state.fixedHtml}
-                onChange={() => {}}
+                onChange={(value) => updateState({ fixedHtml: value })}
                 language="html"
                 showCopy={true}
                 readOnly={false}
@@ -202,7 +203,7 @@ export function FixedCodeTab({ state }: FixedCodeTabProps) {
             <div className="p-4 bg-card">
               <CodeEditor
                 value={state.fixedJson}
-                onChange={() => {}}
+                onChange={(value) => updateState({ fixedJson: value })}
                 language="json"
                 showCopy={true}
                 readOnly={false}

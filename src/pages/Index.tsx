@@ -8,7 +8,7 @@ import { N8nChatTab } from "@/components/tabs/N8nChatTab";
 import { HistoryModal } from "@/components/HistoryModal";
 import { ImproveGoalModal } from "@/components/ImproveGoalModal";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { Sparkles } from "lucide-react";
+import { Sparkles, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { MindboxState, HistoryItem } from "@/types/mindbox";
 
@@ -115,6 +115,13 @@ const Index = () => {
     toast.success("Цель обновлена");
   };
 
+  const handleClearSession = () => {
+    if (confirm("Вы уверены, что хотите очистить текущий сеанс? Все несохраненные данные будут потеряны.")) {
+      setState(initialState);
+      toast.success("Сеанс очищен");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -124,6 +131,17 @@ const Index = () => {
           onDownloadState={handleDownloadState}
           onUploadState={handleUploadState}
         />
+
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearSession}
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Очистить сеанс
+          </Button>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
@@ -146,7 +164,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="fixed" className="mt-0">
-            <FixedCodeTab state={state} />
+            <FixedCodeTab state={state} updateState={updateState} />
           </TabsContent>
         </Tabs>
 
