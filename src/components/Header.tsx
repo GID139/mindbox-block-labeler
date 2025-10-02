@@ -35,9 +35,25 @@ export function Header({
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
             Генератор блоков для <span className="text-primary">Mindbox</span>
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground mb-4">
             Создавайте и редактируйте HTML-блоки для конструктора Mindbox
           </p>
+          <div className="flex justify-center">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+            >
+              <a
+                href="https://help.mindbox.ru/docs/email-editor-upload-blocks"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2"
+              >
+                Документация по разметке блоков →
+              </a>
+            </Button>
+          </div>
         </div>
         
         <TooltipProvider>
@@ -103,23 +119,6 @@ export function Header({
             />
           </div>
         </TooltipProvider>
-      </div>
-      
-      <div className="mt-4 flex justify-center">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-        >
-          <a
-            href="https://help.mindbox.ru/docs/email-editor-upload-blocks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2"
-          >
-            Документация по разметке блоков →
-          </a>
-        </Button>
       </div>
     </header>
   );
