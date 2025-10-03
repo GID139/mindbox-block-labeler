@@ -128,29 +128,32 @@ export function CodeEditor({
         />
       ) : (
         <div className="relative rounded-lg overflow-hidden border border-input" style={{ maxHeight: "480px" }}>
+          <style>{`
+            .code-scroll-container::-webkit-scrollbar {
+              height: 12px;
+              width: 8px;
+            }
+            .code-scroll-container::-webkit-scrollbar-track {
+              background: #1e1e1e;
+            }
+            .code-scroll-container::-webkit-scrollbar-thumb {
+              background: #404040;
+              border-radius: 4px;
+            }
+            .code-scroll-container::-webkit-scrollbar-thumb:hover {
+              background: #505050;
+            }
+          `}</style>
           <div 
-            className="overflow-y-auto overflow-x-scroll" 
+            className="code-scroll-container" 
             style={{ 
               maxHeight: "480px",
+              overflowY: "auto",
+              overflowX: "scroll",
               scrollbarWidth: "thin",
               scrollbarColor: "#404040 #1e1e1e"
             }}
           >
-            <style>{`
-              .overflow-x-scroll::-webkit-scrollbar {
-                height: 8px;
-              }
-              .overflow-x-scroll::-webkit-scrollbar-track {
-                background: #1e1e1e;
-              }
-              .overflow-x-scroll::-webkit-scrollbar-thumb {
-                background: #404040;
-                border-radius: 4px;
-              }
-              .overflow-x-scroll::-webkit-scrollbar-thumb:hover {
-                background: #505050;
-              }
-            `}</style>
             <SyntaxHighlighter
               language={language}
               style={vscDarkPlus}
@@ -159,6 +162,7 @@ export function CodeEditor({
                 padding: "1rem",
                 fontSize: "0.875rem",
                 background: "#1e1e1e",
+                minWidth: "max-content",
               }}
               showLineNumbers
               wrapLines={false}
