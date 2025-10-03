@@ -236,7 +236,7 @@ ${step3Prompt}`;
       
       const response1 = await callBothubAPI(
         [{ role: "user", content: step1Prompt }],
-        { model: "gpt-4o-mini", temperature: 0.7 }
+        { model: "claude-sonnet-4", temperature: 0.7 }
       );
       
       setProgress(30);
@@ -267,7 +267,7 @@ ${step3Prompt}`;
       
       const response2 = await callBothubAPI(
         [{ role: "user", content: step2Prompt }],
-        { model: "gpt-4o-mini", temperature: 0.7 }
+        { model: "claude-sonnet-4", temperature: 0.7 }
       );
       
       setProgress(60);
@@ -298,7 +298,7 @@ ${step3Prompt}`;
       
       const response3 = await callBothubAPI(
         [{ role: "user", content: step3Prompt }],
-        { model: "gpt-4o-mini", temperature: 0.7 }
+        { model: "claude-sonnet-4", temperature: 0.7 }
       );
       
       setProgress(95);
