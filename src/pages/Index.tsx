@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 import { CreateTab } from "@/components/tabs/CreateTab";
 import { FixedCodeTab } from "@/components/tabs/FixedCodeTab";
 import { N8nChatTab } from "@/components/tabs/N8nChatTab";
@@ -28,10 +31,19 @@ const initialState: MindboxState = {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [state, setState] = useState<MindboxState>(initialState);
   const [activeTab, setActiveTab] = useState("n8n");
   const [showHistory, setShowHistory] = useState(false);
   const [showImproveGoal, setShowImproveGoal] = useState(false);
+
+  // Перенаправляем неавторизованных пользователей
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   // Проверяем URL на наличие shared data
   useEffect(() => {
@@ -121,6 +133,20 @@ const Index = () => {
       toast.success("Сеанс очищен");
     }
   };
+
+  // Показываем загрузку во время проверки авторизации
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Если нет пользователя, ничего не показываем (идет редирект)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
