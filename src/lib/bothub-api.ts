@@ -25,25 +25,50 @@ export async function callBothubAPI(
       },
     });
 
+    // Проверка на ошибки от Supabase
     if (error) {
-      console.error("Bothub API error:", error);
-      throw new Error(`Ошибка API: ${error.message}`);
+      console.error("Supabase invoke error:", error);
+      throw new Error(`Ошибка соединения с сервером: ${error.message}`);
     }
 
+    // Проверка на наличие данных
     if (!data) {
-      throw new Error("Пустой ответ от API");
+      throw new Error("Пустой ответ от сервера");
+    }
+
+    // Проверка на ошибки от edge function
+    if (data.error) {
+      console.error("Edge function error:", data);
+      const errorMsg = data.error;
+      const requestId = data.requestId;
+      
+      // Формируем понятное сообщение для пользователя
+      throw new Error(
+        `${errorMsg}${requestId ? ` (ID запроса: ${requestId})` : ''}`
+      );
     }
 
     // Извлекаем текст из ответа
     const content = data.choices?.[0]?.message?.content;
     if (!content) {
-      throw new Error("Некорректный формат ответа API");
+      console.error("Invalid response format:", data);
+      throw new Error("Некорректный формат ответа от AI модели");
     }
 
     return content;
   } catch (error) {
-    console.error("Error calling Bothub API:", error);
-    throw error;
+    // Логируем для отладки
+    console.error("Error calling Bothub API:", {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    // Пробрасываем ошибку дальше с понятным сообщением
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    throw new Error("Неизвестная ошибка при обращении к AI модели");
   }
 }
 
