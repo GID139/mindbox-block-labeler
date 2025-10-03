@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,15 +11,8 @@ import { ZipUpload } from "@/components/ZipUpload";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
-import { 
-  buildStep1, 
-  buildStep2, 
-  buildStep3, 
-  detectScenario, 
-  getStepName,
-  getPipelineDescription,
-  type Scenario 
-} from "@/lib/mindbox-prompts-v2";
+import { useMindboxPrompts } from "@/hooks/useMindboxPrompts";
+import type { Scenario } from "@/lib/mindbox-prompts-v2";
 import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
@@ -38,16 +31,46 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
-  const [currentScenario, setCurrentScenario] = useState<Scenario>('generate-from-scratch');
   const [progressMessage, setProgressMessage] = useState("");
-  const [tokenEstimate, setTokenEstimate] = useState(0);
-  const [outputPrompt, setOutputPrompt] = useState("");
   const [selectedSettings, setSelectedSettings] = useState<Record<string, boolean>>({});
   const [isApplyingSettings, setIsApplyingSettings] = useState(false);
 
-  useEffect(() => {
-    updatePrompt();
-  }, [state.goal, state.html, state.json, state.quickFix, state.isDynamicGrid, state.isEditable]);
+  // Мемоизируем список настроек для промптов
+  const settingsList = useMemo(() => {
+    return Object.entries(selectedSettings)
+      .filter(([_, checked]) => checked)
+      .map(([settingId]) => settingId)
+      .join(', ');
+  }, [selectedSettings]);
+
+  // Используем хук с мемоизацией промптов
+  const {
+    scenario,
+    step1Prompt,
+    step2Prompt,
+    step3Prompt,
+    stepNames,
+    pipelineDescription
+  } = useMindboxPrompts({
+    goal: state.goal,
+    html: state.html,
+    json: state.json,
+    isDynamicGrid: state.isDynamicGrid,
+    isEditable: state.isEditable,
+    settingsList,
+    quickFix: state.quickFix
+  });
+
+  // Мемоизируем оценку токенов
+  const tokenEstimate = useMemo(() => {
+    const combinedText = [state.goal, state.html, state.json].join('\n');
+    return estimateTokens(combinedText) * 3; // Умножаем на 3 шага
+  }, [state.goal, state.html, state.json]);
+
+  // Мемоизируем промпт для предпросмотра
+  const outputPrompt = useMemo(() => {
+    return `Текущий сценарий: ${pipelineDescription}\n\nПромпты будут сгенерированы автоматически на каждом шаге.`;
+  }, [pipelineDescription]);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
@@ -57,36 +80,14 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
   const updateGoal = (goal: string) => {
     updateState({ goal });
-    updateTokenEstimate(goal, state.html, state.json);
   };
 
   const updateHtml = (html: string) => {
     updateState({ html });
-    updateTokenEstimate(state.goal, html, state.json);
   };
 
   const updateJson = (json: string) => {
     updateState({ json });
-    updateTokenEstimate(state.goal, state.html, json);
-  };
-
-  const updateTokenEstimate = (goal: string, html: string, json: string) => {
-    const combinedText = [goal, html, json].join('\n');
-    setTokenEstimate(estimateTokens(combinedText));
-  };
-
-  const updatePrompt = () => {
-    // Определяем сценарий на основе наличия HTML/JSON
-    const scenario = detectScenario(state.html, state.json);
-    setCurrentScenario(scenario);
-    
-    // Для предпросмотра показываем описание пайплайна
-    const description = getPipelineDescription(scenario);
-    setOutputPrompt(`Текущий сценарий: ${description}\n\nПромпты будут сгенерированы автоматически на каждом шаге.`);
-    
-    // Оцениваем токены для всех данных
-    const combinedText = [state.goal, state.html, state.json].join('\n');
-    setTokenEstimate(estimateTokens(combinedText) * 3); // Умножаем на 3 шага
   };
 
   const parseCodeBlocks = (text: string) => {
@@ -185,38 +186,19 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
     setProgress(0);
     setCurrentStep(0);
     
-    // Определяем сценарий
-    const scenario = detectScenario(state.html, state.json);
-    setCurrentScenario(scenario);
-    
-    const pipelineDesc = getPipelineDescription(scenario);
-    addLog(`Начало анализа: ${pipelineDesc}`);
+    addLog(`Начало анализа: ${pipelineDescription}`);
 
     try {
-      const settingsList = Object.entries(selectedSettings)
-        .filter(([_, checked]) => checked)
-        .map(([settingId]) => settingId)
-        .join(', ');
-
       // ============================================================
       // ШАГ 1: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ HTML (всегда выполняется)
       // ============================================================
       setCurrentStep(1);
       setProgress(33);
-      const step1Name = getStepName(1, scenario);
-      setProgressMessage(step1Name);
-      addLog(`Шаг 1/3: ${step1Name}`);
-      
-      const prompt1 = buildStep1({
-        goal: state.goal,
-        html: state.html, // Передаем существующий HTML для валидации
-        isDynamicGrid: state.isDynamicGrid,
-        isEditable: state.isEditable,
-        settingsList
-      });
+      setProgressMessage(stepNames.step1);
+      addLog(`Шаг 1/3: ${stepNames.step1}`);
       
       const response1 = await callBothubAPI(
-        [{ role: "user", content: prompt1 }],
+        [{ role: "user", content: step1Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
       
@@ -236,17 +218,11 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       // ============================================================
       setCurrentStep(2);
       setProgress(66);
-      const step2Name = getStepName(2, scenario);
-      setProgressMessage(step2Name);
-      addLog(`Шаг 2/3: ${step2Name}`);
-      
-      const prompt2 = buildStep2({
-        html,
-        json: state.json // Передаем существующий JSON для валидации
-      });
+      setProgressMessage(stepNames.step2);
+      addLog(`Шаг 2/3: ${stepNames.step2}`);
       
       const response2 = await callBothubAPI(
-        [{ role: "user", content: prompt2 }],
+        [{ role: "user", content: step2Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
       
@@ -266,19 +242,11 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
       // ============================================================
       setCurrentStep(3);
       setProgress(90);
-      const step3Name = getStepName(3, scenario);
-      setProgressMessage(step3Name);
-      addLog(`Шаг 3/3: ${step3Name}`);
-      
-      const prompt3 = buildStep3({
-        goal: state.goal,
-        html,
-        json,
-        quickFix: state.quickFix
-      });
+      setProgressMessage(stepNames.step3);
+      addLog(`Шаг 3/3: ${stepNames.step3}`);
       
       const response3 = await callBothubAPI(
-        [{ role: "user", content: prompt3 }],
+        [{ role: "user", content: step3Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
       
@@ -502,8 +470,8 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
           <Card className="p-6">
             <CodeEditor
               value={outputPrompt}
-              onChange={setOutputPrompt}
-              label="Промпт для отправки (редактируемый)"
+              onChange={() => {}} // Read-only, промпт генерируется автоматически
+              label="Промпт для отправки (автоматически генерируется)"
               placeholder=""
               showCopy={true}
               className="min-h-[200px]"
@@ -545,7 +513,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
                     {progressMessage}
                   </p>
                   <p className="text-xs text-muted-foreground text-center">
-                    {getPipelineDescription(currentScenario)}
+                    {pipelineDescription}
                   </p>
                 </div>
               )}

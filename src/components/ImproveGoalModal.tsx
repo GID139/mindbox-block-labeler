@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,15 +33,16 @@ export function ImproveGoalModal({
   const [mode, setMode] = useState<ImproveMode>("medium");
   const [isLoading, setIsLoading] = useState(false);
 
-  const buildPrompt = (mode: ImproveMode, goal: string) => {
+  // Мемоизируем промпт для улучшения цели
+  const improvePrompt = useMemo(() => {
     if (mode === "short") {
-      return `Переформулируй цель максимально кратко (1-2 предложения), без потери смысла. Верни только текст цели.\n\nЦель:\n${goal}`;
+      return `Переформулируй цель максимально кратко (1-2 предложения), без потери смысла. Верни только текст цели.\n\nЦель:\n${currentGoal}`;
     }
     if (mode === "medium") {
-      return `Переформулируй цель кратко и понятно (2-4 предложения), сохрани требования. Верни только текст цели.\n\nЦель:\n${goal}`;
+      return `Переформулируй цель кратко и понятно (2-4 предложения), сохрани требования. Верни только текст цели.\n\nЦель:\n${currentGoal}`;
     }
-    return `Переформулируй цель максимально чётко и однозначно для ИИ. Укажи ключевые параметры, входные данные и ожидаемые выходы. Верни только текст цели.\n\nЦель:\n${goal}`;
-  };
+    return `Переформулируй цель максимально чётко и однозначно для ИИ. Укажи ключевые параметры, входные данные и ожидаемые выходы. Верни только текст цели.\n\nЦель:\n${currentGoal}`;
+  }, [mode, currentGoal]);
 
   const handleImprove = async () => {
     if (!currentGoal.trim()) {
@@ -51,9 +52,8 @@ export function ImproveGoalModal({
 
     setIsLoading(true);
     try {
-      const prompt = buildPrompt(mode, currentGoal);
       const result = await callBothubAPI(
-        [{ role: "user", content: prompt }],
+        [{ role: "user", content: improvePrompt }],
         { model: "gpt-4o-mini", temperature: 0.7 }
       );
       setImprovedText(result.trim());
