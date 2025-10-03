@@ -26,6 +26,7 @@ export function CodeEditor({
   language = "html",
   readOnly = false,
 }: CodeEditorProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
 
   // Синхронизируем editValue с value при изменении value извне
@@ -42,13 +43,27 @@ export function CodeEditor({
     }
   };
 
+  const handleEdit = () => {
+    setEditValue(value);
+    setIsEditing(true);
+  };
+
   const handleSave = () => {
     onChange(editValue);
+    setIsEditing(false);
     toast.success("Код обновлен");
   };
 
   const handleCancel = () => {
     setEditValue(value);
+    setIsEditing(false);
+  };
+
+  const handleClear = () => {
+    onChange('');
+    setEditValue('');
+    setIsEditing(false);
+    toast.success("Код очищен");
   };
 
   return (
@@ -57,20 +72,27 @@ export function CodeEditor({
         <div className="flex items-center justify-between">
           <label className="text-sm font-semibold text-foreground">{label}</label>
           <div className="flex gap-2">
-            {!readOnly && value && (
+            {!readOnly && !isEditing && value && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  onChange('');
-                  toast.success("Код очищен");
-                }}
+                onClick={handleClear}
                 className="h-8"
               >
                 Очистить
               </Button>
             )}
-            {!readOnly && (
+            {!readOnly && !isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEdit}
+                className="h-8"
+              >
+                Редактировать
+              </Button>
+            )}
+            {!readOnly && isEditing && (
               <>
                 <Button
                   variant="ghost"
@@ -104,7 +126,7 @@ export function CodeEditor({
           </div>
         </div>
       )}
-      {!readOnly ? (
+      {isEditing ? (
         <textarea
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
