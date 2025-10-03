@@ -128,7 +128,29 @@ export function CodeEditor({
         />
       ) : (
         <div className="relative rounded-lg overflow-hidden border border-input" style={{ maxHeight: "480px" }}>
-          <div className="overflow-y-auto" style={{ maxHeight: "480px" }}>
+          <div 
+            className="overflow-y-auto overflow-x-scroll" 
+            style={{ 
+              maxHeight: "480px",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#404040 #1e1e1e"
+            }}
+          >
+            <style>{`
+              .overflow-x-scroll::-webkit-scrollbar {
+                height: 8px;
+              }
+              .overflow-x-scroll::-webkit-scrollbar-track {
+                background: #1e1e1e;
+              }
+              .overflow-x-scroll::-webkit-scrollbar-thumb {
+                background: #404040;
+                border-radius: 4px;
+              }
+              .overflow-x-scroll::-webkit-scrollbar-thumb:hover {
+                background: #505050;
+              }
+            `}</style>
             <SyntaxHighlighter
               language={language}
               style={vscDarkPlus}
