@@ -38,12 +38,6 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showImproveGoal, setShowImproveGoal] = useState(false);
 
-  // Перенаправляем неавторизованных пользователей
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
 
   // Проверяем URL на наличие shared data
   useEffect(() => {
@@ -141,11 +135,6 @@ const Index = () => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // Если нет пользователя, ничего не показываем (идет редирект)
-  if (!user) {
-    return null;
   }
 
   return (

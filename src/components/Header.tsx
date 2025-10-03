@@ -71,12 +71,20 @@ export function Header({
         
         <TooltipProvider>
           <div className="flex items-center gap-2 ml-4">
-            {user && (
+            {user ? (
               <div className="flex items-center gap-2 mr-2 px-3 py-1 bg-muted rounded-md">
                 <span className="text-sm text-muted-foreground">
                   {user.email}
                 </span>
               </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/auth'}
+              >
+                Войти
+              </Button>
             )}
 
             <Tooltip>
@@ -131,18 +139,20 @@ export function Header({
               <TooltipContent>Загрузить состояние</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Выйти</TooltipContent>
-            </Tooltip>
+            {user && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Выйти</TooltipContent>
+              </Tooltip>
+            )}
             
             <input
               id="file-upload"
