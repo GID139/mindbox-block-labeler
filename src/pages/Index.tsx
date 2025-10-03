@@ -9,6 +9,8 @@ import { HistorySection } from "@/components/sections/HistorySection";
 import { toast } from "sonner";
 import type { MindboxState, HistoryItem } from "@/types/mindbox";
 
+const AUTOSAVE_KEY = 'mindbox-autosave';
+
 const initialState: MindboxState = {
   goal: '',
   html: '',
@@ -26,11 +28,34 @@ const initialState: MindboxState = {
 
 const Index = () => {
   const { loading } = useAuth();
-  const [state, setState] = useState<MindboxState>(initialState);
+  const [state, setState] = useState<MindboxState>(() => {
+    // Загружаем сохраненное состояние при инициализации
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        return { ...initialState, ...JSON.parse(saved) };
+      }
+    } catch (error) {
+      console.error('Error loading autosaved state:', error);
+    }
+    return initialState;
+  });
   const [activeTab, setActiveTab] = useState("n8n");
   const [showHistory, setShowHistory] = useState(false);
   const [showImproveGoal, setShowImproveGoal] = useState(false);
 
+  // Автосохранение с debounce 500мс
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.error('Error autosaving state:', error);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [state]);
 
   // Проверяем URL на наличие shared data
   useEffect(() => {
