@@ -8,7 +8,7 @@ import { CodeEditor } from "@/components/CodeEditor";
 import { DiagnosticLog } from "@/components/DiagnosticLog";
 import { ComponentSettings } from "@/components/ComponentSettings";
 import { ZipUpload } from "@/components/ZipUpload";
-import { Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
 import { useMindboxPrompts } from "@/hooks/useMindboxPrompts";
@@ -34,6 +34,12 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
   const [progressMessage, setProgressMessage] = useState("");
   const [selectedSettings, setSelectedSettings] = useState<Record<string, boolean>>({});
   const [isApplyingSettings, setIsApplyingSettings] = useState(false);
+  const [goalInput, setGoalInput] = useState(state.goal);
+
+  // Синхронизируем goalInput с state.goal при монтировании
+  useEffect(() => {
+    setGoalInput(state.goal);
+  }, [state.goal]);
 
   // Мемоизируем список настроек для промптов
   const settingsList = useMemo(() => {
@@ -98,9 +104,14 @@ ${step3Prompt}`;
     updateState({ log: [...state.log, logEntry] });
   };
 
-  const updateGoal = (goal: string) => {
-    updateState({ goal });
+  const applyGoal = () => {
+    updateState({ goal: goalInput });
+    toast.success("Цель применена к промпту");
   };
+
+  const isGoalChanged = useMemo(() => {
+    return goalInput.trim() !== state.goal.trim();
+  }, [goalInput, state.goal]);
 
   const updateHtml = (html: string) => {
     updateState({ html });
@@ -129,12 +140,13 @@ ${step3Prompt}`;
     // Добавляем/удаляем умные подсказки
     const hint = smartHints[setting];
     if (hint) {
-      let newGoal = state.goal;
+      let newGoal = goalInput;
       if (checked && !newGoal.includes(hint)) {
         newGoal = (newGoal.trim() + '\n' + hint).trim();
       } else if (!checked && newGoal.includes(hint)) {
         newGoal = newGoal.replace('\n' + hint, '').replace(hint, '').trim();
       }
+      setGoalInput(newGoal);
       updateState({ goal: newGoal });
     }
 
@@ -177,7 +189,7 @@ ${step3Prompt}`;
 
     // Сохраняем существующие AI подсказки
     const existingHints = Object.values(smartHints).filter(hint => 
-      state.goal.includes(hint)
+      goalInput.includes(hint)
     );
 
     let goal = `Создать блок с следующими настройками:\n\n${selected.join('\n')}`;
@@ -187,6 +199,7 @@ ${step3Prompt}`;
       goal = goal + '\n\n' + existingHints.join('\n');
     }
 
+    setGoalInput(goal);
     updateState({ goal });
     toast.success("Цель сгенерирована из настроек");
   };
@@ -368,14 +381,31 @@ ${step3Prompt}`;
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="goal">Цель/Описание блока</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="goal">Цель/Описание блока</Label>
+                {isGoalChanged && (
+                  <span className="text-xs text-muted-foreground">
+                    Есть несохраненные изменения
+                  </span>
+                )}
+              </div>
               <Textarea
                 id="goal"
-                value={state.goal}
-                onChange={(e) => updateGoal(e.target.value)}
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
                 placeholder="Опишите, какой блок нужно создать..."
                 className="min-h-[120px]"
               />
+              <Button
+                variant={isGoalChanged ? "default" : "outline"}
+                size="sm"
+                onClick={applyGoal}
+                disabled={!isGoalChanged}
+                className="w-full"
+              >
+                <Check className="mr-2 h-3.5 w-3.5" />
+                Применить цель к промпту
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -389,7 +419,7 @@ ${step3Prompt}`;
                 variant="outline"
                 size="sm"
                 onClick={onImproveGoalClick}
-                disabled={!state.goal.trim()}
+                disabled={!goalInput.trim()}
                 className="w-full"
               >
                 <Sparkles className="mr-2 h-3.5 w-3.5" />
