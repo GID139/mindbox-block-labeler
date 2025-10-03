@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { callGeminiAPI } from "@/lib/gemini-api";
+import { callBothubAPI } from "@/lib/bothub-api";
 
 interface ImproveGoalModalProps {
   isOpen: boolean;
@@ -52,9 +52,10 @@ export function ImproveGoalModal({
     setIsLoading(true);
     try {
       const prompt = buildPrompt(mode, currentGoal);
-      const result = await callGeminiAPI(prompt, {
-        model: "gemini-1.5-flash",
-      });
+      const result = await callBothubAPI(
+        [{ role: "user", content: prompt }],
+        { model: "gpt-4o-mini", temperature: 0.7 }
+      );
       setImprovedText(result.trim());
       toast.success("Цель улучшена");
     } catch (error) {

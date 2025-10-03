@@ -10,7 +10,7 @@ import { ComponentSettings } from "@/components/ComponentSettings";
 import { ZipUpload } from "@/components/ZipUpload";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { callGeminiAPI, estimateTokens } from "@/lib/gemini-api";
+import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
 import { 
   buildStep1, 
   buildStep2, 
@@ -215,9 +215,10 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         settingsList
       });
       
-      const response1 = await callGeminiAPI(prompt1, {
-        model: "gemini-2.0-flash-exp"
-      });
+      const response1 = await callBothubAPI(
+        [{ role: "user", content: prompt1 }],
+        { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
+      );
       
       // Парсим HTML из ответа
       let html = response1.trim();
@@ -244,9 +245,10 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         json: state.json // Передаем существующий JSON для валидации
       });
       
-      const response2 = await callGeminiAPI(prompt2, {
-        model: "gemini-2.0-flash-exp"
-      });
+      const response2 = await callBothubAPI(
+        [{ role: "user", content: prompt2 }],
+        { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
+      );
       
       // Парсим JSON из ответа
       let json = response2.trim();
@@ -275,9 +277,10 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
         quickFix: state.quickFix
       });
       
-      const response3 = await callGeminiAPI(prompt3, {
-        model: "gemini-2.0-flash-exp"
-      });
+      const response3 = await callBothubAPI(
+        [{ role: "user", content: prompt3 }],
+        { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
+      );
       
       // Парсим результаты Step 3
       let fixedHtml = '';
