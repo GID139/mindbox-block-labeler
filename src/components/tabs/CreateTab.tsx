@@ -8,6 +8,7 @@ import { CodeEditor } from "@/components/CodeEditor";
 import { DiagnosticLog } from "@/components/DiagnosticLog";
 import { ComponentSettings } from "@/components/ComponentSettings";
 import { ZipUpload } from "@/components/ZipUpload";
+import { ProgressIndicator } from "@/components/ProgressIndicator";
 import { Loader2, Sparkles, Wand2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
@@ -16,7 +17,6 @@ import type { Scenario } from "@/lib/mindbox-prompts-v2";
 import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
-import { Progress } from "@/components/ui/progress";
 import { applySettingsToCode } from "@/lib/code-sync";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -226,14 +226,20 @@ ${step3Prompt}`;
       // ШАГ 1: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ HTML (всегда выполняется)
       // ============================================================
       setCurrentStep(1);
-      setProgress(33);
-      setProgressMessage(stepNames.step1);
+      setProgress(10);
+      setProgressMessage("Подготовка запроса для генерации HTML...");
       addLog(`Шаг 1/3: ${stepNames.step1}`);
+      
+      setProgress(20);
+      setProgressMessage("Отправка запроса в AI модель...");
       
       const response1 = await callBothubAPI(
         [{ role: "user", content: step1Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
+      
+      setProgress(30);
+      setProgressMessage("Обработка полученного HTML кода...");
       
       // Парсим HTML из ответа
       let html = response1.trim();
@@ -244,20 +250,27 @@ ${step3Prompt}`;
       }
       
       updateState({ html });
+      setProgress(33);
       addLog("Шаг 1 завершен: HTML обработан");
 
       // ============================================================
       // ШАГ 2: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ JSON (всегда выполняется)
       // ============================================================
       setCurrentStep(2);
-      setProgress(66);
-      setProgressMessage(stepNames.step2);
+      setProgress(40);
+      setProgressMessage("Подготовка запроса для генерации JSON...");
       addLog(`Шаг 2/3: ${stepNames.step2}`);
+      
+      setProgress(50);
+      setProgressMessage("Отправка запроса в AI модель...");
       
       const response2 = await callBothubAPI(
         [{ role: "user", content: step2Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
+      
+      setProgress(60);
+      setProgressMessage("Обработка полученного JSON кода...");
       
       // Парсим JSON из ответа
       let json = response2.trim();
@@ -268,20 +281,27 @@ ${step3Prompt}`;
       }
       
       updateState({ json });
+      setProgress(66);
       addLog("Шаг 2 завершен: JSON обработан");
 
       // ============================================================
       // ШАГ 3: ФИНАЛЬНАЯ ОТЛАДКА И СИНХРОНИЗАЦИЯ (всегда выполняется)
       // ============================================================
       setCurrentStep(3);
-      setProgress(90);
-      setProgressMessage(stepNames.step3);
+      setProgress(75);
+      setProgressMessage("Подготовка финального исправления...");
       addLog(`Шаг 3/3: ${stepNames.step3}`);
+      
+      setProgress(85);
+      setProgressMessage("Отправка запроса на финальное исправление...");
       
       const response3 = await callBothubAPI(
         [{ role: "user", content: step3Prompt }],
         { model: "claude-3-5-sonnet-20241022", temperature: 0.7 }
       );
+      
+      setProgress(95);
+      setProgressMessage("Обработка исправленного кода и создание отчета...");
       
       // Парсим результаты Step 3
       let fixedHtml = '';
@@ -548,27 +568,24 @@ ${step3Prompt}`;
         </Button>
 
         {isProcessing && progress > 0 && (
-          <Card className="p-4">
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>Шаг {currentStep}/3</span>
-                  <span>{progress}%</span>
-                </div>
-                <Progress value={progress} className="w-full" />
-              </div>
-              {progressMessage && (
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-center">
-                    {progressMessage}
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {pipelineDescription}
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
+          <ProgressIndicator
+            steps={[
+              {
+                name: stepNames.step1 || "Генерация HTML",
+                status: currentStep > 1 ? "completed" : currentStep === 1 ? "processing" : "pending"
+              },
+              {
+                name: stepNames.step2 || "Генерация JSON",
+                status: currentStep > 2 ? "completed" : currentStep === 2 ? "processing" : "pending"
+              },
+              {
+                name: stepNames.step3 || "Финальное исправление",
+                status: currentStep > 3 ? "completed" : currentStep === 3 ? "processing" : "pending"
+              }
+            ]}
+            currentProgress={progress}
+            message={progressMessage || pipelineDescription}
+          />
         )}
 
         <DiagnosticLog 
