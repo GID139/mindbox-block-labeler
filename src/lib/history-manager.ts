@@ -1,5 +1,6 @@
 // Управление историей сессий
 import type { MindboxState, HistoryItem } from '@/types/mindbox';
+import { logger } from './logger';
 
 const HISTORY_KEY = 'mbx_history_v3';
 const MAX_HISTORY_ITEMS = 50;
@@ -24,7 +25,7 @@ export function saveToHistory(name: string, state: Partial<MindboxState>) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     return true;
   } catch (error) {
-    console.error('Error saving to history:', error);
+    logger.error('Error saving to history', 'history-manager', { error: error instanceof Error ? error.message : error });
     return false;
   }
 }
@@ -34,7 +35,7 @@ export function getHistory(): HistoryItem[] {
     const data = localStorage.getItem(HISTORY_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error loading history:', error);
+    logger.error('Error loading history', 'history-manager', { error: error instanceof Error ? error.message : error });
     return [];
   }
 }
@@ -46,7 +47,7 @@ export function deleteHistoryItem(timestamp: number) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
     return true;
   } catch (error) {
-    console.error('Error deleting history item:', error);
+    logger.error('Error deleting history item', 'history-manager', { error: error instanceof Error ? error.message : error, timestamp });
     return false;
   }
 }
@@ -60,7 +61,7 @@ export function renameHistoryItem(timestamp: number, newName: string) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
     return true;
   } catch (error) {
-    console.error('Error renaming history item:', error);
+    logger.error('Error renaming history item', 'history-manager', { error: error instanceof Error ? error.message : error, timestamp, newName });
     return false;
   }
 }
@@ -70,7 +71,7 @@ export function clearHistory() {
     localStorage.removeItem(HISTORY_KEY);
     return true;
   } catch (error) {
-    console.error('Error clearing history:', error);
+    logger.error('Error clearing history', 'history-manager', { error: error instanceof Error ? error.message : error });
     return false;
   }
 }

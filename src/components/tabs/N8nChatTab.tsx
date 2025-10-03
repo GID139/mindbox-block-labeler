@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 const N8N_CHAT_URL = "https://n8n.mindbox.cloud/webhook/2982e424-ede3-4d1d-924e-49e2f8f6be0c/chat";
 
@@ -23,7 +24,7 @@ export function N8nChatTab() {
       // С no-cors мы не получим реальный статус, но отсутствие ошибки означает доступность
       setIsOnline(true);
     } catch (error) {
-      console.error('n8n status check failed:', error);
+      logger.warn('n8n status check failed', 'N8nChatTab', { error: error instanceof Error ? error.message : error });
       setIsOnline(false);
     } finally {
       setIsChecking(false);

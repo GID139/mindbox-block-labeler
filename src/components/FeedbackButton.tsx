@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +29,7 @@ export function FeedbackButton() {
     // Здесь можно добавить отправку на сервер
     try {
       // Для демонстрации просто логируем
-      console.log('Feedback submitted:', feedback);
+      logger.info('Feedback submitted', 'FeedbackButton', { feedback });
       
       toast.success("Спасибо за ваш отзыв!");
       setFeedback("");

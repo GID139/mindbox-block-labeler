@@ -1,5 +1,6 @@
 // Утилиты для работы с ZIP файлами
 import JSZip from 'jszip';
+import { logger } from './logger';
 
 export interface ParsedZipData {
   html: string;
@@ -45,7 +46,7 @@ export async function parseZipFile(file: File): Promise<ParsedZipData> {
     
     return { html, json };
   } catch (error) {
-    console.error('Error parsing ZIP:', error);
+    logger.error('Error parsing ZIP', 'zip-parser', { error: error instanceof Error ? error.message : error });
     throw new Error('Не удалось распарсить ZIP файл');
   }
 }

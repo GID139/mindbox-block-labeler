@@ -8,6 +8,7 @@ import { TabsSection } from "@/components/sections/TabsSection";
 import { HistorySection } from "@/components/sections/HistorySection";
 import { toast } from "sonner";
 import type { MindboxState, HistoryItem } from "@/types/mindbox";
+import { logger } from "@/lib/logger";
 
 const AUTOSAVE_KEY = 'mindbox-autosave';
 
@@ -36,7 +37,7 @@ const Index = () => {
         return { ...initialState, ...JSON.parse(saved) };
       }
     } catch (error) {
-      console.error('Error loading autosaved state:', error);
+      logger.error('Error loading autosaved state', 'Index', { error: error instanceof Error ? error.message : error });
     }
     return initialState;
   });
@@ -50,7 +51,7 @@ const Index = () => {
       try {
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(state));
       } catch (error) {
-        console.error('Error autosaving state:', error);
+        logger.error('Error autosaving state', 'Index', { error: error instanceof Error ? error.message : error });
       }
     }, 500);
 
@@ -70,7 +71,7 @@ const Index = () => {
         // Очищаем URL
         window.history.replaceState({}, '', window.location.pathname);
       } catch (error) {
-        console.error('Error loading shared data:', error);
+        logger.error('Error loading shared data', 'Index', { error: error instanceof Error ? error.message : error });
         toast.error("Не удалось загрузить данные из ссылки");
       }
     }

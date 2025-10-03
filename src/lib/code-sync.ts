@@ -2,6 +2,7 @@
 
 import { extractHtmlVariables, extractJsonVariables } from "./code-validators";
 import { components } from "./component-settings";
+import { logger } from "./logger";
 
 /**
  * Анализирует код и возвращает список настроек, которые должны быть выбраны
@@ -74,7 +75,7 @@ export function applySettingsToCode(
         }
       }
     } catch (e) {
-      console.error('Error parsing JSON:', e);
+      logger.error('Error parsing JSON', 'code-sync', { error: e instanceof Error ? e.message : e });
     }
   } else {
     // Удаляем из JSON
@@ -85,7 +86,7 @@ export function applySettingsToCode(
         newJson = JSON.stringify(filtered, null, 2);
       }
     } catch (e) {
-      console.error('Error parsing JSON:', e);
+      logger.error('Error parsing JSON in applySettingsToCode', 'code-sync', { error: e instanceof Error ? e.message : e });
     }
   }
 

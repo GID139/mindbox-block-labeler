@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface BothubMessage {
   role: "system" | "user" | "assistant";
@@ -63,7 +64,7 @@ export async function callBothubAPI(
 
       // Проверка на ошибки от Supabase
       if (error) {
-        console.error("Supabase invoke error:", error);
+        logger.error("Supabase invoke error", "bothub-api", { error: error.message, attempt });
         lastError = new Error(`Ошибка соединения с сервером: ${error.message}`);
         if (shouldRetry(lastError, attempt)) continue;
         throw lastError;
@@ -78,7 +79,7 @@ export async function callBothubAPI(
 
       // Проверка на ошибки от edge function
       if (data.error) {
-        console.error("Edge function error:", data);
+        logger.error("Edge function error", "bothub-api", { error: data.error, requestId: data.requestId, attempt });
         const errorMsg = data.error;
         const requestId = data.requestId;
         
@@ -93,7 +94,7 @@ export async function callBothubAPI(
       // Извлекаем текст из ответа
       const content = data.choices?.[0]?.message?.content;
       if (!content) {
-        console.error("Invalid response format:", data);
+        logger.error("Invalid response format", "bothub-api", { data, attempt });
         lastError = new Error("Некорректный формат ответа от AI модели");
         if (shouldRetry(lastError, attempt)) continue;
         throw lastError;
@@ -106,9 +107,10 @@ export async function callBothubAPI(
       return content;
       
     } catch (error) {
-      console.error(`API call attempt ${attempt}/3 failed:`, {
+      logger.error(`API call attempt ${attempt}/3 failed`, "bothub-api", {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
+        attempt
       });
       
       lastError = error instanceof Error ? error : new Error("Неизвестная ошибка при обращении к AI модели");

@@ -19,6 +19,7 @@ import { components, friendlyNames, smartHints } from "@/lib/component-settings"
 import type { MindboxState } from "@/types/mindbox";
 import { applySettingsToCode } from "@/lib/code-sync";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { logger } from "@/lib/logger";
 
 interface CreateTabProps {
   state: MindboxState;
@@ -164,7 +165,7 @@ ${step3Prompt}`;
         updateState({ html: newHtml, json: newJson });
         addLog(`Настройка ${settingId} ${checked ? 'включена' : 'отключена'}`);
       } catch (error) {
-        console.error('Error applying settings:', error);
+        logger.error('Error applying settings', 'CreateTab', { error: error instanceof Error ? error.message : error });
         toast.error("Ошибка при применении настройки");
       } finally {
         setIsApplyingSettings(false);
@@ -363,7 +364,7 @@ ${step3Prompt}`;
         setActiveTab('fixed');
       }, 500);
     } catch (error) {
-      console.error('Analysis error:', error);
+      logger.error('Analysis error', 'CreateTab', { error: error instanceof Error ? error.message : error, currentStep });
       addLog(`Ошибка на шаге ${currentStep}: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`);
       toast.error(`Ошибка на шаге ${currentStep}`);
     } finally {

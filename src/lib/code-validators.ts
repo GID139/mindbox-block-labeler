@@ -1,5 +1,6 @@
 // Валидаторы для HTML и JSON кода
 import { KB } from './mindbox-kb';
+import { logger } from './logger';
 
 export function extractHtmlVariables(html: string): Set<string> {
   const allVars = html.match(/\$\{\s*editor\.([A-Za-z0-9_.]+)\s*\}/g) || [];
@@ -29,7 +30,7 @@ export function extractJsonVariables(jsonText: string): Set<string> {
     
     return varNames;
   } catch (error) {
-    console.error('Error parsing JSON:', error);
+    logger.error('Error parsing JSON', 'code-validators', { error: error instanceof Error ? error.message : error });
     return new Set();
   }
 }

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/lib/logger";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -28,11 +29,11 @@ export default function Auth() {
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        console.error("Google auth error:", error);
+        logger.error("Google auth error", "Auth", { error: error.message });
         toast.error(`Ошибка входа через Google: ${error.message}`);
       }
     } catch (error) {
-      console.error("Unexpected error:", error);
+      logger.error("Unexpected error in Google auth", "Auth", { error: error instanceof Error ? error.message : error });
       toast.error("Неожиданная ошибка при входе через Google");
     } finally {
       setIsLoading(false);
@@ -50,7 +51,7 @@ export default function Auth() {
     try {
       const { error } = await signInWithEmail(email, password);
       if (error) {
-        console.error("Email sign in error:", error);
+        logger.error("Email sign in error", "Auth", { error: error.message });
         if (error.message.includes("Invalid login credentials")) {
           toast.error("Неверный email или пароль");
         } else {
@@ -60,7 +61,7 @@ export default function Auth() {
         toast.success("Успешный вход!");
       }
     } catch (error) {
-      console.error("Unexpected error:", error);
+      logger.error("Unexpected error in email sign in", "Auth", { error: error instanceof Error ? error.message : error });
       toast.error("Неожиданная ошибка при входе");
     } finally {
       setIsLoading(false);
@@ -83,7 +84,7 @@ export default function Auth() {
     try {
       const { error } = await signUpWithEmail(email, password);
       if (error) {
-        console.error("Email sign up error:", error);
+        logger.error("Email sign up error", "Auth", { error: error.message });
         if (error.message.includes("already registered")) {
           toast.error("Этот email уже зарегистрирован");
         } else {
@@ -93,7 +94,7 @@ export default function Auth() {
         toast.success("Регистрация успешна! Проверьте почту для подтверждения.");
       }
     } catch (error) {
-      console.error("Unexpected error:", error);
+      logger.error("Unexpected error in email sign up", "Auth", { error: error instanceof Error ? error.message : error });
       toast.error("Неожиданная ошибка при регистрации");
     } finally {
       setIsLoading(false);

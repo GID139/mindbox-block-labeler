@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { parseZipFile } from "@/lib/zip-parser";
+import { logger } from "@/lib/logger";
 
 interface ZipUploadProps {
   onZipParsed: (html: string, json: string) => void;
@@ -32,7 +33,7 @@ export function ZipUpload({ onZipParsed, isLoading }: ZipUploadProps) {
       onZipParsed(html, json);
       toast.success("ZIP файл успешно загружен");
     } catch (error) {
-      console.error("Error parsing ZIP:", error);
+      logger.error("Error parsing ZIP", "ZipUpload", { error: error instanceof Error ? error.message : error });
       toast.error("Ошибка при обработке ZIP файла");
     } finally {
       // Очищаем input для возможности повторной загрузки того же файла
