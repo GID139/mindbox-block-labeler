@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Copy, Edit } from "lucide-react";
 import { toast } from "sonner";
 import type { MindboxState } from "@/types/mindbox";
 import { CodeEditor } from "@/components/CodeEditor";
@@ -17,6 +17,13 @@ export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
   const [showJson, setShowJson] = useState(true);
   const [showReport, setShowReport] = useState(true);
   const [collapsedBlocks, setCollapsedBlocks] = useState<Record<number, boolean>>({});
+  const [isEditingHtml, setIsEditingHtml] = useState(false);
+  const [isEditingJson, setIsEditingJson] = useState(false);
+
+  const copyToClipboard = (content: string, label: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success(`${label} скопирован в буфер обмена`);
+  };
 
   const downloadFile = (content: string, filename: string) => {
     const blob = new Blob([content], { type: "text/plain" });
@@ -168,6 +175,24 @@ export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
                 <ChevronDown className="h-4 w-4" />
               )}
             </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingHtml(!isEditingHtml)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                {isEditingHtml ? "Только чтение" : "Редактировать"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(state.fixedHtml, "HTML код")}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Копировать
+              </Button>
+            </div>
           </div>
           {showHtml && (
             <div className="p-4 bg-card">
@@ -175,8 +200,8 @@ export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
                 value={state.fixedHtml}
                 onChange={(value) => updateState({ fixedHtml: value })}
                 language="html"
-                showCopy={true}
-                readOnly={false}
+                showCopy={false}
+                readOnly={!isEditingHtml}
               />
             </div>
           )}
@@ -198,6 +223,24 @@ export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
                 <ChevronDown className="h-4 w-4" />
               )}
             </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingJson(!isEditingJson)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                {isEditingJson ? "Только чтение" : "Редактировать"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(state.fixedJson, "JSON код")}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Копировать
+              </Button>
+            </div>
           </div>
           {showJson && (
             <div className="p-4 bg-card">
@@ -205,8 +248,8 @@ export function FixedCodeTab({ state, updateState }: FixedCodeTabProps) {
                 value={state.fixedJson}
                 onChange={(value) => updateState({ fixedJson: value })}
                 language="json"
-                showCopy={true}
-                readOnly={false}
+                showCopy={false}
+                readOnly={!isEditingJson}
               />
             </div>
           )}
