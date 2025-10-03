@@ -60,6 +60,19 @@ export function CodeEditor({
         <div className="flex items-center justify-between">
           <label className="text-sm font-semibold text-foreground">{label}</label>
           <div className="flex gap-2">
+            {!readOnly && !isEditing && value && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onChange('');
+                  toast.success("Код очищен");
+                }}
+                className="h-8"
+              >
+                Очистить
+              </Button>
+            )}
             {!readOnly && !isEditing && (
               <Button
                 variant="ghost"
