@@ -9,7 +9,7 @@ import { DiagnosticLog } from "@/components/DiagnosticLog";
 import { ComponentSettings } from "@/components/ComponentSettings";
 import { ZipUpload } from "@/components/ZipUpload";
 import { ProgressIndicator } from "@/components/ProgressIndicator";
-import { Loader2, Sparkles, Wand2, Check } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
 import { useMindboxPrompts } from "@/hooks/useMindboxPrompts";
@@ -36,6 +36,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
   const [selectedSettings, setSelectedSettings] = useState<Record<string, boolean>>({});
   const [isApplyingSettings, setIsApplyingSettings] = useState(false);
   const [goalInput, setGoalInput] = useState(state.goal);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // Синхронизируем goalInput с state.goal при монтировании
   useEffect(() => {
@@ -215,11 +216,23 @@ ${step3Prompt}`;
     addLog("ZIP файл загружен: editor HTML, visual HTML, JSON");
   };
 
+  const handleCancelRequest = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      addLog("Запрос отменен пользователем");
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!state.goal.trim() && !state.html.trim() && !state.json.trim()) {
       toast.error("Заполните хотя бы одно поле");
       return;
     }
+
+    // Создаем новый AbortController для этого запроса
+    const controller = new AbortController();
+    setAbortController(controller);
 
     setIsProcessing(true);
     setProgress(0);
@@ -241,7 +254,7 @@ ${step3Prompt}`;
       
       const response1 = await callBothubAPI(
         [{ role: "user", content: step1Prompt }],
-        { model: "claude-sonnet-4" }
+        { model: "claude-sonnet-4", signal: controller.signal }
       );
       
       setProgress(30);
@@ -272,7 +285,7 @@ ${step3Prompt}`;
       
       const response2 = await callBothubAPI(
         [{ role: "user", content: step2Prompt }],
-        { model: "claude-sonnet-4" }
+        { model: "claude-sonnet-4", signal: controller.signal }
       );
       
       setProgress(60);
@@ -303,7 +316,7 @@ ${step3Prompt}`;
       
       const response3 = await callBothubAPI(
         [{ role: "user", content: step3Prompt }],
-        { model: "claude-sonnet-4" }
+        { model: "claude-sonnet-4", signal: controller.signal }
       );
       
       setProgress(95);
@@ -369,6 +382,12 @@ ${step3Prompt}`;
         setActiveTab('fixed');
       }, 500);
     } catch (error) {
+      // Проверяем, была ли отмена
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Request cancelled')) {
+        addLog("Запрос отменен");
+        return; // Не показываем toast.error для отмены
+      }
+      
       logger.error('Analysis error', 'CreateTab', { error: error instanceof Error ? error.message : error, currentStep });
       addLog(`Ошибка на шаге ${currentStep}: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`);
       toast.error(`Ошибка на шаге ${currentStep}`);
@@ -377,6 +396,7 @@ ${step3Prompt}`;
       setProgress(0);
       setCurrentStep(0);
       setProgressMessage("");
+      setAbortController(null);
     }
   };
 
@@ -572,6 +592,16 @@ ${step3Prompt}`;
             </>
           )}
         </Button>
+
+        {isProcessing && abortController && (
+          <Button
+            onClick={handleCancelRequest}
+            variant="destructive"
+            className="w-full h-12 text-base font-semibold"
+          >
+            Отменить запрос
+          </Button>
+        )}
 
         {isProcessing && progress > 0 && (
           <ProgressIndicator

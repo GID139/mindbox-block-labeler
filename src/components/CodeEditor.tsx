@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CodeEditorProps {
   value: string;
@@ -26,8 +26,12 @@ export function CodeEditor({
   language = "html",
   readOnly = false,
 }: CodeEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
+
+  // Синхронизируем editValue с value при изменении value извне
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
 
   const handleCopy = async () => {
     try {
@@ -38,20 +42,13 @@ export function CodeEditor({
     }
   };
 
-  const handleEdit = () => {
-    setEditValue(value);
-    setIsEditing(true);
-  };
-
   const handleSave = () => {
     onChange(editValue);
-    setIsEditing(false);
     toast.success("Код обновлен");
   };
 
   const handleCancel = () => {
     setEditValue(value);
-    setIsEditing(false);
   };
 
   return (
@@ -60,7 +57,7 @@ export function CodeEditor({
         <div className="flex items-center justify-between">
           <label className="text-sm font-semibold text-foreground">{label}</label>
           <div className="flex gap-2">
-            {!readOnly && !isEditing && value && (
+            {!readOnly && value && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -73,17 +70,7 @@ export function CodeEditor({
                 Очистить
               </Button>
             )}
-            {!readOnly && !isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEdit}
-                className="h-8"
-              >
-                Редактировать
-              </Button>
-            )}
-            {isEditing && (
+            {!readOnly && (
               <>
                 <Button
                   variant="ghost"
@@ -117,7 +104,7 @@ export function CodeEditor({
           </div>
         </div>
       )}
-      {isEditing ? (
+      {!readOnly ? (
         <textarea
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}

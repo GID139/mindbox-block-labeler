@@ -11,6 +11,7 @@ interface BothubAPIOptions {
   model: string;
   temperature?: number;
   stream?: boolean;
+  signal?: AbortSignal;
 }
 
 // Вспомогательная функция для задержки
@@ -20,6 +21,9 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const shouldRetry = (error: any, attempt: number): boolean => {
   // Не делаем retry после максимального количества попыток
   if (attempt >= 3) return false;
+  
+  // Не retry для отмененных запросов
+  if (error.name === 'AbortError' || error.message?.includes('abort')) return false;
   
   // Retry для сетевых ошибок
   if (error instanceof TypeError && error.message.includes('fetch')) return true;
@@ -47,6 +51,11 @@ export async function callBothubAPI(
   
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
+      // Проверяем отмену перед каждой попыткой
+      if (options.signal?.aborted) {
+        throw new Error('Request cancelled');
+      }
+      
       if (attempt > 1) {
         const delay = getRetryDelay(attempt - 1);
         toast.info(`Повторная попытка ${attempt}/3 через ${delay / 1000}с...`);
@@ -61,6 +70,11 @@ export async function callBothubAPI(
           stream: options.stream ?? false,
         },
       });
+
+      // Проверяем отмену после запроса
+      if (options.signal?.aborted) {
+        throw new Error('Request cancelled');
+      }
 
       // Проверка на ошибки от Supabase
       if (error) {
@@ -107,6 +121,12 @@ export async function callBothubAPI(
       return content;
       
     } catch (error) {
+      // Проверяем, была ли отмена
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Request cancelled')) {
+        toast.info("Запрос отменен");
+        throw error;
+      }
+      
       logger.error(`API call attempt ${attempt}/3 failed`, "bothub-api", {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
