@@ -81,6 +81,17 @@ Deno.serve(async (req) => {
       temperature: temperature ?? 0.7
     });
 
+    const requestBody: any = {
+      model,
+      messages,
+      stream,
+    };
+    
+    // Добавляем temperature только если он указан явно
+    if (temperature !== undefined) {
+      requestBody.temperature = temperature;
+    }
+
     const response = await fetchWithTimeout(
       'https://bothub.chat/api/v2/openai/v1/chat/completions',
       {
@@ -89,12 +100,7 @@ Deno.serve(async (req) => {
           'Authorization': `Bearer ${BOTHUB_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          stream,
-        }),
+        body: JSON.stringify(requestBody),
       },
       BOTHUB_TIMEOUT_MS
     );

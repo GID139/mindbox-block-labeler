@@ -57,7 +57,7 @@ export async function callBothubAPI(
         body: {
           messages,
           model: options.model,
-          temperature: options.temperature ?? 0.7,
+          ...(options.temperature !== undefined && { temperature: options.temperature }),
           stream: options.stream ?? false,
         },
       });
