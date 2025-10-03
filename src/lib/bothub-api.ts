@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface BothubMessage {
   role: "system" | "user" | "assistant";
@@ -11,65 +12,117 @@ interface BothubAPIOptions {
   stream?: boolean;
 }
 
+// Вспомогательная функция для задержки
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Проверяем, нужно ли делать retry для этой ошибки
+const shouldRetry = (error: any, attempt: number): boolean => {
+  // Не делаем retry после максимального количества попыток
+  if (attempt >= 3) return false;
+  
+  // Retry для сетевых ошибок
+  if (error instanceof TypeError && error.message.includes('fetch')) return true;
+  
+  // Retry для временных ошибок сервера
+  if (error.message?.includes('429') || error.message?.includes('503') || error.message?.includes('502')) return true;
+  
+  // Retry для timeout ошибок
+  if (error.message?.includes('timeout') || error.message?.includes('timed out')) return true;
+  
+  return false;
+};
+
+// Вычисляем задержку с экспоненциальным backoff
+const getRetryDelay = (attempt: number): number => {
+  // Экспоненциальная задержка: 1s, 2s, 4s
+  return Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+};
+
 export async function callBothubAPI(
   messages: BothubMessage[],
   options: BothubAPIOptions
 ): Promise<string> {
-  try {
-    const { data, error } = await supabase.functions.invoke("bothub-chat", {
-      body: {
-        messages,
-        model: options.model,
-        temperature: options.temperature ?? 0.7,
-        stream: options.stream ?? false,
-      },
-    });
-
-    // Проверка на ошибки от Supabase
-    if (error) {
-      console.error("Supabase invoke error:", error);
-      throw new Error(`Ошибка соединения с сервером: ${error.message}`);
-    }
-
-    // Проверка на наличие данных
-    if (!data) {
-      throw new Error("Пустой ответ от сервера");
-    }
-
-    // Проверка на ошибки от edge function
-    if (data.error) {
-      console.error("Edge function error:", data);
-      const errorMsg = data.error;
-      const requestId = data.requestId;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      if (attempt > 1) {
+        const delay = getRetryDelay(attempt - 1);
+        toast.info(`Повторная попытка ${attempt}/3 через ${delay / 1000}с...`);
+        await sleep(delay);
+      }
       
-      // Формируем понятное сообщение для пользователя
-      throw new Error(
-        `${errorMsg}${requestId ? ` (ID запроса: ${requestId})` : ''}`
-      );
-    }
+      const { data, error } = await supabase.functions.invoke("bothub-chat", {
+        body: {
+          messages,
+          model: options.model,
+          temperature: options.temperature ?? 0.7,
+          stream: options.stream ?? false,
+        },
+      });
 
-    // Извлекаем текст из ответа
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) {
-      console.error("Invalid response format:", data);
-      throw new Error("Некорректный формат ответа от AI модели");
-    }
+      // Проверка на ошибки от Supabase
+      if (error) {
+        console.error("Supabase invoke error:", error);
+        lastError = new Error(`Ошибка соединения с сервером: ${error.message}`);
+        if (shouldRetry(lastError, attempt)) continue;
+        throw lastError;
+      }
 
-    return content;
-  } catch (error) {
-    // Логируем для отладки
-    console.error("Error calling Bothub API:", {
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    
-    // Пробрасываем ошибку дальше с понятным сообщением
-    if (error instanceof Error) {
-      throw error;
+      // Проверка на наличие данных
+      if (!data) {
+        lastError = new Error("Пустой ответ от сервера");
+        if (shouldRetry(lastError, attempt)) continue;
+        throw lastError;
+      }
+
+      // Проверка на ошибки от edge function
+      if (data.error) {
+        console.error("Edge function error:", data);
+        const errorMsg = data.error;
+        const requestId = data.requestId;
+        
+        lastError = new Error(
+          `${errorMsg}${requestId ? ` (ID запроса: ${requestId})` : ''}`
+        );
+        
+        if (shouldRetry(lastError, attempt)) continue;
+        throw lastError;
+      }
+
+      // Извлекаем текст из ответа
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        console.error("Invalid response format:", data);
+        lastError = new Error("Некорректный формат ответа от AI модели");
+        if (shouldRetry(lastError, attempt)) continue;
+        throw lastError;
+      }
+
+      // Успешный ответ
+      if (attempt > 1) {
+        toast.success(`Успешно выполнено с попытки ${attempt}/3`);
+      }
+      return content;
+      
+    } catch (error) {
+      console.error(`API call attempt ${attempt}/3 failed:`, {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      
+      lastError = error instanceof Error ? error : new Error("Неизвестная ошибка при обращении к AI модели");
+      
+      // Проверяем, нужно ли делать retry
+      if (!shouldRetry(lastError, attempt)) {
+        throw lastError;
+      }
     }
-    
-    throw new Error("Неизвестная ошибка при обращении к AI модели");
   }
+  
+  // Если все попытки исчерпаны
+  toast.error("Все попытки исчерпаны");
+  throw lastError || new Error("Не удалось выполнить запрос после 3 попыток");
 }
 
 // Оценка токенов (упрощенная, ~4 символа = 1 токен для кириллицы)
