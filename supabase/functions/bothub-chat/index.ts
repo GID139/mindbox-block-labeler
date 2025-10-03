@@ -3,8 +3,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Таймаут для запросов к Bothub API (30 секунд)
-const BOTHUB_TIMEOUT_MS = 30000;
+// Таймаут для запросов к Bothub API (10 минут)
+const BOTHUB_TIMEOUT_MS = 600000;
 
 // Утилита для запросов с таймаутом
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
@@ -21,7 +21,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Превышено время ожидания ответа от API (30 секунд)');
+      throw new Error('Превышено время ожидания ответа от API (10 минут)');
     }
     throw error;
   }
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       model, 
       messageCount: messages.length, 
       stream,
-      temperature: temperature ?? 0.7
+      ...(temperature !== undefined && { temperature })
     });
 
     const requestBody: any = {
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     
     if (error instanceof Error) {
       if (error.message.includes('таймаут') || error.message.includes('timeout')) {
-        userMessage = 'Превышено время ожидания ответа (30 секунд). Попробуйте упростить запрос или повторите позже';
+        userMessage = 'Превышено время ожидания ответа (10 минут). Попробуйте упростить запрос или повторите позже';
         statusCode = 504;
       } else if (error.message.includes('network') || error.message.includes('fetch')) {
         userMessage = 'Ошибка соединения с AI сервисом. Проверьте подключение к интернету';
