@@ -12,6 +12,7 @@ import {
 interface UseMindboxPromptsParams {
   goal: string;
   html: string;
+  visualHtml?: string;
   json: string;
   isDynamicGrid: boolean;
   isEditable: boolean;
@@ -27,6 +28,7 @@ export function useMindboxPrompts(params: UseMindboxPromptsParams) {
   const {
     goal,
     html,
+    visualHtml,
     json,
     isDynamicGrid,
     isEditable,
@@ -44,29 +46,32 @@ export function useMindboxPrompts(params: UseMindboxPromptsParams) {
     return buildStep1({
       goal,
       html,
+      visualHtml,
       isDynamicGrid,
       isEditable,
       settingsList
     });
-  }, [goal, html, isDynamicGrid, isEditable, settingsList]);
+  }, [goal, html, visualHtml, isDynamicGrid, isEditable, settingsList]);
 
   // Мемоизируем промпт для Step 2 (JSON generation/validation)
   const step2Prompt = useMemo(() => {
     return buildStep2({
       html,
+      visualHtml,
       json
     });
-  }, [html, json]);
+  }, [html, visualHtml, json]);
 
   // Мемоизируем промпт для Step 3 (debugging & sync)
   const step3Prompt = useMemo(() => {
     return buildStep3({
       goal,
       html,
+      visualHtml,
       json,
       quickFix
     });
-  }, [goal, html, json, quickFix]);
+  }, [goal, html, visualHtml, json, quickFix]);
 
   // Мемоизируем названия шагов
   const stepNames = useMemo(() => ({

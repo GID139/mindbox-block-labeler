@@ -1,6 +1,7 @@
 export interface MindboxState {
   goal: string;
   html: string;
+  visualHtml?: string;  // Визуальный HTML для референса
   json: string;
   quickFix: boolean;
   isDynamicGrid: boolean;

@@ -31,6 +31,7 @@ export function detectScenario(html: string, json: string): Scenario {
 interface Step1Params {
   goal: string;
   html?: string;  // Optional: if provided, will validate instead of generate
+  visualHtml?: string;  // Optional: visual reference showing how block should look
   isDynamicGrid: boolean;
   isEditable: boolean;
   settingsList: string;
@@ -150,7 +151,7 @@ Start directly with the HTML code.`;
 /**
  * Step 1B: Validate existing HTML (when HTML exists but JSON doesn't)
  */
-export function buildStep1Validate({ goal, html, isDynamicGrid, isEditable, settingsList }: Step1Params): string {
+export function buildStep1Validate({ goal, html, visualHtml, isDynamicGrid, isEditable, settingsList }: Step1Params): string {
   return `# STEP 1: HTML VALIDATION AND CORRECTION
 
 ## YOUR ROLE
@@ -162,7 +163,17 @@ ${MINDBOX_KB_CONTENT}
 ## USER'S ORIGINAL GOAL
 ${goal}
 
-## EXISTING HTML CODE TO VALIDATE
+${visualHtml ? `## VISUAL REFERENCE (HOW THE BLOCK SHOULD LOOK)
+This is the visual template showing how the final block should appear with real values:
+
+\`\`\`html
+${visualHtml}
+\`\`\`
+
+**IMPORTANT**: Use this as a visual reference to understand the design intent and structure. 
+Your task is to validate/fix the EDITOR HTML below, ensuring it produces this visual result when variables are populated.
+
+` : ''}## EDITOR HTML CODE TO VALIDATE
 \`\`\`html
 ${html}
 \`\`\`
@@ -245,13 +256,14 @@ export function buildStep1(params: Step1Params): string {
 
 interface Step2Params {
   html: string;
+  visualHtml?: string;  // Optional: visual reference
   json?: string;  // Optional: if provided, will validate instead of generate
 }
 
 /**
  * Step 2A: Generate JSON from HTML (when no JSON exists)
  */
-export function buildStep2Generate({ html }: Step2Params): string {
+export function buildStep2Generate({ html, visualHtml }: Step2Params): string {
   return `# STEP 2: JSON CONFIGURATION GENERATION
 
 ## YOUR ROLE
@@ -260,7 +272,16 @@ You are an expert Mindbox JSON configuration generator. Your task is to analyze 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
 ${MINDBOX_KB_CONTENT}
 
-## HTML CODE TO ANALYZE
+${visualHtml ? `## VISUAL REFERENCE (HOW THE BLOCK LOOKS)
+This is the visual template showing how the block appears with real values:
+
+\`\`\`html
+${visualHtml}
+\`\`\`
+
+Use this as a reference to understand the visual structure and design intent.
+
+` : ''}## EDITOR HTML CODE TO ANALYZE
 \`\`\`html
 ${html}
 \`\`\`
@@ -395,7 +416,7 @@ Start directly with the opening bracket [ and end with closing bracket ].`;
 /**
  * Step 2B: Validate existing JSON (when both HTML and JSON exist)
  */
-export function buildStep2Validate({ html, json }: Step2Params): string {
+export function buildStep2Validate({ html, visualHtml, json }: Step2Params): string {
   return `# STEP 2: JSON CONFIGURATION VALIDATION
 
 ## YOUR ROLE
@@ -404,7 +425,12 @@ You are an expert Mindbox JSON validator. Your task is to validate the provided 
 ## KNOWLEDGE BASE (YOUR SINGLE SOURCE OF TRUTH)
 ${MINDBOX_KB_CONTENT}
 
-## HTML CODE (REFERENCE)
+${visualHtml ? `## VISUAL REFERENCE (HOW THE BLOCK LOOKS)
+\`\`\`html
+${visualHtml}
+\`\`\`
+
+` : ''}## EDITOR HTML CODE (REFERENCE)
 \`\`\`html
 ${html}
 \`\`\`
@@ -507,6 +533,7 @@ export function buildStep2(params: Step2Params): string {
 interface Step3Params {
   goal: string;
   html: string;
+  visualHtml?: string;
   json: string;
   quickFix: boolean;
 }
@@ -515,7 +542,7 @@ interface Step3Params {
  * Step 3: Final debugging, synchronization, and quality assurance
  * This step ALWAYS runs regardless of scenario
  */
-export function buildStep3({ goal, html, json, quickFix }: Step3Params): string {
+export function buildStep3({ goal, html, visualHtml, json, quickFix }: Step3Params): string {
   return `# STEP 3: FINAL DEBUGGING AND SYNCHRONIZATION
 
 ## YOUR ROLE
@@ -527,7 +554,16 @@ ${MINDBOX_KB_CONTENT}
 ## USER'S ORIGINAL GOAL
 ${goal}
 
-## HTML CODE TO AUDIT
+${visualHtml ? `## VISUAL REFERENCE (TARGET APPEARANCE)
+This shows how the block should look with real values:
+
+\`\`\`html
+${visualHtml}
+\`\`\`
+
+Ensure the editor HTML structure matches this visual design when variables are populated.
+
+` : ''}## HTML CODE TO AUDIT
 \`\`\`html
 ${html}
 \`\`\`

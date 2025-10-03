@@ -6,7 +6,7 @@ import { parseZipFile } from "@/lib/zip-parser";
 import { logger } from "@/lib/logger";
 
 interface ZipUploadProps {
-  onZipParsed: (html: string, json: string) => void;
+  onZipParsed: (editorHtml: string, visualHtml: string, json: string) => void;
   isLoading?: boolean;
 }
 
@@ -23,14 +23,14 @@ export function ZipUpload({ onZipParsed, isLoading }: ZipUploadProps) {
     }
 
     try {
-      const { html, json } = await parseZipFile(file);
+      const { editorHtml, visualHtml, json } = await parseZipFile(file);
       
-      if (!html && !json) {
+      if (!editorHtml && !visualHtml && !json) {
         toast.error("В ZIP файле не найдены HTML или JSON файлы");
         return;
       }
 
-      onZipParsed(html, json);
+      onZipParsed(editorHtml, visualHtml, json);
       toast.success("ZIP файл успешно загружен");
     } catch (error) {
       logger.error("Error parsing ZIP", "ZipUpload", { error: error instanceof Error ? error.message : error });

@@ -3,7 +3,8 @@ import JSZip from 'jszip';
 import { logger } from './logger';
 
 export interface ParsedZipData {
-  html: string;
+  editorHtml: string;   // Рабочий шаблон с переменными ${editor.*}
+  visualHtml: string;   // Визуальный шаблон с реальными значениями
   json: string;
 }
 
@@ -12,27 +13,31 @@ export async function parseZipFile(file: File): Promise<ParsedZipData> {
     const zip = new JSZip();
     const contents = await zip.loadAsync(file);
     
-    let html = '';
+    let editorHtml = '';
+    let visualHtml = '';
     let json = '';
     
-    // Ищем HTML файлы - приоритет для файла с суффиксом editor
+    // Ищем HTML файлы
     const allHtmlFiles = Object.keys(contents.files).filter(name => 
       name.toLowerCase().endsWith('.html') || name.toLowerCase().endsWith('.htm')
     );
     
-    // Файл с суффиксом editor идет в блок кода (html), остальные в цель
+    // Файл с суффиксом editor - рабочий шаблон с переменными
     const editorHtmlFile = allHtmlFiles.find(name => 
       name.toLowerCase().includes('editor')
     );
     
-    const regularHtmlFile = allHtmlFiles.find(name => 
+    // Обычный HTML файл - визуальный шаблон
+    const visualHtmlFile = allHtmlFiles.find(name => 
       !name.toLowerCase().includes('editor')
     );
     
     if (editorHtmlFile) {
-      html = await contents.files[editorHtmlFile].async('text');
-    } else if (regularHtmlFile) {
-      html = await contents.files[regularHtmlFile].async('text');
+      editorHtml = await contents.files[editorHtmlFile].async('text');
+    }
+    
+    if (visualHtmlFile) {
+      visualHtml = await contents.files[visualHtmlFile].async('text');
     }
     
     // Ищем JSON файл
@@ -44,7 +49,7 @@ export async function parseZipFile(file: File): Promise<ParsedZipData> {
       json = await contents.files[jsonFile].async('text');
     }
     
-    return { html, json };
+    return { editorHtml, visualHtml, json };
   } catch (error) {
     logger.error('Error parsing ZIP', 'zip-parser', { error: error instanceof Error ? error.message : error });
     throw new Error('Не удалось распарсить ZIP файл');

@@ -61,6 +61,7 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
   } = useMindboxPrompts({
     goal: state.goal,
     html: state.html,
+    visualHtml: state.visualHtml,
     json: state.json,
     isDynamicGrid: state.isDynamicGrid,
     isEditable: state.isEditable,
@@ -205,9 +206,13 @@ ${step3Prompt}`;
     toast.success("Цель сгенерирована из настроек");
   };
 
-  const handleZipParsed = (html: string, json: string) => {
-    updateState({ html, json });
-    addLog("ZIP файл загружен и распарсен");
+  const handleZipParsed = (editorHtml: string, visualHtml: string, json: string) => {
+    updateState({ 
+      html: editorHtml,
+      visualHtml: visualHtml,
+      json 
+    });
+    addLog("ZIP файл загружен: editor HTML, visual HTML, JSON");
   };
 
   const handleAnalyze = async () => {
