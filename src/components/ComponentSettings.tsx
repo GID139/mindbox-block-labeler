@@ -114,11 +114,32 @@ export function ComponentSettings({
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4 pt-2">
-                  {Object.entries(groupedSettings).map(([group, settings]) => (
+                  {Object.entries(groupedSettings).map(([group, settings]) => {
+                    const groupSettingIds = settings.map(s => `${componentKey}-${s}`);
+                    const allChecked = groupSettingIds.every(id => selectedSettings[id]);
+                    const someChecked = groupSettingIds.some(id => selectedSettings[id]) && !allChecked;
+                    
+                    const handleGroupToggle = (checked: boolean) => {
+                      settings.forEach(settingKey => {
+                        onSettingChange(componentKey, settingKey, checked);
+                      });
+                    };
+                    
+                    return (
                     <div key={group}>
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-2 pb-1 border-b">
-                        {group}
-                      </h4>
+                      <div className="flex items-center gap-2 mb-2 pb-1 border-b">
+                        <Checkbox
+                          id={`${componentKey}-${group}-all`}
+                          checked={someChecked ? "indeterminate" : allChecked}
+                          onCheckedChange={handleGroupToggle}
+                        />
+                        <Label
+                          htmlFor={`${componentKey}-${group}-all`}
+                          className="text-sm font-semibold text-muted-foreground cursor-pointer"
+                        >
+                          {group}
+                        </Label>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {settings.map((settingKey) => {
                           const settingId = `${componentKey}-${settingKey}`;
@@ -161,7 +182,8 @@ export function ComponentSettings({
                         })}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </AccordionContent>
             </AccordionItem>
