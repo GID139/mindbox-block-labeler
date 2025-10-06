@@ -9,6 +9,8 @@ interface ControlPanelProps {
 
 const initialState: MindboxState = {
   goal: '',
+  originalHtml: '',
+  originalJson: '',
   html: '',
   json: '',
   quickFix: false,

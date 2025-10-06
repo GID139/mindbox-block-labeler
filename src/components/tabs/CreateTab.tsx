@@ -61,9 +61,9 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
     pipelineDescription
   } = useMindboxPrompts({
     goal: state.goal,
-    html: state.html,
+    html: state.originalHtml,
     visualHtml: state.visualHtml,
-    json: state.json,
+    json: state.originalJson,
     isDynamicGrid: state.isDynamicGrid,
     isEditable: state.isEditable,
     settingsList,
@@ -72,9 +72,9 @@ export function CreateTab({ state, updateState, setActiveTab, onImproveGoalClick
 
   // Мемоизируем оценку токенов
   const tokenEstimate = useMemo(() => {
-    const combinedText = [state.goal, state.html, state.json].join('\n');
+    const combinedText = [state.goal, state.originalHtml, state.originalJson].join('\n');
     return estimateTokens(combinedText) * 3; // Умножаем на 3 шага
-  }, [state.goal, state.html, state.json]);
+  }, [state.goal, state.originalHtml, state.originalJson]);
 
   // Мемоизируем полный промпт для предпросмотра (все 3 шага)
   const outputPrompt = useMemo(() => {
@@ -117,11 +117,11 @@ ${step3Prompt}`;
   }, [goalInput, state.goal]);
 
   const updateHtml = (html: string) => {
-    updateState({ html });
+    updateState({ originalHtml: html });
   };
 
   const updateJson = (json: string) => {
-    updateState({ json });
+    updateState({ originalJson: json });
   };
 
   const parseCodeBlocks = (text: string) => {
@@ -154,17 +154,17 @@ ${step3Prompt}`;
     }
 
     // Интерактивное редактирование: применяем изменения к коду
-    if (state.html.trim() || state.json.trim()) {
+    if (state.originalHtml.trim() || state.originalJson.trim()) {
       setIsApplyingSettings(true);
       try {
         const { html: newHtml, json: newJson } = applySettingsToCode(
-          state.html,
-          state.json,
+          state.originalHtml,
+          state.originalJson,
           settingId,
           checked
         );
         
-        updateState({ html: newHtml, json: newJson });
+        updateState({ originalHtml: newHtml, originalJson: newJson });
         addLog(`Настройка ${settingId} ${checked ? 'включена' : 'отключена'}`);
       } catch (error) {
         logger.error('Error applying settings', 'CreateTab', { error: error instanceof Error ? error.message : error });
@@ -209,6 +209,8 @@ ${step3Prompt}`;
 
   const handleZipParsed = (editorHtml: string, visualHtml: string, json: string) => {
     updateState({ 
+      originalHtml: editorHtml,
+      originalJson: json,
       html: editorHtml,
       visualHtml: visualHtml,
       json 
@@ -225,10 +227,16 @@ ${step3Prompt}`;
   };
 
   const handleAnalyze = async () => {
-    if (!state.goal.trim() && !state.html.trim() && !state.json.trim()) {
+    if (!state.goal.trim() && !state.originalHtml.trim() && !state.originalJson.trim()) {
       toast.error("Заполните хотя бы одно поле");
       return;
     }
+
+    // Копируем оригинальный код в рабочие переменные для AI обработки
+    updateState({
+      html: state.originalHtml,
+      json: state.originalJson
+    });
 
     // Создаем новый AbortController для этого запроса
     const controller = new AbortController();
@@ -369,6 +377,8 @@ ${step3Prompt}`;
       // Сохраняем в историю
       saveToHistory("Автосохранение", {
         goal: state.goal,
+        originalHtml: state.originalHtml,
+        originalJson: state.originalJson,
         html,
         json,
         fixedHtml,
@@ -527,15 +537,15 @@ ${step3Prompt}`;
         </Card>
 
         <ComponentSettings
-          html={state.html}
-          json={state.json}
+          html={state.originalHtml}
+          json={state.originalJson}
           selectedSettings={selectedSettings}
           onSettingChange={handleSettingChange}
         />
 
         <Card className="p-6">
           <CodeEditor
-            value={state.html}
+            value={state.originalHtml}
             onChange={updateHtml}
             label="HTML код"
             placeholder="Вставьте HTML код или оставьте пустым для генерации..."
@@ -545,7 +555,7 @@ ${step3Prompt}`;
 
         <Card className="p-6">
           <CodeEditor
-            value={state.json}
+            value={state.originalJson}
             onChange={updateJson}
             label="JSON настройки"
             placeholder="Вставьте JSON настройки или оставьте пустым для генерации..."

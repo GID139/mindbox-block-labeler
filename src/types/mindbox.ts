@@ -1,16 +1,25 @@
 export interface MindboxState {
   goal: string;
-  html: string;
-  visualHtml?: string;  // Визуальный HTML для референса
-  json: string;
+  
+  // Оригинальный код от пользователя (не трогаем после загрузки)
+  originalHtml: string;        // HTML код из ZIP или введённый вручную
+  originalJson: string;        // JSON из ZIP или введённый вручную
+  visualHtml?: string;         // Визуальный HTML для референса
+  
+  // Рабочий код для AI обработки (временный буфер)
+  html: string;                // Используется AI для генерации/валидации
+  json: string;                // Используется AI для генерации/валидации
+  
+  // Финальный исправленный код (результат Step 3)
+  fixedHtml: string;
+  fixedJson: string;
+  reportMarkdown: string;
+  
   quickFix: boolean;
   isDynamicGrid: boolean;
   isEditable: boolean;
   settings: Record<string, boolean>;
   improvedGoal: string;
-  fixedHtml: string;
-  fixedJson: string;
-  reportMarkdown: string;
   log: string[];
 }
 

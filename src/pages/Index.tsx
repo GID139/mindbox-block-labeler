@@ -14,6 +14,8 @@ const AUTOSAVE_KEY = 'mindbox-autosave';
 
 const initialState: MindboxState = {
   goal: '',
+  originalHtml: '',
+  originalJson: '',
   html: '',
   json: '',
   quickFix: false,
