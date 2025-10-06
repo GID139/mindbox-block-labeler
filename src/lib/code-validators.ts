@@ -146,6 +146,51 @@ export function validateDynamicBlocks(html: string, json: string): {
 }
 
 /**
+ * Validates that @{if} blocks contain HTML tags as direct children
+ * Mindbox requires an HTML wrapper before any other template directives
+ */
+export function validateConditionalBlocks(html: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Pattern: @{if ...} followed by @{for/@{set/@{include} without HTML in between
+  const ifBlockPattern = /@\{if\s+[^}]+\}([\s\S]*?)@\{end if\}/g;
+  
+  let match;
+  while ((match = ifBlockPattern.exec(html)) !== null) {
+    const blockContent = match[1].trim();
+    const conditionSnippet = match[0].substring(0, 50); // First 50 chars for context
+    
+    // Check if first non-whitespace character is another directive
+    const firstDirective = blockContent.match(/^@\{(for|set|include|macro)/);
+    
+    if (firstDirective) {
+      errors.push(
+        `Условный блок должен содержать HTML-тег в качестве прямого потомка, найдено @{${firstDirective[1]}}.\n` +
+        `Контекст: ${conditionSnippet}...\n` +
+        `Исправление: Оберните @{${firstDirective[1]}} в соответствующий HTML-тег (например, <table> для элементов <tr>)`
+      );
+    }
+    
+    // Check for plain text without HTML tags (rare but possible)
+    if (!blockContent.match(/^\s*<[a-z]/i) && blockContent.length > 0 && !firstDirective) {
+      errors.push(
+        `Условный блок содержит текст/код без HTML-обёртки.\n` +
+        `Контекст: ${conditionSnippet}...\n` +
+        `Исправление: Оберните содержимое в HTML-тег (например, <div>, <span>, <td>)`
+      );
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Validates that role parameters are used correctly
  */
 export function validateRoleParameters(json: string): {
@@ -299,6 +344,10 @@ export function validateAll(html: string, json: string): {
   
   const roleParamsResult = validateRoleParameters(json);
   allErrors.push(...roleParamsResult.errors);
+  
+  // Validate conditional block structure
+  const conditionalValidation = validateConditionalBlocks(html);
+  allErrors.push(...conditionalValidation.errors);
   
   return {
     isValid: allErrors.length === 0,

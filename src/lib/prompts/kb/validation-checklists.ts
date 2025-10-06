@@ -12,6 +12,7 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 - [ ] Variables follow naming rules (no dashes, no Cyrillic)
 - [ ] All \${editor.*} variables use valid syntax
 - [ ] @{if} / @{end if} constructs properly formed
+- [ ] @{if} blocks contain HTML tag as direct child (not @{for} or @{set})
 - [ ] Required attributes present (alt on images, href on links)
 - [ ] Table-based layout (not divs)
 
@@ -56,6 +57,10 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 - ❌ Missing ghost tables → ✅ Add Outlook wrappers
 - ❌ Div-based centering → ✅ Use table-based centering
 - ❌ Missing alt on images → ✅ Add alt with variable
+
+**Conditional Block Errors:**
+- ❌ @{if} → @{for} without HTML wrapper → ✅ Add <table> or <div> wrapper
+- ❌ @{if} → plain text without HTML → ✅ Wrap text in <span> or <td>
 
 **Variable Errors:**
 - ❌ Variable with dashes (my-var) → ✅ Use camelCase (myVar)

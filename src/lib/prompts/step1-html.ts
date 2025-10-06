@@ -100,6 +100,7 @@ Check for:
 - [ ] Unclosed HTML tags
 - [ ] Invalid variable syntax (\${editor.*} format)
 - [ ] Malformed @{if} / @{end if} constructs
+- [ ] @{if} blocks contain HTML tag as direct child (not directives like @{for})
 - [ ] Missing required attributes (alt on images, href on links)
 
 ### Phase 2: Structure Validation

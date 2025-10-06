@@ -156,4 +156,41 @@ Alternative pattern:
   @{end for}
   </table>
   \`\`\`
-  where 3 is the number of columns per row`;
+  where 3 is the number of columns per row
+
+### Rule 11: HTML Tag Required Inside Conditional Blocks (CRITICAL)
+
+**CRITICAL REQUIREMENT**: Every \`@{if}\` block MUST contain at least one HTML tag as a direct child. 
+You CANNOT place template directives (\`@{for}\`, \`@{set}\`, \`@{include}\`) or plain text directly inside \`@{if}\`.
+
+**Why?**: Mindbox template engine requires an HTML element to properly parse conditional blocks.
+
+#### ❌ INCORRECT (Template directive immediately after @{if})
+\`\`\`html
+@{if editor.shouldShowProduct}
+  @{for product in editor.productCollection}
+    <table>
+      <tr><td>\${product.name}</td></tr>
+    </table>
+  @{end for}
+@{end if}
+\`\`\`
+
+#### ✅ CORRECT (HTML wrapper added)
+\`\`\`html
+@{if editor.shouldShowProduct}
+  <table>
+    @{for product in editor.productCollection}
+      <tr><td>\${product.name}</td></tr>
+    @{end for}
+  </table>
+@{end if}
+\`\`\`
+
+#### Auto-correction algorithm:
+1. Detect if first non-whitespace element after \`@{if}\` is another directive (\`@{for}\`, \`@{set}\`)
+2. Identify the element type generated inside (usually \`<tr>\` or \`<div>\`)
+3. Create appropriate HTML wrapper:
+   - For \`<tr>\` elements → wrap in \`<table><tbody>...</tbody></table>\`
+   - For \`<div>\` or \`<td>\` → wrap in \`<div>...</div>\`
+4. Move the directive inside the wrapper`;
