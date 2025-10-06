@@ -35,4 +35,4 @@ The JSON MUST include controls for:
   - .containerHeightAttribute → TEXT_SIZE
 - [ ] DISPLAY_TOGGLE conditions match JSON variable names
 - [ ] Collection variables have COLLECTION type in JSON
-- [ ] Role parameters don't have defaultValue in JSON`;
+- [ ] Role parameters HAVE defaultValue (sample data), but will be replaced by dynamic collection data at runtime`;

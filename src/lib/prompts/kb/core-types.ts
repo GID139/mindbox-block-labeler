@@ -20,8 +20,21 @@ export const CORE_TYPES_KB = `## Core Control Types
 - Default IMAGE: "https://mindbox.ru/build/assets/images/mb-fav_marketing_green-Ds-aOpBM.svg"
 
 ### SIZE (Width Control)
-- Format: "manual 100 *" (MANDATORY default)
+- Format: "manual X *" where X is number up to 100 (commonly 55)
 - Usage: width="\${editor.var.formattedWidthAttribute}" style="\${editor.var.formattedWidthStyle}"
+- Requires "extra" object with:
+  - defaultMaxWidth: Max width of email (usually "600px")
+  - allowedTypes: ["inherit", "manual"] or just ["manual"]
+- Example JSON:
+  {
+    "name": "imageSize",
+    "type": "SIZE",
+    "defaultValue": "manual 55 *",
+    "extra": {
+      "defaultMaxWidth": "600px",
+      "allowedTypes": ["inherit", "manual"]
+    }
+  }
 
 ### HEIGHTV2 (Height Control)  
 - Format: "100 100" (desktop mobile)
@@ -35,6 +48,16 @@ export const CORE_TYPES_KB = `## Core Control Types
 - Format: { "width": "pixels 100 80", "height": "50 40" }
 - Width types: "pixels" or "percent"
 
+### NUMBER
+- Type: Numeric value for single numeric settings
+- Usage: For font size, spacing, gap, custom numeric values
+- Default: "20"
+- Format: String containing number
+- Examples: 
+  - Gap/Spacer: height: \\\${editor.gap}px
+  - Font size: font-size: \\\${editor.customSize}px
+  - Any single numeric value that needs adjustment
+
 ### BORDER_RADIUS
 - Format: "25 25 25 25" (TL TR BR BL)
 
@@ -46,18 +69,18 @@ export const CORE_TYPES_KB = `## Core Control Types
 
 ### BACKGROUND
 - Transparent: { "type": "transparent" }
-- Color: { "type": "color", "color": "#39AA5D" } (MANDATORY default)
+- Color: { "type": "color", "color": "#39AA5D" } (Example: Mindbox brand green. Common alternatives: "#FFFFFF" white, "#000000" black, "#F0F0F0" light gray)
 - Image: { "type": "image", "url": "...", "color": "#39AA5D", "mode": "cover" }
 - Modes: "contain", "cover", "repeat", "stretch"
 
 ### TEXT_STYLES & SIMPLE_TEXT_STYLES
 Required fields:
-- font: "Arial", "Helvetica", "Roboto", etc.
+- font: One of allowed fonts (Arial, Helvetica, Roboto, Open Sans, Montserrat, Inter, Geneva, Times New Roman, Verdana, Courier / Courier New, Tahoma, Georgia, Palatino, Trebuchet MS)
 - fontSize: string number
 - lineHeight: "1.0", "1.15", "1.5", "2.0" (ONLY these values)
 - inscription: [] or ["bold"], ["italic"], ["underlined"], ["crossed"]
-- color: "#RRGGBB"
-- fallbackFont: "Helvetica" (MANDATORY)
+- color: "#RRGGBB" (SIMPLE_TEXT_STYLES only, TEXT_STYLES manages color separately)
+- fallbackFont: One of allowed fonts (MANDATORY). Commonly "Helvetica" or "Arial"
 - letterSpacing: string number
 
 ### COLOR
@@ -68,19 +91,35 @@ Required fields:
 
 ### COLLECTION (Dynamic Content)
 - Values: "RECIPIENT_RECOMMENDATIONS", "FROM_SEGMENT", "FROM_PRODUCT_LIST", "ORDER", "VIEWED_PRODUCTS_IN_SESSION", "PRODUCT_LIST_ITEM", "PRODUCT_VIEW", "FROM_CUSTOMER_COMPUTED_FIELD"
+- Optional "size" parameter to limit number of items displayed: "size": 2
+- Example:
+  {
+    "name": "productCollection",
+    "type": "COLLECTION",
+    "defaultValue": "RECIPIENT_RECOMMENDATIONS",
+    "size": 3
+  }
 
 ### Dynamic Roles
 - ProductTitle, ProductPrice, ProductOldPrice, ProductUrl, ProductImageUrl, ProductDescription, ProductBadge
-- Use "role" instead of "defaultValue"
+- Role parameters HAVE "defaultValue" (sample text/URL), but it gets replaced by dynamic data from collection
+- Example:
+  {
+    "name": "productTitle",
+    "type": "SIMPLE_TEXT",
+    "role": "ProductTitle",
+    "defaultValue": "Sample Product Name"
+  }
 
 ## Mandatory Default Values
 
 Use these defaults for generation:
 
-- **SIZE**: \`"manual 100 *"\`
-- **BACKGROUND**: \`{ "type": "color", "color": "#39AA5D" }\`
+- **NUMBER**: \`"20"\` (adjust based on context: gap, font size, etc.)
+- **SIZE**: \`"manual 55 *"\` (X can be any number up to 100)
+- **BACKGROUND**: \`{ "type": "color", "color": "#39AA5D" }\` (or "#FFFFFF" for white)
 - **IMAGE**: \`"https://mindbox.ru/build/assets/images/mb-fav_marketing_green-Ds-aOpBM.svg"\`
-- **TEXT_STYLES/SIMPLE_TEXT_STYLES**: Must include \`"fallbackFont": "Helvetica"\`
+- **TEXT_STYLES/SIMPLE_TEXT_STYLES**: Must include \`"fallbackFont": "Helvetica"\` or \`"Arial"\`
 - **DISPLAY_TOGGLE**: String \`"true"\` or \`"false"\` (NOT boolean)
 - **BORDER**: \`"none"\` or \`"solid black 2"\`
 - **BORDER_RADIUS**: \`"25 25 25 25"\`

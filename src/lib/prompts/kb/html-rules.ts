@@ -36,10 +36,26 @@ To center any block:
 For EACH logical element (image, text block, button), you MUST include:
 
 ✓ **DISPLAY_TOGGLE**: Wrap in \`@{if editor.shouldShow[ElementName]} ... @{end if}\`
-✓ **SIZE**: Width control via SIZE variable
+✓ **SIZE**: Width control via SIZE variable (with extra.defaultMaxWidth and extra.allowedTypes)
 ✓ **INNER_SPACING**: Padding control via INNER_SPACING variable
-✓ **HEIGHT**: Use NUMBER, HEIGHTV2, or TEXT_SIZE as appropriate
+✓ **HEIGHT**: Use NUMBER (for simple height), HEIGHTV2 (for images), or TEXT_SIZE (for text containers) as appropriate
 ✓ **BORDER & BORDER_RADIUS**: Where visually appropriate
+
+### Rule 3a: Gap/Spacer Elements
+For vertical spacing between blocks (gaps/spacers), use NUMBER type:
+\`\`\`html
+<tr>
+  <td>
+    <div style="height: \${editor.gap}px; line-height: \${editor.gap}px; font-size: 8px;">&nbsp;</div>
+  </td>
+</tr>
+\`\`\`
+Alternative pattern:
+\`\`\`html
+<tr>
+  <td style="height: \${editor.gap}px; background: transparent;"></td>
+</tr>
+\`\`\`
 
 ### Rule 4: Images MUST Have
 \`\`\`html
@@ -114,7 +130,30 @@ For EACH logical element (image, text block, button), you MUST include:
 
 ### Rule 9: Critical HTML Requirements
 1. Each block MUST start with: \`<!-- EDITOR_BLOCK_TEMPLATE: block_name -->\`
-2. Wrap in ghost tables: \`<!--[if mso | IE]>...<![endif]-->\`
+2. Wrap in ghost tables for Outlook compatibility: \`<!--[if mso | IE]>...<![endif]-->\` (recommended for table-based layouts, can be omitted for div-based adaptive grids)
 3. Center using: parent \`<td align="center">\` + SIZE-controlled inner table
 4. All images MUST have alt attributes
-5. Text in @{if} blocks MUST have font-size and line-height`;
+5. Text in @{if} blocks MUST have font-size and line-height
+
+### Rule 10: Dynamic Product Grids - Layout Choice
+- **Adaptive (responsive)**: Use div-based layout - cards will stack on mobile devices
+- **Fixed (non-responsive)**: Use table-based layout - same appearance on all devices
+- **Table-based with Tablerows()**: For multi-row product grids:
+  \`\`\`html
+  <table>
+  @{for row in Tablerows(editor.collection, 3)}
+      <tr>
+      @{for cell in row.Cells}
+          <td>
+          @{if cell.Value != null}
+              <!-- Product card content -->
+              <img src="\${editor.productImage}" />
+              \${editor.productTitle}
+          @{end if}
+          </td>
+      @{end for}
+      </tr>
+  @{end for}
+  </table>
+  \`\`\`
+  where 3 is the number of columns per row`;
