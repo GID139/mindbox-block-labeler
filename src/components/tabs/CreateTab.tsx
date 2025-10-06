@@ -13,7 +13,7 @@ import { Loader2, Sparkles, Wand2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
 import { useMindboxPrompts } from "@/hooks/useMindboxPrompts";
-import type { Scenario } from "@/lib/mindbox-prompts-v2";
+import type { Scenario } from "@/lib/prompts";
 import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";

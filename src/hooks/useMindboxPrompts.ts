@@ -7,7 +7,7 @@ import {
   getStepName,
   getPipelineDescription,
   type Scenario
-} from '@/lib/mindbox-prompts-v2';
+} from '@/lib/prompts';
 
 interface UseMindboxPromptsParams {
   goal: string;
