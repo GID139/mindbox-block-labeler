@@ -100,8 +100,24 @@ export function ComponentSettings({
           return (
             <AccordionItem key={componentKey} value={componentKey}>
               <AccordionTrigger className="text-left hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{component.title}</span>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    id={`${componentKey}-all`}
+                    checked={Object.keys(component.settings).every(
+                      (setting) => selectedSettings[`${componentKey}-${setting}`]
+                    )}
+                    onCheckedChange={(checked) => {
+                      Object.keys(component.settings).forEach((setting) => {
+                        onSettingChange(componentKey, setting, checked as boolean);
+                      });
+                    }}
+                  />
+                  <Label
+                    htmlFor={`${componentKey}-all`}
+                    className="font-semibold cursor-pointer"
+                  >
+                    {component.title}
+                  </Label>
                   {Object.keys(component.settings).some(
                     (setting) =>
                       selectedSettings[`${componentKey}-${setting}`]
