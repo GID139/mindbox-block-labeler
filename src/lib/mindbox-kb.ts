@@ -66,6 +66,18 @@ export const templates = {
 
   INNER_SPACING: { defaultValue: "10 25 10 25" },
 
+  NUMBER: {
+    defaultValue: "20",
+    useCases: ["gap", "spacer", "custom spacing", "custom numeric values"],
+    htmlUsage: {
+      heightStyle: 'height: ${editor.var}px;',
+      lineHeight: 'line-height: ${editor.var}px;',
+      fontSize: 'font-size: 8px;',
+      padding: 'padding-top: ${editor.var}px;'
+    },
+    spacerPattern: '<div style="height: ${editor.var}px; line-height: ${editor.var}px; font-size: 8px;">&nbsp;</div>'
+  },
+
   BORDER: {
     examples: ["none", "solid black 2"]
   },

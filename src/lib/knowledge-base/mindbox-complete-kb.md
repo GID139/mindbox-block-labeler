@@ -267,11 +267,12 @@ A dropdown to select a product feed for dynamic content.
 | Property | Description |
 | :--- | :--- |
 | **JSON Type** | `COLLECTION` |
-| **Description** | Links the block to a dynamic data source. |
+| **Description** | Links the block to a dynamic data source. Used to generate dynamic product grids. |
 | **Default Value** | `"RECIPIENT_RECOMMENDATIONS"` |
-| **HTML Usage** | `@{for item in editor.uniqueVariableName} ... @{end for}` |
+| **HTML Usage** | `@{for item in editor.uniqueVariableName} ... <tr><td>...product card...</td></tr> ... @{end for}` |
 | **JSON Structure** | `{ "name": "productFeed", "type": "COLLECTION", "defaultValue": "RECIPIENT_RECOMMENDATIONS", "group": "Dynamic Content", "extra": { "label": "Product Source" } }` |
 | **Allowed Values**| "RECIPIENT_RECOMMENDATIONS", "FROM_SEGMENT", "FROM_PRODUCT_LIST", "ORDER", "VIEWED_PRODUCTS_IN_SESSION", "PRODUCT_LIST_ITEM", "PRODUCT_VIEW", "FROM_CUSTOMER_COMPUTED_FIELD" |
+| **Important Notes**| - Must be used with `@{for}...@{end for}` loop syntax<br>- Loop must iterate table rows: `@{for item in editor.collection}<tr>...</tr>@{end for}`<br>- Product data accessed via `role` parameters (see below)<br>- Commonly used for: recommendations, order items, viewed products |
 
 ### **Dynamic Data Roles (`role`)**
 Connects a JSON parameter to a specific product field within a dynamic grid.
@@ -279,10 +280,11 @@ Connects a JSON parameter to a specific product field within a dynamic grid.
 | Property | Description |
 | :--- | :--- |
 | **JSON Key** | `role` |
-| **Description** | This key is used **instead of** `defaultValue` to map a control to a product data field. |
+| **Description** | This key is used **instead of** `defaultValue` to map a control to a product data field from the COLLECTION. Used exclusively in dynamic blocks. |
 | **Allowed Values**| `ProductTitle`, `ProductPrice`, `ProductOldPrice`, `ProductUrl`, `ProductImageUrl`, `ProductDescription`, `ProductBadge` |
 | **JSON Example**| `{ "name": "product_name", "type": "SIMPLE_TEXT", "role": "ProductTitle", "group": "Dynamic Product Card" }` |
 | **Note**| For `ProductOldPrice` and `ProductPrice`, the recommended JSON type is `TEXT`.|
+| **Usage Pattern**| 1. Define COLLECTION control<br>2. Wrap product card in `@{for item in editor.collection}`<br>3. Use role-based parameters inside loop: `${editor.product_title}`, `${editor.product_image}`, etc.<br>4. Each role parameter automatically populates from collection data |
 
 ---
 
@@ -298,6 +300,7 @@ Connects a JSON parameter to a specific product field within a dynamic grid.
     * **BACKGROUND**: The `defaultValue` **MUST** be `{ "type": "color", "color": "#39AA5D" }` unless specified otherwise.
     * **IMAGE**: The `defaultValue` **MUST** be `"https://mindbox.ru/build/assets/images/mb-fav_marketing_green-Ds-aOpBM.svg"`.
     * **TEXT_STYLES / SIMPLE_TEXT_STYLES**: The `defaultValue` object **MUST** include `"fallbackFont": "Helvetica"`.
+    * **NUMBER** (for gap/spacer): Typically `"20"` with `font-size: 8px;` for invisible content.
 
 * **JSON Structure**:
     * Every parameter **MUST** have both a `group` and an `extra.label` key with clear, user-friendly values.
@@ -310,6 +313,354 @@ Connects a JSON parameter to a specific product field within a dynamic grid.
         <table width="${editor.block_width.formattedWidthAttribute}" style="${editor.block_width.formattedWidthStyle};">...</table>
       </td>
       ```
+
+* **Block Naming Rules**:
+    * Block names (in `<!-- EDITOR_BLOCK_TEMPLATE: name -->`) must use only **Latin letters, digits, and underscores**
+    * Block names must be **unique across the entire project**
+    * Block names are **permanent** - re-uploading with the same name overwrites the previous version
+
+* **Variable Naming Rules**:
+    * Format: `${editor.descriptiveName}`
+    * Use only: **Latin letters, digits, underscore (_)**
+    * **NO dashes (-)**, **NO Cyrillic characters**
+    * Variable names are **case-insensitive** but use camelCase for consistency
+    * Must be **unique within each block**
+
+---
+
+## Block Upload Process
+
+### Stage I: HTML Markup Preparation
+
+**Step 1: Define Block Boundaries**
+Each independent section of your email layout should be marked as a separate block:
+
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: header_block -->
+<table cellspacing="0" cellpadding="0" border="0" width="100%">
+  <!-- Block content -->
+</table>
+
+<!-- EDITOR_BLOCK_TEMPLATE: product_grid -->
+<table cellspacing="0" cellpadding="0" border="0" width="100%">
+  <!-- Block content -->
+</table>
+```
+
+**Step 2: Insert Mindbox Variables**
+Replace editable content with `${editor.*}` variables:
+
+```html
+<!-- Before: Static content -->
+<td style="padding: 20px;">
+  <img src="logo.png" alt="Company Logo" width="150">
+</td>
+
+<!-- After: Editable with Mindbox variables -->
+<td style="padding: ${editor.logoPadding};">
+  @{if editor.shouldShowLogo}
+    <img src="${editor.logoImage}" 
+         alt="${editor.logoAlt}" 
+         width="${editor.logoSize.formattedWidthAttribute}"
+         style="${editor.logoSize.formattedWidthStyle};">
+  @{end if}
+</td>
+```
+
+**Step 3: Add Display Toggles**
+Wrap each editable element in conditional logic:
+
+```html
+@{if editor.shouldShowButton}
+  <table><!-- Button markup --></table>
+@{end if}
+```
+
+### Stage II: JSON Configuration
+
+After uploading HTML to Mindbox, define settings in the JSON configuration file:
+
+```json
+[
+  {
+    "name": "shouldShowLogo",
+    "type": "DISPLAY_TOGGLE",
+    "defaultValue": "true",
+    "group": "Header >> Logo",
+    "extra": { "label": "Show Logo" }
+  },
+  {
+    "name": "logoImage",
+    "type": "IMAGE",
+    "defaultValue": "https://mindbox.ru/build/assets/images/mb-fav_marketing_green-Ds-aOpBM.svg",
+    "group": "Header >> Logo",
+    "extra": { "label": "Logo Image" }
+  }
+]
+```
+
+---
+
+## Practical Examples & Patterns
+
+### Example 1: Gap/Spacer Element
+
+**Use Case**: Add adjustable vertical spacing between blocks.
+
+**HTML Pattern**:
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: spacer_block -->
+@{if editor.shouldShowSpacer}
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td>
+      <div style="height: ${editor.spacerHeight}px; line-height: ${editor.spacerHeight}px; font-size: 8px;">
+        &nbsp;
+      </div>
+    </td>
+  </tr>
+</table>
+@{end if}
+```
+
+**JSON Configuration**:
+```json
+[
+  {
+    "name": "shouldShowSpacer",
+    "type": "DISPLAY_TOGGLE",
+    "defaultValue": "true",
+    "group": "Spacing",
+    "extra": { "label": "Show Spacer" }
+  },
+  {
+    "name": "spacerHeight",
+    "type": "NUMBER",
+    "defaultValue": "20",
+    "group": "Spacing",
+    "extra": { "label": "Spacer Height (px)" }
+  }
+]
+```
+
+**Key Points**:
+- Use `NUMBER` type for height value
+- Set `font-size: 8px;` to make the `&nbsp;` character minimal
+- Match `height` and `line-height` for consistency
+
+---
+
+### Example 2: Static to Dynamic Product Grid Conversion
+
+**Original Static HTML** (3 hardcoded products):
+```html
+<table width="100%">
+  <tr>
+    <td width="33%">
+      <img src="product1.jpg" alt="Product 1">
+      <div>Product Name 1</div>
+      <div>$99.99</div>
+    </td>
+    <td width="33%">
+      <img src="product2.jpg" alt="Product 2">
+      <div>Product Name 2</div>
+      <div>$129.99</div>
+    </td>
+    <td width="33%">
+      <img src="product3.jpg" alt="Product 3">
+      <div>Product Name 3</div>
+      <div>$149.99</div>
+    </td>
+  </tr>
+</table>
+```
+
+**Converted to Dynamic Grid**:
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: product_recommendations -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    @{for item in editor.productCollection}
+    <td width="33%" align="center" style="padding: ${editor.productPadding};">
+      @{if editor.shouldShowProductImage}
+        <a href="${editor.productUrl}">
+          <img src="${editor.productImage}" 
+               alt="${editor.productTitle}"
+               width="${editor.productImageSize.formattedWidthAttribute}"
+               style="display: block; ${editor.productImageSize.formattedWidthStyle};">
+        </a>
+      @{end if}
+      
+      @{if editor.shouldShowProductTitle}
+        <div style="${editor.titleStyles}">
+          <a href="${editor.productUrl}">${editor.productTitle}</a>
+        </div>
+      @{end if}
+      
+      @{if editor.shouldShowProductPrice}
+        <div style="${editor.priceStyles}">
+          ${editor.productPrice}
+        </div>
+      @{end if}
+    </td>
+    @{end for}
+  </tr>
+</table>
+```
+
+**JSON Configuration with Roles**:
+```json
+[
+  {
+    "name": "productCollection",
+    "type": "COLLECTION",
+    "defaultValue": "RECIPIENT_RECOMMENDATIONS",
+    "group": "Product Grid >> Data Source",
+    "extra": { "label": "Product Collection" }
+  },
+  {
+    "name": "productTitle",
+    "type": "SIMPLE_TEXT",
+    "role": "ProductTitle",
+    "group": "Product Grid >> Content",
+    "extra": { "label": "Product Title" }
+  },
+  {
+    "name": "productImage",
+    "type": "IMAGE",
+    "role": "ProductImageUrl",
+    "group": "Product Grid >> Content",
+    "extra": { "label": "Product Image" }
+  },
+  {
+    "name": "productUrl",
+    "type": "URL",
+    "role": "ProductUrl",
+    "group": "Product Grid >> Content",
+    "extra": { "label": "Product Link" }
+  },
+  {
+    "name": "productPrice",
+    "type": "TEXT",
+    "role": "ProductPrice",
+    "group": "Product Grid >> Content",
+    "extra": { "label": "Product Price" }
+  }
+]
+```
+
+**Conversion Steps**:
+1. **Identify the repeating pattern** (single product card)
+2. **Wrap in `@{for}...@{end for}` loop** using COLLECTION variable
+3. **Replace static values** with role-based parameters
+4. **Use `role` instead of `defaultValue`** in JSON for product data
+5. **Keep the table row structure** - loop must iterate `<td>` cells within a single `<tr>`
+
+---
+
+### Example 3: Dynamic Product Grid Best Practices
+
+**Complete Dynamic Grid with All Features**:
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: dynamic_products -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+  <tr>
+    @{for item in editor.productCollection}
+    <td width="${editor.productCardWidth}%" 
+        align="center" 
+        valign="top"
+        style="padding: ${editor.cardPadding};">
+      
+      <!-- Product Card Container -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${editor.cardBackground.color}">
+        <tr>
+          <td style="padding: ${editor.cardInnerPadding};">
+            
+            <!-- Product Image -->
+            @{if editor.shouldShowImage}
+            <a href="${editor.productUrl}" target="_blank">
+              <img src="${editor.productImage}" 
+                   alt="${editor.productTitle}"
+                   width="${editor.imageSize.formattedWidthAttribute}"
+                   style="display: block; ${editor.imageSize.formattedWidthStyle}; border-radius: ${editor.imageBorderRadius};">
+            </a>
+            @{end if}
+            
+            <!-- Spacer -->
+            <div style="height: 10px; line-height: 10px; font-size: 8px;">&nbsp;</div>
+            
+            <!-- Product Title -->
+            @{if editor.shouldShowTitle}
+            <div style="${editor.titleTextStyles}">
+              <a href="${editor.productUrl}" 
+                 style="color: inherit; text-decoration: none;">
+                ${editor.productTitle}
+              </a>
+            </div>
+            @{end if}
+            
+            <!-- Spacer -->
+            <div style="height: 8px; line-height: 8px; font-size: 8px;">&nbsp;</div>
+            
+            <!-- Price Section -->
+            @{if editor.shouldShowPrice}
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                @{if editor.shouldShowOldPrice}
+                <td width="50%">
+                  <div style="${editor.oldPriceStyles}">
+                    ${editor.productOldPrice}
+                  </div>
+                </td>
+                @{end if}
+                <td width="${if(editor.shouldShowOldPrice, '50', '100')}%">
+                  <div style="${editor.priceStyles}">
+                    ${editor.productPrice}
+                  </div>
+                </td>
+              </tr>
+            </table>
+            @{end if}
+            
+            <!-- CTA Button -->
+            @{if editor.shouldShowButton}
+            <div style="height: 12px; line-height: 12px; font-size: 8px;">&nbsp;</div>
+            <table border="0" cellpadding="0" cellspacing="0" width="${editor.buttonSize.width}">
+              <tr>
+                <td align="center" 
+                    height="${editor.buttonSize.height}"
+                    bgcolor="${editor.buttonBackground}"
+                    style="border-radius: ${editor.buttonBorderRadius};">
+                  <a href="${editor.productUrl}" 
+                     target="_blank"
+                     style="display: block; ${editor.buttonTextStyles}; 
+                            height: ${editor.buttonSize.formattedHeight}; 
+                            line-height: ${editor.buttonSize.height}px;
+                            text-decoration: none;">
+                    ${editor.buttonText}
+                  </a>
+                </td>
+              </tr>
+            </table>
+            @{end if}
+            
+          </td>
+        </tr>
+      </table>
+    </td>
+    @{end for}
+  </tr>
+</table>
+```
+
+**Key Dynamic Grid Rules**:
+1. **Loop Structure**: `@{for item in editor.collection}` must wrap `<td>` elements inside a single `<tr>`
+2. **Role Parameters**: Use `role` property in JSON for all product-specific data
+3. **Table Layout**: Maintain table-based structure for email client compatibility
+4. **Responsive Width**: Use percentage widths on `<td>` elements for multi-column layouts
+5. **Spacers**: Use invisible `<div>` elements with `font-size: 8px;` for vertical spacing
+6. **Conditional Elements**: Wrap optional elements (images, buttons) in `@{if}` conditions
+7. **Nested Tables**: Use nested tables for complex layouts within each product card
 
 ---
 

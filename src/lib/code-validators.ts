@@ -53,6 +53,147 @@ export function validateHtmlJsonSync(html: string, json: string): {
   };
 }
 
+/**
+ * Validates block naming rules
+ * Block names must use only Latin letters, digits, and underscores
+ */
+export function validateBlockNames(html: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const blockNamePattern = /<!--\s*EDITOR_BLOCK_TEMPLATE:\s*([^\s-]+)\s*-->/g;
+  const matches = Array.from(html.matchAll(blockNamePattern));
+  const seenNames = new Set<string>();
+  
+  matches.forEach(match => {
+    const blockName = match[1];
+    
+    // Check for invalid characters (no dashes, no Cyrillic)
+    if (!/^[a-zA-Z0-9_]+$/.test(blockName)) {
+      errors.push(`Блок "${blockName}": недопустимые символы. Используйте только латиницу, цифры и подчеркивание`);
+    }
+    
+    // Check for duplicates
+    if (seenNames.has(blockName)) {
+      errors.push(`Блок "${blockName}": дублирующееся имя. Имена блоков должны быть уникальными`);
+    }
+    seenNames.add(blockName);
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates dynamic block structure
+ * Checks for proper @{for}...@{end for} syntax and COLLECTION usage
+ */
+export function validateDynamicBlocks(html: string, json: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Check for @{for} loops
+  const forLoopPattern = /@\{for\s+\w+\s+in\s+editor\.(\w+)\}/g;
+  const forMatches = Array.from(html.matchAll(forLoopPattern));
+  
+  forMatches.forEach(match => {
+    const collectionVar = match[1];
+    
+    // Check if corresponding @{end for} exists
+    const endForPattern = new RegExp(`@\\{for\\s+\\w+\\s+in\\s+editor\\.${collectionVar}\\}[\\s\\S]*?@\\{end for\\}`, 'g');
+    if (!endForPattern.test(html)) {
+      errors.push(`Незакрытый цикл для переменной "${collectionVar}": отсутствует @{end for}`);
+    }
+    
+    // Verify COLLECTION exists in JSON
+    try {
+      const jsonArray = JSON.parse(json);
+      const hasCollection = jsonArray.some((item: any) => 
+        item.name === collectionVar && item.type === 'COLLECTION'
+      );
+      
+      if (!hasCollection) {
+        errors.push(`Переменная цикла "${collectionVar}" должна быть определена в JSON с типом COLLECTION`);
+      }
+    } catch (e) {
+      // JSON parsing errors will be caught by validateJsonStructure
+    }
+  });
+  
+  // Check for role-based parameters when COLLECTION is used
+  if (forMatches.length > 0) {
+    try {
+      const jsonArray = JSON.parse(json);
+      const hasRoleParams = jsonArray.some((item: any) => item.role);
+      
+      if (!hasRoleParams) {
+        errors.push('Динамические блоки с COLLECTION должны содержать параметры с полем "role" (ProductTitle, ProductUrl, и т.д.)');
+      }
+    } catch (e) {
+      // JSON parsing errors will be caught by validateJsonStructure
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates that role parameters are used correctly
+ */
+export function validateRoleParameters(json: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const allowedRoles = [
+    'ProductTitle',
+    'ProductPrice',
+    'ProductOldPrice',
+    'ProductUrl',
+    'ProductImageUrl',
+    'ProductDescription',
+    'ProductBadge'
+  ];
+  
+  try {
+    const jsonArray = JSON.parse(json);
+    
+    jsonArray.forEach((item: any, index: number) => {
+      if (item.role) {
+        // Check if role is in allowed list
+        if (!allowedRoles.includes(item.role)) {
+          errors.push(`Элемент ${index}: недопустимое значение role "${item.role}"`);
+        }
+        
+        // Check that defaultValue is not present when role is used
+        if (item.defaultValue !== undefined) {
+          errors.push(`Элемент ${index}: параметры с "role" не должны содержать "defaultValue"`);
+        }
+        
+        // Check that COLLECTION type is not used with role
+        if (item.type === 'COLLECTION') {
+          errors.push(`Элемент ${index}: тип COLLECTION не может использоваться с полем "role"`);
+        }
+      }
+    });
+  } catch (e) {
+    // JSON parsing errors will be caught by validateJsonStructure
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
 export function validateJsonStructure(jsonText: string): {
   isValid: boolean;
   errors: string[];
@@ -68,11 +209,18 @@ export function validateJsonStructure(jsonText: string): {
     }
     
     jsonArray.forEach((item, index) => {
-      if (!item.variable) {
-        errors.push(`Элемент ${index}: отсутствует поле "variable"`);
+      if (!item.name && !item.variable) {
+        errors.push(`Элемент ${index}: отсутствует поле "name" или "variable"`);
       }
       if (!item.type) {
         errors.push(`Элемент ${index}: отсутствует поле "type"`);
+      }
+      
+      // Check for valid COLLECTION values
+      if (item.type === 'COLLECTION' && item.defaultValue) {
+        if (!KB.allowedCollections.includes(item.defaultValue)) {
+          errors.push(`Элемент ${index}: недопустимое значение COLLECTION "${item.defaultValue}"`);
+        }
       }
       
       // Проверка шрифтов
@@ -83,6 +231,28 @@ export function validateJsonStructure(jsonText: string): {
       // Проверка lineHeight
       if (item.defaultValue?.lineHeight && !KB.allowedLineHeights.includes(item.defaultValue.lineHeight)) {
         errors.push(`Элемент ${index}: недопустимый lineHeight "${item.defaultValue.lineHeight}"`);
+      }
+      
+      // Validate BACKGROUND structure
+      if (item.type === 'BACKGROUND' && item.defaultValue) {
+        if (!item.defaultValue.type || !['transparent', 'color', 'image'].includes(item.defaultValue.type)) {
+          errors.push(`Элемент ${index}: BACKGROUND должен иметь type: "transparent", "color" или "image"`);
+        }
+        if (item.defaultValue.type === 'image' && item.defaultValue.mode) {
+          if (!KB.bgModes.includes(item.defaultValue.mode)) {
+            errors.push(`Элемент ${index}: недопустимый mode для BACKGROUND image "${item.defaultValue.mode}"`);
+          }
+        }
+      }
+      
+      // Validate BUTTON_SIZE structure
+      if (item.type === 'BUTTON_SIZE' && item.defaultValue) {
+        if (item.defaultValue.width) {
+          const widthType = item.defaultValue.width.split(' ')[0];
+          if (!KB.widthTypes.includes(widthType)) {
+            errors.push(`Элемент ${index}: недопустимый тип ширины в BUTTON_SIZE "${widthType}"`);
+          }
+        }
       }
     });
     
@@ -96,4 +266,42 @@ export function validateJsonStructure(jsonText: string): {
       errors: ['Некорректный JSON формат']
     };
   }
+}
+
+/**
+ * Comprehensive validation that runs all checks
+ */
+export function validateAll(html: string, json: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const allErrors: string[] = [];
+  
+  // Run all validation checks
+  const blockNamesResult = validateBlockNames(html);
+  allErrors.push(...blockNamesResult.errors);
+  
+  const syncResult = validateHtmlJsonSync(html, json);
+  if (!syncResult.isValid) {
+    if (syncResult.missingInJson.length > 0) {
+      allErrors.push(`Переменные отсутствуют в JSON: ${syncResult.missingInJson.join(', ')}`);
+    }
+    if (syncResult.missingInHtml.length > 0) {
+      allErrors.push(`Переменные отсутствуют в HTML: ${syncResult.missingInHtml.join(', ')}`);
+    }
+  }
+  
+  const jsonStructResult = validateJsonStructure(json);
+  allErrors.push(...jsonStructResult.errors);
+  
+  const dynamicBlocksResult = validateDynamicBlocks(html, json);
+  allErrors.push(...dynamicBlocksResult.errors);
+  
+  const roleParamsResult = validateRoleParameters(json);
+  allErrors.push(...roleParamsResult.errors);
+  
+  return {
+    isValid: allErrors.length === 0,
+    errors: allErrors
+  };
 }
