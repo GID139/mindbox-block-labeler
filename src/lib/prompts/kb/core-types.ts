@@ -73,6 +73,12 @@ export const CORE_TYPES_KB = `## Core Control Types
 - Image: { "type": "image", "url": "...", "color": "#39AA5D", "mode": "cover" }
 - Modes: "contain", "cover", "repeat", "stretch"
 
+**CRITICAL: HTML Usage**
+- NEVER use \`\${editor.variableName}\` directly (outputs "[object Object]")
+- ALWAYS use \`.background\` method: \`\${editor.variableName.background}\`
+- This method converts the BACKGROUND object to valid CSS string
+- Example: \`style="\${editor.containerBackground.background};"\`
+
 ### TEXT_STYLES & SIMPLE_TEXT_STYLES
 Required fields:
 - font: One of allowed fonts (Arial, Helvetica, Roboto, Open Sans, Montserrat, Inter, Geneva, Times New Roman, Verdana, Courier / Courier New, Tahoma, Georgia, Palatino, Trebuchet MS)

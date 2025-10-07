@@ -11,6 +11,7 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 - [ ] Centering uses correct method (align="center" + inner table)
 - [ ] Variables follow naming rules (no dashes, no Cyrillic)
 - [ ] All \${editor.*} variables use valid syntax
+- [ ] BACKGROUND variables use \`.background\` method (NOT direct \${editor.var})
 - [ ] @{if} / @{end if} constructs properly formed
 - [ ] @{if} blocks contain HTML tag as direct child (not @{for} or @{set})
 - [ ] Required attributes present (alt on images, href on links)
@@ -64,6 +65,10 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 - ❌ Missing ghost tables → ✅ Add Outlook wrappers
 - ❌ Div-based centering → ✅ Use table-based centering
 - ❌ Missing alt on images → ✅ Add alt with variable
+
+**BACKGROUND Usage Errors:**
+- ❌ \`style="background: \${editor.containerBackground};"\` → ✅ \`style="\${editor.containerBackground.background};"\`
+- ❌ Direct BACKGROUND variable → ✅ Always use \`.background\` method
 
 **Conditional Block Errors:**
 - ❌ @{if} → @{for} without HTML wrapper → ✅ Add <table> or <div> wrapper

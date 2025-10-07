@@ -568,6 +568,53 @@ export function validateNoRoleNull(jsonText: string): {
 }
 
 /**
+ * Validates that BACKGROUND type variables use .background method in HTML
+ */
+export function validateBackgroundMethod(html: string, jsonText: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Extract all BACKGROUND type variables from JSON
+  const backgroundVars: string[] = [];
+  try {
+    const params = JSON.parse(jsonText);
+    if (Array.isArray(params)) {
+      params.forEach((param: any) => {
+        if (param.type === 'BACKGROUND') {
+          const varName = param.name || param.variable;
+          if (varName) backgroundVars.push(varName);
+        }
+      });
+    }
+  } catch (e) {
+    return { isValid: true, errors: [] }; // Skip if JSON invalid
+  }
+  
+  // Check each BACKGROUND variable usage in HTML
+  backgroundVars.forEach(varName => {
+    // Pattern: ${editor.varName} WITHOUT .background (but not followed by .background)
+    const directPattern = new RegExp(`\\$\\{editor\\.${varName}\\}(?!\\.background)`, 'g');
+    const matches = html.match(directPattern);
+    
+    if (matches && matches.length > 0) {
+      const context = html.substring(html.indexOf(matches[0]) - 30, html.indexOf(matches[0]) + 50);
+      errors.push(
+        `❌ BACKGROUND variable used directly (outputs "[object Object]"): \${editor.${varName}}\n` +
+        `   Context: ...${context}...\n` +
+        `   Fix: Use .background method → \${editor.${varName}.background}`
+      );
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Comprehensive validation that runs all checks
  */
 export function validateAll(html: string, json: string): {
@@ -630,6 +677,10 @@ export function validateAll(html: string, json: string): {
   // Validate no "role": null
   const roleNullValidation = validateNoRoleNull(json);
   allErrors.push(...roleNullValidation.errors);
+
+  // Validate BACKGROUND method usage
+  const backgroundMethodValidation = validateBackgroundMethod(html, json);
+  allErrors.push(...backgroundMethodValidation.errors);
   
   return {
     isValid: allErrors.length === 0,

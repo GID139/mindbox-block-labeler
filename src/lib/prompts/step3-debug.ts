@@ -108,6 +108,7 @@ Final check against all mandatory rules:
 - [ ] **CRITICAL**: No "role": null in JSON (omit field entirely if not needed)
 - [ ] **CRITICAL**: Groups max 2 levels ("Settings >> Section", NOT 3+ levels)
 - [ ] **CRITICAL**: No 3-dot notation in HTML variables
+- [ ] **CRITICAL**: BACKGROUND variables use \`.background\` method (NOT direct usage)
 
 ## CORRECTION STRATEGY
 
@@ -122,6 +123,7 @@ Final check against all mandatory rules:
 - **Wrong SIZE format**: Change to "manual [percent] [max_px]"
 - **Nested color access**: Flatten variables (e.g., background.color → backgroundColor)
 - **Deep group hierarchies**: Simplify to max 2 levels
+- **Direct BACKGROUND usage**: Replace \${editor.varName} with \${editor.varName.background}
 
 ### Priority 2: Standard Compliance (Fix Unless Quick Mode)
 - Missing ghost tables

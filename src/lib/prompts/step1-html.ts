@@ -130,6 +130,7 @@ Verify:
 - [ ] Text in @{if} blocks has font-size and line-height
 - [ ] **CRITICAL**: Variable names avoid 3-dot notation (SIZE → use *Width, HEIGHTV2 → use *Height)
 - [ ] **CRITICAL**: No nested property access (use \${editor.backgroundColor} NOT \${editor.background.color})
+- [ ] **CRITICAL**: BACKGROUND variables use \`.background\` method (e.g., \\\${editor.containerBackground.background})
 
 ### Phase 5: Goal Alignment
 Review the USER'S ORIGINAL GOAL and verify the HTML actually implements what was requested.

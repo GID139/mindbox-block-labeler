@@ -250,7 +250,7 @@ For multi-column product layouts, use \`Tablerows(collection, columns)\` instead
 **✅ CORRECT (1-2 dots):**
 \`\`\`html
 <table width="\${editor.containerWidth.formattedWidthAttribute}">
-<div style="background: \${editor.containerBackground};">
+<div style="\${editor.containerBackground.background};">
 \`\`\`
 
 **How to fix violations:**
@@ -266,4 +266,31 @@ For multi-column product layouts, use \`Tablerows(collection, columns)\` instead
 2. For SIZE types: rename base variable to end with \`Width\` (e.g., \`blockSize\` → \`blockWidth\`)
 3. For HEIGHTV2: rename to end with \`Height\` (e.g., \`blockSize\` → \`blockHeight\`)
 4. For BACKGROUND/COLOR: use flat naming without nested properties
-5. Update JSON to match new variable names`;
+5. Update JSON to match new variable names
+
+### Rule 15: BACKGROUND Type Usage (CRITICAL)
+
+**Problem:** BACKGROUND is a complex object. Direct usage outputs "[object Object]".
+
+**❌ FORBIDDEN:**
+\`\`\`html
+<td style="background: \${editor.containerBackground};">
+  <!-- Outputs: style="background: [object Object];" -->
+</td>
+\`\`\`
+
+**✅ CORRECT:**
+\`\`\`html
+<td style="\${editor.containerBackground.background};">
+  <!-- Outputs: style="background-color: #39AA5D;" or "background-image: url(...);" -->
+</td>
+\`\`\`
+
+**Why \`.background\` method?**
+- Converts BACKGROUND object to valid CSS string
+- Handles color, image, transparent types automatically
+- Supports all modes: cover, contain, repeat, stretch
+
+**Variable naming for BACKGROUND type:**
+- Use flat names ending with \`*Background\` (e.g., \`containerBackground\`, \`headerBackground\`)
+- This creates 2 dots max: \`\${editor.containerBackground.background}\` ✅`;
