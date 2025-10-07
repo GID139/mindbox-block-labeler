@@ -314,6 +314,119 @@ export function validateJsonStructure(jsonText: string): {
 }
 
 /**
+ * Validates that variables don't exceed 2-dot notation (editor.variable.method)
+ */
+export function validateDotNotation(html: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Find all ${editor.*} variables
+  const variablePattern = /\$\{editor\.([^}]+)\}/g;
+  let match;
+  
+  while ((match = variablePattern.exec(html)) !== null) {
+    const fullPath = match[1]; // e.g., "containerSize.formattedWidthAttribute"
+    const dotCount = (fullPath.match(/\./g) || []).length;
+    
+    if (dotCount >= 2) {
+      const basePath = fullPath.split('.')[0];
+      let suggestion = '';
+      
+      // Provide type-specific suggestions
+      if (fullPath.includes('formattedWidthAttribute')) {
+        suggestion = `Rename '${basePath}' to '${basePath.replace(/Size$/, 'Width')}' in JSON`;
+      } else if (fullPath.includes('formattedHeight')) {
+        suggestion = `Rename '${basePath}' to '${basePath.replace(/Size$/, 'Height')}' in JSON`;
+      } else if (fullPath.includes('.color')) {
+        suggestion = `Use flat naming (e.g., '${basePath}Color' instead of '${basePath}.color')`;
+      }
+      
+      errors.push(
+        `❌ Variable has ${dotCount + 1} dots (max 2 allowed): \${editor.${fullPath}}\n` +
+        `   Context: ${match[0]}\n` +
+        `   Fix: ${suggestion}`
+      );
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates that <tr> elements are inside <table> tags
+ */
+export function validateTableStructure(html: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Remove content inside <table>...</table> to check for orphaned <tr>
+  const htmlWithoutTables = html.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+  
+  // Now check if there are any <tr> tags left
+  const orphanedTrPattern = /<tr[\s>]/gi;
+  let match;
+  
+  while ((match = orphanedTrPattern.exec(htmlWithoutTables)) !== null) {
+    const context = htmlWithoutTables.substring(Math.max(0, match.index - 50), match.index + 100);
+    errors.push(
+      `❌ Found <tr> element outside of <table>\n` +
+      `   Context: ...${context}...`
+    );
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates SIZE parameter format in JSON
+ */
+export function validateSizeFormat(jsonText: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  try {
+    const params = JSON.parse(jsonText);
+    if (!Array.isArray(params)) return { isValid: true, errors: [] };
+    
+    params.forEach((param: any, index: number) => {
+      if (param.type === 'SIZE' && param.defaultValue) {
+        const value = param.defaultValue;
+        
+        // Check if it matches the correct format: "manual [percent] [max_width_px]"
+        const validFormat = /^manual\s+\d+\s+\d+$/;
+        
+        if (!validFormat.test(value)) {
+          errors.push(
+            `❌ Parameter "${param.name || param.variable}" (index ${index}) has invalid SIZE format\n` +
+            `   Current: "${value}"\n` +
+            `   Expected: "manual [percent] [max_width_px]" (e.g., "manual 100 600")`
+          );
+        }
+      }
+    });
+  } catch (e) {
+    // JSON parsing errors are handled by validateJsonStructure
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Comprehensive validation that runs all checks
  */
 export function validateAll(html: string, json: string): {
@@ -348,6 +461,18 @@ export function validateAll(html: string, json: string): {
   // Validate conditional block structure
   const conditionalValidation = validateConditionalBlocks(html);
   allErrors.push(...conditionalValidation.errors);
+
+  // Validate dot notation (max 2 dots)
+  const dotNotationValidation = validateDotNotation(html);
+  allErrors.push(...dotNotationValidation.errors);
+
+  // Validate table structure (<tr> inside <table>)
+  const tableValidation = validateTableStructure(html);
+  allErrors.push(...tableValidation.errors);
+
+  // Validate SIZE format
+  const sizeValidation = validateSizeFormat(json);
+  allErrors.push(...sizeValidation.errors);
   
   return {
     isValid: allErrors.length === 0,

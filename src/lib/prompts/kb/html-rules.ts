@@ -193,4 +193,77 @@ You CANNOT place template directives (\`@{for}\`, \`@{set}\`, \`@{include}\`) or
 3. Create appropriate HTML wrapper:
    - For \`<tr>\` elements → wrap in \`<table><tbody>...</tbody></table>\`
    - For \`<div>\` or \`<td>\` → wrap in \`<div>...</div>\`
-4. Move the directive inside the wrapper`;
+4. Move the directive inside the wrapper
+
+### Rule 12: Table Row Elements Must Be Inside Tables
+
+**Problem:** \`<tr>\` elements outside \`<table>\` cause rendering failures.
+
+**❌ FORBIDDEN:**
+\`\`\`html
+<tr>
+  <td>Content</td>
+</tr>
+\`\`\`
+
+**✅ CORRECT:**
+\`\`\`html
+<table>
+  <tr>
+    <td>Content</td>
+  </tr>
+</table>
+\`\`\`
+
+### Rule 13: Use Tablerows() for Dynamic Product Grids
+
+For multi-column product layouts, use \`Tablerows(collection, columns)\` instead of simple loops:
+
+**❌ AVOID (simple loop):**
+\`\`\`html
+@{for product in editor.products}
+  <td>\${product.name}</td>
+@{end for}
+\`\`\`
+
+**✅ CORRECT (grid layout):**
+\`\`\`html
+@{for row in Tablerows(editor.products, 3)}
+  <tr>
+    @{for product in row}
+      <td>\${product.name}</td>
+    @{end for}
+  </tr>
+@{end for}
+\`\`\`
+
+### Rule 14: Maximum 2 Dots in Variable Paths (CRITICAL)
+
+**Problem:** Mindbox API enforces maximum 2 dots: \`\${editor.variableName.method}\`
+
+**❌ FORBIDDEN (3+ dots):**
+\`\`\`html
+<table width="\${editor.containerSize.formattedWidthAttribute}">
+<div style="background: \${editor.container.background.color};">
+\`\`\`
+
+**✅ CORRECT (1-2 dots):**
+\`\`\`html
+<table width="\${editor.containerWidth.formattedWidthAttribute}">
+<div style="background: \${editor.containerBackground};">
+\`\`\`
+
+**How to fix violations:**
+1. Identify variable type (SIZE, COLOR, HEIGHTV2, BACKGROUND)
+2. Flatten the variable name:
+   - \`containerSize.formattedWidthAttribute\` → \`containerWidth.formattedWidthAttribute\`
+   - \`background.color\` → \`backgroundColor\`
+   - \`buttonSize.formattedWidthAttribute\` → \`buttonWidth.formattedWidthAttribute\`
+3. Update corresponding JSON parameter name
+
+**Auto-correction algorithm:**
+1. Find all \`\${editor.*}\` with 3+ dots
+2. For SIZE types: rename base variable to end with \`Width\` (e.g., \`blockSize\` → \`blockWidth\`)
+3. For HEIGHTV2: rename to end with \`Height\` (e.g., \`blockSize\` → \`blockHeight\`)
+4. For BACKGROUND/COLOR: use flat naming without nested properties
+5. Update JSON to match new variable names`;

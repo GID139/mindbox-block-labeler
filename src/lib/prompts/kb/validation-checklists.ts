@@ -20,19 +20,25 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 - [ ] Valid JSON syntax (no trailing commas)
 - [ ] All types are valid Mindbox types
 - [ ] DISPLAY_TOGGLE values are strings, not booleans
-- [ ] SIZE has "manual 100 *" or equivalent
+- [ ] SIZE has "manual [percent] [max_width_px]" format (e.g., "manual 100 600")
 - [ ] BACKGROUND has correct structure
 - [ ] TEXT_STYLES has fallbackFont field
 - [ ] All fonts from allowed list
 - [ ] All lineHeights are "1.0", "1.15", "1.5", or "2.0"
 - [ ] Every object has "group" field
 - [ ] Every object has "extra.label" field
-- [ ] Groups use nested structure ("Settings >> Subsection")
+- [ ] Groups use nested structure max 2 levels ("Settings >> Subsection", NOT 3 levels)
 - [ ] Labels are user-friendly (not technical variable names)
 - [ ] Complex objects have all required nested fields
 - [ ] BUTTON_SIZE width type is "pixels" or "percent"
 - [ ] BACKGROUND mode is from allowed list
 - [ ] No unused variables
+- [ ] Variable names don't create 3+ dot notation when used in HTML
+- [ ] SIZE types use \`*Width\` suffix (not \`*Size\`)
+- [ ] HEIGHTV2 types use \`*Height\` suffix
+- [ ] BUTTON_SIZE types use \`*ButtonWidth\` / \`*ButtonHeight\`
+- [ ] BACKGROUND/COLOR types are flat (no nested \`.color\` access)
+- [ ] No "role": null (omit field if not needed)
 
 ### Synchronization Validation Checklist
 - [ ] Every HTML variable has JSON object
@@ -48,9 +54,10 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 
 **Type Errors:**
 - ❌ DISPLAY_TOGGLE with boolean defaultValue → ✅ Must be string "true" or "false"
-- ❌ SIZE without "manual 100 *" → ✅ Must use mandatory default
+- ❌ SIZE without "manual [percent] [max_px]" → ✅ Must be "manual 100 600" format
 - ❌ BACKGROUND without correct structure → ✅ Must be { "type": "color", "color": "#39AA5D" }
 - ❌ TEXT_STYLES without "fallbackFont" → ✅ Must include "fallbackFont": "Helvetica"
+- ❌ "role": null in JSON → ✅ Omit "role" field entirely
 
 **Structure Errors:**
 - ❌ Missing EDITOR_BLOCK_TEMPLATE → ✅ Add block header
@@ -65,4 +72,14 @@ export const VALIDATION_CHECKLISTS = `## Validation Checklists
 **Variable Errors:**
 - ❌ Variable with dashes (my-var) → ✅ Use camelCase (myVar)
 - ❌ Cyrillic variable names → ✅ Use Latin letters only
-- ❌ Unused variables in JSON → ✅ Remove or verify usage`;
+- ❌ Unused variables in JSON → ✅ Remove or verify usage
+
+**3-Dot Notation Errors (CRITICAL):**
+- ❌ \`containerSize\` (type SIZE) → ✅ Rename to \`containerWidth\`
+- ❌ \`buttonSize.formattedWidthAttribute\` → ✅ Rename to \`buttonWidth.formattedWidthAttribute\`
+- ❌ \`background.color\` access → ✅ Use flat \`backgroundColor\` variable
+- ❌ \`blockSize\` (type HEIGHTV2) → ✅ Rename to \`blockHeight\`
+
+**Group Hierarchy Errors:**
+- ❌ "Settings >> Section >> Subsection >> Item" (4 levels) → ✅ "Settings >> Section" (max 2 levels)
+- ❌ "Settings >> Header >> Logo >> Image" (4 levels) → ✅ "Settings >> Header Logo" (2 levels)`;
