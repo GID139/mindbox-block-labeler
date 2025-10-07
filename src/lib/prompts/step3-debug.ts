@@ -98,13 +98,16 @@ Review the USER'S ORIGINAL GOAL and verify:
 
 ### Stage 6: Standards Compliance
 Final check against all mandatory rules:
-- [ ] All DISPLAY_TOGGLE values are strings
-- [ ] All SIZE controls use "manual X *" format
+- [ ] All DISPLAY_TOGGLE values are strings ("true" or "false", NOT booleans)
+- [ ] All SIZE controls use "manual [percent] [max_px]" format (e.g., "manual 100 600")
 - [ ] All TEXT_STYLES include fallbackFont
 - [ ] All BACKGROUND objects have correct structure
 - [ ] All fonts from allowed list
 - [ ] All line heights from allowed values
 - [ ] No Cyrillic or dashes in variable names
+- [ ] **CRITICAL**: No "role": null in JSON (omit field entirely if not needed)
+- [ ] **CRITICAL**: Groups max 2 levels ("Settings >> Section", NOT 3+ levels)
+- [ ] **CRITICAL**: No 3-dot notation in HTML variables
 
 ## CORRECTION STRATEGY
 
@@ -114,6 +117,11 @@ Final check against all mandatory rules:
 - Type mismatches
 - Synchronization failures
 - Invalid variable names
+- **3-dot notation violations**: Rename variables (e.g., containerSize → containerWidth)
+- **"role": null in JSON**: Remove "role" field entirely
+- **Wrong SIZE format**: Change to "manual [percent] [max_px]"
+- **Nested color access**: Flatten variables (e.g., background.color → backgroundColor)
+- **Deep group hierarchies**: Simplify to max 2 levels
 
 ### Priority 2: Standard Compliance (Fix Unless Quick Mode)
 - Missing ghost tables

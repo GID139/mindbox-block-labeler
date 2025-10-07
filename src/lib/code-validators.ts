@@ -427,6 +427,147 @@ export function validateSizeFormat(jsonText: string): {
 }
 
 /**
+ * Validates that color/background properties are not accessed with nested notation
+ */
+export function validateNestedColorAccess(html: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Find nested color access patterns like ${editor.background.color}
+  const nestedColorPattern = /\$\{editor\.(\w+)\.(background|color)\.(\w+)\}/g;
+  let match;
+  
+  while ((match = nestedColorPattern.exec(html)) !== null) {
+    errors.push(
+      `❌ Nested color access detected: ${match[0]}\n` +
+      `   Fix: Use flat variable (e.g., \${editor.${match[1]}${match[2].charAt(0).toUpperCase() + match[2].slice(1)}})`
+    );
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates that JSON groups don't exceed 2 levels
+ */
+export function validateGroupHierarchy(jsonText: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  try {
+    const params = JSON.parse(jsonText);
+    if (!Array.isArray(params)) return { isValid: true, errors: [] };
+    
+    for (const param of params) {
+      if (param.group) {
+        const levels = param.group.split('>>').length;
+        if (levels > 2) {
+          errors.push(
+            `❌ Parameter "${param.name || param.variable}" has ${levels} group levels: "${param.group}"\n` +
+            `   Max allowed: 2 levels (e.g., "Settings >> Section")`
+          );
+        }
+      }
+    }
+  } catch (e) {
+    // JSON parsing error - will be caught by other validators
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates that variable names match their type suffixes
+ */
+export function validateVariableSuffixes(jsonText: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  try {
+    const params = JSON.parse(jsonText);
+    if (!Array.isArray(params)) return { isValid: true, errors: [] };
+    
+    for (const param of params) {
+      const name = param.name || param.variable;
+      const type = param.type;
+      
+      if (!name) continue;
+      
+      if (type === 'SIZE' && !name.toLowerCase().includes('width')) {
+        errors.push(
+          `❌ Parameter "${name}" has type SIZE but doesn't contain "Width" in name\n` +
+          `   Recommendation: Rename to "${name.replace(/size$/i, 'Width')}"`
+        );
+      }
+      
+      if (type === 'HEIGHTV2' && !name.toLowerCase().includes('height')) {
+        errors.push(
+          `❌ Parameter "${name}" has type HEIGHTV2 but doesn't contain "Height" in name\n` +
+          `   Recommendation: Rename to "${name.replace(/size$/i, 'Height')}"`
+        );
+      }
+      
+      if (type === 'BUTTON_SIZE' && !(name.toLowerCase().includes('buttonwidth') || name.toLowerCase().includes('buttonheight'))) {
+        errors.push(
+          `❌ Parameter "${name}" has type BUTTON_SIZE but doesn't contain "ButtonWidth" or "ButtonHeight"\n` +
+          `   Recommendation: Use ButtonWidth or ButtonHeight suffix`
+        );
+      }
+    }
+  } catch (e) {
+    // JSON parsing error - will be caught by other validators
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates that no parameters have "role": null
+ */
+export function validateNoRoleNull(jsonText: string): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  try {
+    const params = JSON.parse(jsonText);
+    if (!Array.isArray(params)) return { isValid: true, errors: [] };
+    
+    for (const param of params) {
+      if ('role' in param && param.role === null) {
+        errors.push(
+          `❌ Parameter "${param.name || param.variable}" contains "role": null\n` +
+          `   Fix: Remove "role" field entirely if not needed`
+        );
+      }
+    }
+  } catch (e) {
+    // JSON parsing error - will be caught by other validators
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Comprehensive validation that runs all checks
  */
 export function validateAll(html: string, json: string): {
@@ -473,6 +614,22 @@ export function validateAll(html: string, json: string): {
   // Validate SIZE format
   const sizeValidation = validateSizeFormat(json);
   allErrors.push(...sizeValidation.errors);
+
+  // Validate nested color access
+  const nestedColorValidation = validateNestedColorAccess(html);
+  allErrors.push(...nestedColorValidation.errors);
+
+  // Validate JSON group hierarchy
+  const groupHierarchyValidation = validateGroupHierarchy(json);
+  allErrors.push(...groupHierarchyValidation.errors);
+
+  // Validate variable name suffixes match types
+  const suffixValidation = validateVariableSuffixes(json);
+  allErrors.push(...suffixValidation.errors);
+
+  // Validate no "role": null
+  const roleNullValidation = validateNoRoleNull(json);
+  allErrors.push(...roleNullValidation.errors);
   
   return {
     isValid: allErrors.length === 0,

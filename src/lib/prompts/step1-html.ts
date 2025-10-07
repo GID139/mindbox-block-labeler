@@ -102,6 +102,8 @@ Check for:
 - [ ] Malformed @{if} / @{end if} constructs
 - [ ] @{if} blocks contain HTML tag as direct child (not directives like @{for})
 - [ ] Missing required attributes (alt on images, href on links)
+- [ ] **CRITICAL**: <tr> elements ONLY inside <table> tags
+- [ ] **CRITICAL**: No variables with 3+ dots (e.g., \${editor.containerSize.formattedWidthAttribute})
 
 ### Phase 2: Structure Validation
 Verify each block has:
@@ -109,6 +111,7 @@ Verify each block has:
 - [ ] Ghost table wrappers for Outlook compatibility
 - [ ] Table-based layout (not divs)
 - [ ] Proper centering method (align="center" on parent <td>)
+- [ ] For dynamic grids: Use Tablerows(editor.collection, columnsNumber) instead of simple @{for} loops
 
 ### Phase 3: Variable Completeness
 For each logical element, verify presence of:
@@ -125,6 +128,8 @@ Verify:
 - [ ] Variable names follow conventions (no dashes, no Cyrillic)
 - [ ] SIZE variables use formattedWidthAttribute/formattedWidthStyle
 - [ ] Text in @{if} blocks has font-size and line-height
+- [ ] **CRITICAL**: Variable names avoid 3-dot notation (SIZE → use *Width, HEIGHTV2 → use *Height)
+- [ ] **CRITICAL**: No nested property access (use \${editor.backgroundColor} NOT \${editor.background.color})
 
 ### Phase 5: Goal Alignment
 Review the USER'S ORIGINAL GOAL and verify the HTML actually implements what was requested.
