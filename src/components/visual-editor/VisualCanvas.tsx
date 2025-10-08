@@ -1,10 +1,12 @@
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { BlockInstance } from '@/types/visual-editor';
+import { BlockInstance, BlockType } from '@/types/visual-editor';
 import Moveable from 'react-moveable';
 import { useRef, useState, useEffect } from 'react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDroppable } from '@dnd-kit/core';
+import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
+import { toast } from 'sonner';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -173,7 +175,17 @@ function VisualBlock({ block }: VisualBlockProps) {
 }
 
 export function VisualCanvas() {
-  const { blocks, showGrid, gridSize, zoom, deviceMode } = useVisualEditorStore();
+  const { 
+    blocks, 
+    showGrid, 
+    gridSize, 
+    zoom, 
+    deviceMode, 
+    drawingTool, 
+    addBlock, 
+    updateVisualLayout,
+    setDrawingTool,
+  } = useVisualEditorStore();
   
   const { setNodeRef, isOver } = useDroppable({
     id: 'visual-canvas-root',
@@ -188,6 +200,48 @@ export function VisualCanvas() {
     desktop: 600,
   };
 
+  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only create blocks when clicking on the canvas itself, not on blocks
+    if (e.target !== e.currentTarget) return;
+    
+    if (drawingTool !== 'select') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / (zoom / 100);
+      const y = (e.clientY - rect.top) / (zoom / 100);
+      
+      const existingNames = getAllBlockNames(blocks);
+      const newBlockName = generateBlockName(drawingTool.toUpperCase() as BlockType, existingNames);
+      const template = getTemplate(drawingTool.toUpperCase() as BlockType);
+      
+      const newBlock: BlockInstance = {
+        id: `${drawingTool}-${Date.now()}`,
+        type: drawingTool.toUpperCase() as BlockType,
+        name: newBlockName,
+        settings: { ...template.defaultSettings },
+        children: [],
+        canContainChildren: template.canContainChildren,
+        maxNestingLevel: template.maxNestingLevel,
+      };
+      
+      addBlock(newBlock);
+      
+      // Set layout for visual mode
+      const defaultSize = drawingTool === 'rectangle' ? { width: 200, height: 150 } :
+                         drawingTool === 'circle' ? { width: 150, height: 150 } :
+                         { width: 200, height: 2 };
+      
+      updateVisualLayout(newBlock.id, {
+        x: Math.max(0, x - defaultSize.width / 2),
+        y: Math.max(0, y - defaultSize.height / 2),
+        ...defaultSize,
+        zIndex: 0,
+      });
+      
+      toast.success(`${template.name} created`);
+      setDrawingTool('select');
+    }
+  };
+
   const renderBlocks = (blocks: BlockInstance[]): JSX.Element[] => {
     return blocks.flatMap(block => [
       <VisualBlock key={block.id} block={block} />,
@@ -199,9 +253,10 @@ export function VisualCanvas() {
     <div className="flex justify-center items-start p-8 bg-muted/20 min-h-full">
       <div 
         ref={setNodeRef}
+        onClick={handleCanvasClick}
         className={`relative bg-white shadow-lg transition-all ${
           isOver ? 'ring-4 ring-primary/30' : ''
-        }`}
+        } ${drawingTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
         style={{
           width: `${deviceWidths[deviceMode]}px`,
           minHeight: '800px',

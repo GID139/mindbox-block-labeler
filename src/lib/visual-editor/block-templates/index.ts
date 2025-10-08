@@ -5,6 +5,9 @@ import { imageTemplate } from './image';
 import { containerTemplate } from './container';
 import { tableTemplate } from './table';
 import { spacerTemplate } from './spacer';
+import { rectangleTemplate } from './rectangle';
+import { circleTemplate } from './circle';
+import { lineTemplate } from './line';
 
 export const blockTemplates: BlockTemplate[] = [
   textTemplate,
@@ -14,6 +17,9 @@ export const blockTemplates: BlockTemplate[] = [
   containerTemplate,
   tableTemplate,
   spacerTemplate,
+  rectangleTemplate,
+  circleTemplate,
+  lineTemplate,
 ];
 
 export const getTemplate = (type: BlockType): BlockTemplate => {

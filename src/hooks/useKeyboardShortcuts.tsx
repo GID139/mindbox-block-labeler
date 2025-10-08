@@ -9,10 +9,36 @@ export function useKeyboardShortcuts() {
     redo,
     duplicateBlock,
     saveProject,
+    setDrawingTool,
+    canvasMode,
   } = useVisualEditorStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Tool shortcuts (only in visual mode)
+      if (canvasMode === 'visual' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        if (e.key === 'v' || e.key === 'V') {
+          e.preventDefault();
+          setDrawingTool('select');
+          return;
+        }
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          setDrawingTool('rectangle');
+          return;
+        }
+        if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          setDrawingTool('circle');
+          return;
+        }
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          setDrawingTool('line');
+          return;
+        }
+      }
+
       // Delete
       if (e.key === 'Delete' && selectedBlockIds.length > 0) {
         e.preventDefault();
@@ -46,5 +72,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode]);
 }

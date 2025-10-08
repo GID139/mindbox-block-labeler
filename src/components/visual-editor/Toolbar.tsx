@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy } from 'lucide-react';
+import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
@@ -39,6 +39,8 @@ export function Toolbar() {
     setShowOutline,
     canvasMode,
     blocks,
+    drawingTool,
+    setDrawingTool,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -151,6 +153,51 @@ export function Toolbar() {
         <div className="canvas-mode-toggle">
           <CanvasModeToggle />
         </div>
+
+        {/* Drawing Tools (Visual Mode Only) */}
+        {canvasMode === 'visual' && (
+          <>
+            <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+              <Button 
+                variant={drawingTool === 'select' ? 'default' : 'ghost'} 
+                size="icon" 
+                onClick={() => setDrawingTool('select')}
+                title="Select Tool (V)"
+                className="h-8 w-8"
+              >
+                <MousePointer className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={drawingTool === 'rectangle' ? 'default' : 'ghost'} 
+                size="icon" 
+                onClick={() => setDrawingTool('rectangle')}
+                title="Rectangle Tool (R)"
+                className="h-8 w-8"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={drawingTool === 'circle' ? 'default' : 'ghost'} 
+                size="icon" 
+                onClick={() => setDrawingTool('circle')}
+                title="Circle Tool (C)"
+                className="h-8 w-8"
+              >
+                <Circle className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={drawingTool === 'line' ? 'default' : 'ghost'} 
+                size="icon" 
+                onClick={() => setDrawingTool('line')}
+                title="Line Tool (L)"
+                className="h-8 w-8"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Visual Mode Controls */}
         {canvasMode === 'visual' && (

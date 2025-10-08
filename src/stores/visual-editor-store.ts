@@ -38,6 +38,7 @@ interface VisualEditorState {
   selectedBlockIds: string[];
   canvasMode: 'structure' | 'visual';
   visualLayout: VisualLayout;
+  drawingTool: 'select' | 'rectangle' | 'circle' | 'line';
   
   // Global styles
   globalStyles: GlobalStyles;
@@ -77,6 +78,7 @@ interface VisualEditorState {
   
   // Visual mode
   updateVisualLayout: (blockId: string, layout: Partial<VisualLayout[string]>) => void;
+  setDrawingTool: (tool: 'select' | 'rectangle' | 'circle' | 'line') => void;
   
   // UI controls
   setShowGrid: (show: boolean) => void;
@@ -208,6 +210,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     selectedBlockIds: [],
     canvasMode: 'structure',
     visualLayout: {},
+    drawingTool: 'select',
     globalStyles: {
       defaultFont: 'Arial',
       defaultFontSize: 14,
@@ -395,6 +398,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       });
     },
     
+    setDrawingTool: (tool) => set({ drawingTool: tool }),
     setShowGrid: (show) => set({ showGrid: show }),
     setGridSize: (size) => set({ gridSize: size }),
     setZoom: (zoom) => set({ zoom }),

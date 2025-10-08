@@ -1,4 +1,4 @@
-export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER';
+export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE';
 export type BlockCategory = 'BASIC' | 'LAYOUT' | 'CONTENT';
 
 export interface BlockInstance {
