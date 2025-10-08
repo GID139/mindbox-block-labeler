@@ -3,8 +3,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { validateBlockName } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
+import { ColorPickerInput } from './ColorPickerInput';
 
 function findBlockById(blocks: any[], id: string): any {
   for (const block of blocks) {
@@ -35,12 +37,77 @@ export function SettingsPanel() {
   };
 
   const renderSettingControl = (key: string, value: any) => {
-    // Basic text/number input
-    if (typeof value === 'string' || typeof value === 'number') {
+    const labelText = key.replace(/([A-Z])/g, ' $1').trim();
+    
+    // Boolean (Switch)
+    if (typeof value === 'boolean') {
+      return (
+        <div key={key} className="flex items-center justify-between">
+          <Label htmlFor={key} className="text-xs capitalize">
+            {labelText}
+          </Label>
+          <Switch
+            id={key}
+            checked={value}
+            onCheckedChange={(checked) => updateSetting(selectedBlockId, key, checked)}
+          />
+        </div>
+      );
+    }
+    
+    // Color (if key contains 'color' or 'Color')
+    if (typeof value === 'string' && (key.toLowerCase().includes('color') || value.match(/^#[0-9A-Fa-f]{6}$/))) {
+      return (
+        <ColorPickerInput
+          key={key}
+          label={labelText}
+          value={value}
+          onChange={(newValue) => updateSetting(selectedBlockId, key, newValue)}
+        />
+      );
+    }
+    
+    // Number input (if value is a number string or actual number)
+    if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)) && value !== '')) {
       return (
         <div key={key}>
           <Label htmlFor={key} className="text-xs capitalize">
-            {key.replace(/([A-Z])/g, ' $1').trim()}
+            {labelText}
+          </Label>
+          <Input
+            id={key}
+            type="number"
+            value={value}
+            onChange={(e) => updateSetting(selectedBlockId, key, e.target.value)}
+            className="mt-1"
+          />
+        </div>
+      );
+    }
+    
+    // Text input (default)
+    if (typeof value === 'string') {
+      // Textarea for longer text (if key is 'text' or value is long)
+      if (key === 'text' || value.length > 50) {
+        return (
+          <div key={key}>
+            <Label htmlFor={key} className="text-xs capitalize">
+              {labelText}
+            </Label>
+            <textarea
+              id={key}
+              value={value}
+              onChange={(e) => updateSetting(selectedBlockId, key, e.target.value)}
+              className="mt-1 w-full min-h-[60px] px-3 py-2 text-sm border border-input rounded-md bg-background"
+            />
+          </div>
+        );
+      }
+      
+      return (
+        <div key={key}>
+          <Label htmlFor={key} className="text-xs capitalize">
+            {labelText}
           </Label>
           <Input
             id={key}

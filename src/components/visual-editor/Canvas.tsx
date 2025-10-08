@@ -3,6 +3,7 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { CanvasBlock } from './CanvasBlock';
 import { Card } from '@/components/ui/card';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
+import { BreadcrumbNav } from './BreadcrumbNav';
 
 export function Canvas() {
   const { blocks, previewMode } = useVisualEditorStore();
@@ -39,6 +40,7 @@ export function Canvas() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      <BreadcrumbNav />
       <Card
         ref={setNodeRef}
         className={`min-h-[600px] bg-white p-4 transition-colors ${

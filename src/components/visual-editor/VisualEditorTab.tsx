@@ -88,6 +88,7 @@ export function VisualEditorTab() {
       const targetParentId = over.data.current?.parentId || null;
       const targetIndex = over.data.current?.index || 0;
       
+      // moveBlock already has validation inside
       moveBlock(active.id as string, targetParentId, targetIndex);
     }
   };
@@ -127,8 +128,11 @@ export function VisualEditorTab() {
       
       <DragOverlay>
         {activeBlock && (
-          <div className="opacity-50 bg-primary/10 border-2 border-primary rounded p-2">
-            {activeBlock.name}
+          <div className="opacity-75 bg-primary text-primary-foreground border-2 border-primary rounded-lg p-3 shadow-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{activeBlock.type === 'TEXT' ? '📝' : activeBlock.type === 'BUTTON' ? '🔘' : activeBlock.type === 'IMAGE' ? '📷' : activeBlock.type === 'CONTAINER' ? '🎨' : activeBlock.type === 'TABLE' ? '📊' : '📦'}</span>
+              <span className="font-medium">{activeBlock.name}</span>
+            </div>
           </div>
         )}
       </DragOverlay>

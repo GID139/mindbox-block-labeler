@@ -4,6 +4,7 @@ import { BlockInstance } from '@/types/visual-editor';
 import { Button } from '@/components/ui/button';
 import { Trash2, GripVertical } from 'lucide-react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
+import { useState, useRef, useEffect } from 'react';
 
 interface CanvasBlockProps {
   block: BlockInstance;
@@ -13,8 +14,10 @@ interface CanvasBlockProps {
 }
 
 export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockProps) {
-  const { selectedBlockId, selectBlock, removeBlock } = useVisualEditorStore();
+  const { selectedBlockId, selectBlock, removeBlock, updateSetting } = useVisualEditorStore();
   const isSelected = selectedBlockId === block.id;
+  const [isEditing, setIsEditing] = useState(false);
+  const editableRef = useRef<HTMLDivElement>(null);
   
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: block.id,
@@ -38,64 +41,152 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
 
   const template = getTemplate(block.type);
 
+  // Handle click to select block (always select the deepest child)
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    selectBlock(block.id);
+  };
+
+  // Handle double-click for inline editing
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (block.type === 'TEXT' || block.type === 'BUTTON') {
+      setIsEditing(true);
+    }
+  };
+
+  // Handle blur to save edited text
+  const handleBlur = () => {
+    if (editableRef.current) {
+      const newText = editableRef.current.innerText;
+      updateSetting(block.id, 'text', newText);
+    }
+    setIsEditing(false);
+  };
+
+  // Focus on editable element when editing starts
+  useEffect(() => {
+    if (isEditing && editableRef.current) {
+      editableRef.current.focus();
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(editableRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
+
+  // Generate HTML preview
+  const generatePreviewHTML = () => {
+    // For blocks with children, render them separately
+    if (block.children && block.children.length > 0 && block.type !== 'TEXT' && block.type !== 'BUTTON') {
+      return null; // Will render children as React components
+    }
+    return template.generateHTML(block);
+  };
+
+  const previewHTML = generatePreviewHTML();
+
   return (
     <div
       ref={setDropRef}
       className={`relative group ${isDragging ? 'opacity-50' : ''}`}
+      onClick={handleClick}
     >
       <div
         ref={setDragRef}
-        onClick={() => selectBlock(block.id)}
-        className={`border rounded p-3 transition-all cursor-pointer ${
+        className={`relative border rounded transition-all ${
           isSelected
-            ? 'border-primary bg-primary/5'
+            ? 'border-primary bg-primary/5 shadow-lg'
             : 'border-border hover:border-primary/50'
         } ${isOver && block.canContainChildren ? 'ring-2 ring-primary' : ''}`}
       >
-        <div className="flex items-center gap-2 mb-2">
-          <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-          
-          <span className="text-lg">{template.icon}</span>
-          
-          <div className="flex-1">
-            <div className="font-medium text-sm">{block.name}</div>
-            <div className="text-xs text-muted-foreground">{template.name}</div>
-          </div>
+        {/* Drag handle - always visible on hover */}
+        <div 
+          {...listeners} 
+          {...attributes} 
+          className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
+        >
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </div>
 
+        {/* Delete button - visible when selected */}
+        {isSelected && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant="destructive"
+            size="icon"
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md z-10"
             onClick={(e) => {
               e.stopPropagation();
               removeBlock(block.id);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
           </Button>
-        </div>
-
-        {/* Render children if any */}
-        {block.children && block.children.length > 0 && (
-          <div className="ml-6 mt-2 space-y-2 border-l-2 border-border pl-3">
-            {block.children.map((child, childIndex) => (
-              <CanvasBlock
-                key={child.id}
-                block={child}
-                index={childIndex}
-                parentId={block.id}
-                level={level + 1}
-              />
-            ))}
-          </div>
         )}
 
-        {/* Show drop zone indicator for containers */}
+        {/* Block label - small indicator */}
+        <div className="absolute -top-2 left-2 px-2 py-0.5 bg-background border border-border rounded text-xs font-medium z-10 flex items-center gap-1">
+          <span>{template.icon}</span>
+          <span className="text-muted-foreground">{block.name}</span>
+        </div>
+
+        {/* WYSIWYG Preview */}
+        <div className="p-4 pt-6" onDoubleClick={handleDoubleClick}>
+          {isEditing && (block.type === 'TEXT' || block.type === 'BUTTON') ? (
+            <div
+              ref={editableRef}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleBlur}
+              className="outline-none min-h-[1em]"
+              style={{
+                fontFamily: block.settings.font || 'Arial',
+                fontSize: `${block.settings.fontSize || 16}px`,
+                fontWeight: block.settings.fontWeight || 'normal',
+                color: block.type === 'BUTTON' ? block.settings.textColor : block.settings.color,
+                lineHeight: block.settings.lineHeight || '1.5',
+                textAlign: block.settings.align || 'left',
+              }}
+            >
+              {block.settings.text}
+            </div>
+          ) : previewHTML ? (
+            <div 
+              dangerouslySetInnerHTML={{ __html: previewHTML }}
+              className="pointer-events-none select-none"
+            />
+          ) : (
+            // Render children as React components for containers
+            <div className="space-y-2">
+              {block.children && block.children.length > 0 ? (
+                block.children.map((child, childIndex) => (
+                  <CanvasBlock
+                    key={child.id}
+                    block={child}
+                    index={childIndex}
+                    parentId={block.id}
+                    level={level + 1}
+                  />
+                ))
+              ) : (
+                block.canContainChildren && (
+                  <div className="text-center text-muted-foreground text-sm py-4">
+                    Drop blocks here
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Show drop zone indicator */}
         {isOver && block.canContainChildren && (
-          <div className="mt-2 p-2 border-2 border-dashed border-primary rounded bg-primary/5 text-center text-sm text-primary">
-            Drop here
+          <div className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 pointer-events-none flex items-center justify-center">
+            <span className="text-sm font-medium text-primary bg-background px-2 py-1 rounded">
+              Drop here
+            </span>
           </div>
         )}
       </div>

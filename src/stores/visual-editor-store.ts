@@ -150,6 +150,30 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => ({
     const draggedBlock = findBlockById(blocks, draggedId);
     if (!draggedBlock) return;
     
+    // Validate: Cannot move block into itself
+    if (draggedId === targetId) {
+      toast.error('Cannot move block into itself');
+      return;
+    }
+    
+    // Validate: Cannot move block into its descendant
+    const isDescendant = (possibleDescendantId: string | null): boolean => {
+      if (!possibleDescendantId) return false;
+      
+      const checkChildren = (children: BlockInstance[]): boolean => {
+        return children.some(child => 
+          child.id === possibleDescendantId || checkChildren(child.children)
+        );
+      };
+      
+      return checkChildren(draggedBlock.children);
+    };
+    
+    if (isDescendant(targetId)) {
+      toast.error('Cannot move block into its descendant');
+      return;
+    }
+    
     // Remove from old position
     let newBlocks = removeBlockFromTree(blocks, draggedId);
     // Add to new position
