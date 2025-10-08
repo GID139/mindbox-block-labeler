@@ -230,7 +230,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
               position="bottom"
               blockId={block.id}
               parentId={parentId}
-              index={index + 1}
+              index={index}
             />
             <DropZoneIndicator
               id={`${block.id}-drop-left`}
@@ -244,7 +244,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
               position="right"
               blockId={block.id}
               parentId={parentId}
-              index={index + 1}
+              index={index}
             />
           </>
         )}

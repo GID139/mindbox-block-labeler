@@ -12,6 +12,7 @@ function VisualBlock({ block }: VisualBlockProps) {
   const { visualLayout, updateVisualLayout, selectedBlockIds, selectBlock } = useVisualEditorStore();
   const targetRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedBlockIds.includes(block.id);
+  const [frame, setFrame] = useState({ translate: [0, 0], width: 0, height: 0 });
   
   const layout = visualLayout[block.id] || { 
     x: 0, 
@@ -32,12 +33,11 @@ function VisualBlock({ block }: VisualBlockProps) {
           e.stopPropagation();
           selectBlock(block.id);
         }}
-        className={`absolute cursor-pointer border-2 transition-all ${
+        className={`absolute cursor-pointer border-2 transition-all overflow-hidden ${
           isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
         }`}
         style={{
-          left: `${layout.x}px`,
-          top: `${layout.y}px`,
+          transform: `translate(${layout.x}px, ${layout.y}px)`,
           width: `${layout.width}px`,
           height: `${layout.height}px`,
           zIndex: layout.zIndex,
@@ -53,18 +53,36 @@ function VisualBlock({ block }: VisualBlockProps) {
           snappable
           snapThreshold={5}
           onDrag={({ translate }) => {
-            updateVisualLayout(block.id, {
-              x: translate[0],
-              y: translate[1],
-            });
+            setFrame({ ...frame, translate });
+            if (targetRef.current) {
+              targetRef.current.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
+            }
+          }}
+          onDragEnd={({ lastEvent }) => {
+            if (lastEvent) {
+              updateVisualLayout(block.id, {
+                x: lastEvent.translate[0],
+                y: lastEvent.translate[1],
+              });
+            }
           }}
           onResize={({ width, height, drag }) => {
-            updateVisualLayout(block.id, {
-              width,
-              height,
-              x: drag.translate[0],
-              y: drag.translate[1],
-            });
+            setFrame({ translate: drag.translate, width, height });
+            if (targetRef.current) {
+              targetRef.current.style.transform = `translate(${drag.translate[0]}px, ${drag.translate[1]}px)`;
+              targetRef.current.style.width = `${width}px`;
+              targetRef.current.style.height = `${height}px`;
+            }
+          }}
+          onResizeEnd={({ lastEvent }) => {
+            if (lastEvent) {
+              updateVisualLayout(block.id, {
+                width: lastEvent.width,
+                height: lastEvent.height,
+                x: lastEvent.drag.translate[0],
+                y: lastEvent.drag.translate[1],
+              });
+            }
           }}
         />
       )}

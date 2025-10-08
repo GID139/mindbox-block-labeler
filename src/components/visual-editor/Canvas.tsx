@@ -39,26 +39,6 @@ export function Canvas() {
     );
   }
 
-  // Visual mode - coming soon
-  if (canvasMode === 'visual') {
-    return (
-      <div className="w-full max-w-2xl mx-auto">
-        <Card className="min-h-[600px] bg-white p-8 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="text-6xl">🎨</div>
-            <h3 className="text-lg font-semibold">Visual Mode</h3>
-            <p className="text-muted-foreground text-sm max-w-md">
-              Drag and resize blocks freely like in Figma. This feature is coming soon!
-            </p>
-            <p className="text-xs text-muted-foreground">
-              For now, use Structure Mode to build your email templates.
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-2xl mx-auto">
       <BreadcrumbNav />

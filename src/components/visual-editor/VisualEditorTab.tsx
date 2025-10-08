@@ -90,14 +90,44 @@ export function VisualEditorTab() {
         if (over.data.current?.type === 'table-cell') {
           const { blockId, cellKey } = over.data.current;
           addBlockToTableCell(blockId, cellKey, newBlock);
+          toast.success(`Added ${template.name} to table cell`);
           return;
         }
 
-        // Determine parent and index for regular drop
-        const parentId = over.data.current?.parentId || null;
-        const index = over.data.current?.index;
+        // Handle drop zones (between blocks)
+        if (over.data.current?.type === 'drop-zone') {
+          const { parentId, index, position } = over.data.current;
+          let targetIndex = index;
+          
+          // Adjust index based on position
+          if (position === 'bottom' || position === 'right') {
+            targetIndex = index + 1;
+          }
+          
+          addBlock(newBlock, parentId || undefined, targetIndex);
+          toast.success(`Added ${template.name}`);
+          return;
+        }
 
-        addBlock(newBlock, parentId || undefined, index);
+        // Handle drop on container block
+        if (over.data.current?.type === 'canvas-drop') {
+          const { parentId, index } = over.data.current;
+          addBlock(newBlock, parentId || undefined, index);
+          toast.success(`Added ${template.name}`);
+          return;
+        }
+
+        // Handle canvas root drop
+        if (over.data.current?.type === 'canvas-root') {
+          const { index } = over.data.current;
+          addBlock(newBlock, undefined, index);
+          toast.success(`Added ${template.name}`);
+          return;
+        }
+
+        // Default: add to end of canvas
+        addBlock(newBlock);
+        toast.success(`Added ${template.name}`);
       }
     }
     
@@ -114,6 +144,33 @@ export function VisualEditorTab() {
           // For now, just show a toast - full implementation would need more complex logic
           toast.error('Moving existing blocks to table cells is not yet supported. Please create new blocks in cells.');
         }
+        return;
+      }
+
+      // Handle drop zones
+      if (over.data.current?.type === 'drop-zone') {
+        const { parentId, index, position } = over.data.current;
+        let targetIndex = index;
+        
+        if (position === 'bottom' || position === 'right') {
+          targetIndex = index + 1;
+        }
+        
+        moveBlock(active.id as string, parentId, targetIndex);
+        return;
+      }
+
+      // Handle drop on container block
+      if (over.data.current?.type === 'canvas-drop') {
+        const { parentId, index } = over.data.current;
+        moveBlock(active.id as string, parentId, index);
+        return;
+      }
+
+      // Handle canvas root
+      if (over.data.current?.type === 'canvas-root') {
+        const { index } = over.data.current;
+        moveBlock(active.id as string, null, index);
         return;
       }
 
