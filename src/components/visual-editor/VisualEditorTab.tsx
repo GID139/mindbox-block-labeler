@@ -8,6 +8,7 @@ import { VisualCanvas } from './VisualCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
 import { OutlineView } from './OutlineView';
+import { InteractiveTutorial } from './InteractiveTutorial';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
@@ -131,21 +132,23 @@ export function VisualEditorTab() {
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-full">
-        <Toolbar />
+        <div className="toolbar">
+          <Toolbar />
+        </div>
         
         <div className="flex flex-1 gap-4 overflow-hidden">
           {/* Left: Block Library */}
-          <div className="w-64 border-r border-border overflow-y-auto">
+          <div className="w-64 border-r border-border overflow-y-auto block-library">
             <BlockLibrary />
           </div>
           
           {/* Center: Canvas */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 canvas-container">
             {canvasMode === 'structure' ? <Canvas /> : <VisualCanvas />}
           </div>
           
           {/* Right: Settings Panel or Outline */}
-          <div className="w-80 border-l border-border overflow-y-auto">
+          <div className="w-80 border-l border-border overflow-y-auto settings-panel-container">
             {showOutline ? (
               <div className="p-4">
                 <OutlineView />
@@ -189,6 +192,7 @@ export function VisualEditorTab() {
       </DragOverlay>
       
       <QuickTips />
+      <InteractiveTutorial />
     </DndContext>
   );
 }

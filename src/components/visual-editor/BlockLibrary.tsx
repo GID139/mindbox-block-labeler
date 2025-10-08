@@ -1,7 +1,11 @@
 import { useDraggable } from '@dnd-kit/core';
 import { blockTemplates } from '@/lib/visual-editor/block-templates';
+import { tableTemplates } from '@/lib/visual-editor/table-templates';
 import { BlockTemplate } from '@/types/visual-editor';
 import { Card } from '@/components/ui/card';
+import { useVisualEditorStore } from '@/stores/visual-editor-store';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 function BlockCard({ template }: { template: BlockTemplate }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -35,9 +39,34 @@ function BlockCard({ template }: { template: BlockTemplate }) {
 }
 
 export function BlockLibrary() {
+  const { addBlock } = useVisualEditorStore();
   const basicBlocks = blockTemplates.filter(t => t.category === 'BASIC');
   const layoutBlocks = blockTemplates.filter(t => t.category === 'LAYOUT');
   const contentBlocks = blockTemplates.filter(t => t.category === 'CONTENT');
+
+  const handleAddTableTemplate = (templateKey: string) => {
+    const template = tableTemplates[templateKey];
+    if (!template) return;
+
+    const cells = template.getCells();
+    
+    const tableBlock = {
+      id: `block-${Date.now()}`,
+      type: 'TABLE' as const,
+      name: `table_${templateKey}`,
+      settings: {
+        rows: template.rows,
+        cols: template.cols,
+        cells,
+      },
+      children: [],
+      canContainChildren: false,
+      maxNestingLevel: 0,
+    };
+
+    addBlock(tableBlock);
+    toast.success(`Added ${template.name}`);
+  };
 
   return (
     <div className="p-4 space-y-6">
@@ -77,6 +106,30 @@ export function BlockLibrary() {
           </div>
         </div>
       )}
+
+      <Separator className="my-4" />
+
+      <div>
+        <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+          Table Templates
+        </h3>
+        <div className="space-y-2">
+          {Object.entries(tableTemplates).map(([key, template]) => (
+            <Card
+              key={key}
+              className="p-3 cursor-pointer hover:border-primary transition-colors"
+              onClick={() => handleAddTableTemplate(key)}
+            >
+              <div>
+                <div className="font-medium text-sm">{template.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {template.description}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,12 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List } from 'lucide-react';
+import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { GlobalStylesDialog } from './GlobalStylesDialog';
+import { generateHTML } from '@/lib/visual-editor/code-generator';
 
 export function Toolbar() {
   const {
@@ -37,6 +38,7 @@ export function Toolbar() {
     showOutline,
     setShowOutline,
     canvasMode,
+    blocks,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -81,6 +83,15 @@ export function Toolbar() {
     if (minutes === 0) return 'Just now';
     if (minutes === 1) return '1 min ago';
     return `${minutes} mins ago`;
+  };
+
+  const handleCopyCode = () => {
+    const html = generateHTML(blocks);
+    const json = JSON.stringify(blocks, null, 2);
+    const code = `<!-- HTML -->\n${html}\n\n<!-- JSON -->\n${json}`;
+    
+    navigator.clipboard.writeText(code);
+    toast.success('Code copied to clipboard!');
   };
 
   return (
@@ -137,7 +148,9 @@ export function Toolbar() {
         <div className="h-6 w-px bg-border" />
 
         {/* Canvas Mode Toggle */}
-        <CanvasModeToggle />
+        <div className="canvas-mode-toggle">
+          <CanvasModeToggle />
+        </div>
 
         {/* Visual Mode Controls */}
         {canvasMode === 'visual' && (
@@ -190,10 +203,16 @@ export function Toolbar() {
           Preview
         </Button>
 
+        {/* Copy Code */}
+        <Button variant="outline" size="sm" onClick={handleCopyCode}>
+          <Copy className="h-4 w-4 mr-1" />
+          Copy Code
+        </Button>
+
         {/* Generate Code */}
         <Button variant="outline" size="sm" onClick={() => setShowCodeModal(true)}>
           <Code className="h-4 w-4 mr-1" />
-          Code
+          View Code
         </Button>
 
         {/* Save */}
