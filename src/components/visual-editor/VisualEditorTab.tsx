@@ -9,6 +9,8 @@ import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
 import { OutlineView } from './OutlineView';
 import { InteractiveTutorial } from './InteractiveTutorial';
+import { ComponentsLibrary } from './ComponentsLibrary';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
@@ -217,9 +219,20 @@ export function VisualEditorTab() {
         </div>
         
         <div className="flex flex-1 gap-4 overflow-hidden">
-          {/* Left: Block Library */}
+          {/* Left Panel - Block Library & Components */}
           <div className="w-64 border-r border-border overflow-y-auto block-library">
-            <BlockLibrary />
+            <Tabs defaultValue="blocks" className="w-full">
+              <TabsList className="w-full grid grid-cols-2">
+                <TabsTrigger value="blocks">Blocks</TabsTrigger>
+                <TabsTrigger value="components">Components</TabsTrigger>
+              </TabsList>
+              <TabsContent value="blocks" className="mt-0">
+                <BlockLibrary />
+              </TabsContent>
+              <TabsContent value="components" className="mt-0">
+                <ComponentsLibrary />
+              </TabsContent>
+            </Tabs>
           </div>
           
           {/* Center: Canvas */}

@@ -41,11 +41,31 @@ export interface TableSettings {
   cellSpacing?: number;
 }
 
+export interface ComponentVariant {
+  id: string;
+  name: string;
+  overrides: Record<string, any>; // blockId -> settings overrides
+}
+
+export interface ComponentDefinition {
+  id: string;
+  name: string;
+  masterBlock: BlockInstance;
+  variants: ComponentVariant[];
+  createdAt: string;
+}
+
+export interface ComponentInstance extends BlockInstance {
+  componentId?: string;
+  variantId?: string;
+}
+
 export interface VisualEditorProject {
   id: string;
   user_id: string;
   name: string;
   canvas_state: BlockInstance[];
+  components?: ComponentDefinition[];
   thumbnail?: string;
   created_at: string;
   updated_at: string;

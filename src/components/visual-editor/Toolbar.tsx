@@ -4,13 +4,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus } from 'lucide-react';
+import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { GlobalStylesDialog } from './GlobalStylesDialog';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 export function Toolbar() {
   const {
@@ -41,12 +51,16 @@ export function Toolbar() {
     blocks,
     drawingTool,
     setDrawingTool,
+    selectedBlockIds,
+    createComponent,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [componentName, setComponentName] = useState('');
+  const [isComponentDialogOpen, setIsComponentDialogOpen] = useState(false);
 
   useEffect(() => {
     loadProjectsList();
@@ -94,6 +108,14 @@ export function Toolbar() {
     
     navigator.clipboard.writeText(code);
     toast.success('Code copied to clipboard!');
+  };
+
+  const handleCreateComponent = () => {
+    if (componentName.trim() && selectedBlockIds.length === 1) {
+      createComponent(componentName.trim(), selectedBlockIds[0]);
+      setComponentName('');
+      setIsComponentDialogOpen(false);
+    }
   };
 
   return (
@@ -198,6 +220,52 @@ export function Toolbar() {
             </div>
           </>
         )}
+
+        <div className="h-6 w-px bg-border" />
+
+        {/* Component Creation */}
+        <Dialog open={isComponentDialogOpen} onOpenChange={setIsComponentDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={selectedBlockIds.length !== 1}
+              title="Create Component from Selection"
+            >
+              <Component className="h-4 w-4 mr-1" />
+              Component
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Component</DialogTitle>
+              <DialogDescription>
+                Create a reusable component from the selected block
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="component-name">Component Name</Label>
+                <Input
+                  id="component-name"
+                  value={componentName}
+                  onChange={(e) => setComponentName(e.target.value)}
+                  placeholder="e.g., Hero Button, Card Header"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateComponent();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleCreateComponent}>
+                Create Component
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Visual Mode Controls */}
         {canvasMode === 'visual' && (

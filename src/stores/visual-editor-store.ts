@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BlockInstance } from '@/types/visual-editor';
+import { BlockInstance, ComponentDefinition, ComponentVariant } from '@/types/visual-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -40,6 +40,10 @@ interface VisualEditorState {
   visualLayout: VisualLayout;
   drawingTool: 'select' | 'rectangle' | 'circle' | 'line';
   
+  // Components
+  components: ComponentDefinition[];
+  selectedComponentId: string | null;
+  
   // Global styles
   globalStyles: GlobalStyles;
   
@@ -72,6 +76,15 @@ interface VisualEditorState {
   toggleSetting: (blockId: string, settingKey: string) => void;
   updateSetting: (blockId: string, settingKey: string, value: any) => void;
   duplicateBlock: (id: string) => void;
+  
+  // Component actions
+  createComponent: (name: string, blockId: string) => void;
+  deleteComponent: (componentId: string) => void;
+  addVariant: (componentId: string, variantName: string) => void;
+  updateVariant: (componentId: string, variantId: string, overrides: Record<string, any>) => void;
+  deleteVariant: (componentId: string, variantId: string) => void;
+  instantiateComponent: (componentId: string, variantId?: string, position?: { x: number; y: number }) => void;
+  setSelectedComponent: (componentId: string | null) => void;
   
   // Global styles
   setGlobalStyles: (styles: Partial<GlobalStyles>) => void;
@@ -211,6 +224,8 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     canvasMode: 'structure',
     visualLayout: {},
     drawingTool: 'select',
+    components: [],
+    selectedComponentId: null,
     globalStyles: {
       defaultFont: 'Arial',
       defaultFontSize: 14,
@@ -388,6 +403,134 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     setGlobalStyles: (styles) => set({ globalStyles: { ...get().globalStyles, ...styles } }),
     
+    // Component management
+    createComponent: (name, blockId) => {
+      const block = findBlockById(get().blocks, blockId);
+      if (!block) {
+        toast.error('Block not found');
+        return;
+      }
+
+      const newComponent: ComponentDefinition = {
+        id: `component-${Date.now()}`,
+        name,
+        masterBlock: JSON.parse(JSON.stringify(block)),
+        variants: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      set(state => ({
+        components: [...state.components, newComponent],
+      }));
+      
+      toast.success(`Component "${name}" created`);
+    },
+
+    deleteComponent: (componentId) => {
+      set(state => ({
+        components: state.components.filter(c => c.id !== componentId),
+        selectedComponentId: state.selectedComponentId === componentId ? null : state.selectedComponentId,
+      }));
+      toast.success('Component deleted');
+    },
+
+    addVariant: (componentId, variantName) => {
+      set(state => ({
+        components: state.components.map(comp => {
+          if (comp.id === componentId) {
+            return {
+              ...comp,
+              variants: [
+                ...comp.variants,
+                {
+                  id: `variant-${Date.now()}`,
+                  name: variantName,
+                  overrides: {},
+                },
+              ],
+            };
+          }
+          return comp;
+        }),
+      }));
+      toast.success(`Variant "${variantName}" added`);
+    },
+
+    updateVariant: (componentId, variantId, overrides) => {
+      set(state => ({
+        components: state.components.map(comp => {
+          if (comp.id === componentId) {
+            return {
+              ...comp,
+              variants: comp.variants.map(v => 
+                v.id === variantId ? { ...v, overrides } : v
+              ),
+            };
+          }
+          return comp;
+        }),
+      }));
+    },
+
+    deleteVariant: (componentId, variantId) => {
+      set(state => ({
+        components: state.components.map(comp => {
+          if (comp.id === componentId) {
+            return {
+              ...comp,
+              variants: comp.variants.filter(v => v.id !== variantId),
+            };
+          }
+          return comp;
+        }),
+      }));
+      toast.success('Variant deleted');
+    },
+
+    instantiateComponent: (componentId, variantId?, position?) => {
+      const component = get().components.find(c => c.id === componentId);
+      if (!component) {
+        toast.error('Component not found');
+        return;
+      }
+
+      const variant = variantId ? component.variants.find(v => v.id === variantId) : null;
+      const instance: BlockInstance = JSON.parse(JSON.stringify(component.masterBlock));
+      
+      // Apply variant overrides
+      if (variant) {
+        Object.keys(variant.overrides).forEach(blockIdKey => {
+          const block = findBlockById([instance], blockIdKey);
+          if (block) {
+            block.settings = { ...block.settings, ...variant.overrides[blockIdKey] };
+          }
+        });
+      }
+
+      // Generate new ID for instance
+      const newId = `${instance.type.toLowerCase()}-${Date.now()}`;
+      instance.id = newId;
+      instance.name = `${instance.name}_instance`;
+
+      // Set position if in visual mode
+      if (position && get().canvasMode === 'visual') {
+        get().updateVisualLayout(newId, {
+          x: position.x,
+          y: position.y,
+          width: get().visualLayout[component.masterBlock.id]?.width || 200,
+          height: get().visualLayout[component.masterBlock.id]?.height || 100,
+          zIndex: 0,
+        });
+      }
+
+      get().addBlock(instance);
+      toast.success('Component instance created');
+    },
+
+    setSelectedComponent: (componentId) => {
+      set({ selectedComponentId: componentId });
+    },
+    
     updateVisualLayout: (blockId, layout) => {
       const current = get().visualLayout[blockId] || { x: 0, y: 0, width: 600, height: 100, zIndex: 0 };
       set({
@@ -561,7 +704,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     },
     
     saveProject: async () => {
-      const { currentProjectId, projectName, blocks, visualLayout, globalStyles, isSaving } = get();
+      const { currentProjectId, projectName, blocks, visualLayout, globalStyles, components, isSaving } = get();
       
       if (isSaving) return;
       
@@ -578,7 +721,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
             .insert({
               user_id: user.id,
               name: projectName,
-              canvas_state: { blocks, visualLayout, globalStyles } as any,
+              canvas_state: { blocks, visualLayout, globalStyles, components } as any,
             })
             .select()
             .single();
@@ -597,7 +740,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
             .from('visual_editor_projects')
             .update({
               name: projectName,
-              canvas_state: { blocks, visualLayout, globalStyles } as any,
+              canvas_state: { blocks, visualLayout, globalStyles, components } as any,
             })
             .eq('id', currentProjectId);
           
@@ -632,6 +775,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
           currentProjectId: data.id,
           projectName: data.name,
           blocks: canvasState.blocks || [],
+          components: canvasState.components || [],
           visualLayout: canvasState.visualLayout || {},
           globalStyles: canvasState.globalStyles || {
             defaultFont: 'Arial',
@@ -659,6 +803,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         currentProjectId: null,
         projectName: name,
         blocks: [],
+        components: [],
         selectedBlockIds: [],
         previewMode: 'editor',
         visualLayout: {},
@@ -708,6 +853,8 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         currentProjectId: null,
         projectName: 'Untitled Project',
         blocks: [],
+        components: [],
+        selectedComponentId: null,
         selectedBlockIds: [],
         canvasMode: 'structure',
         previewMode: 'editor',
