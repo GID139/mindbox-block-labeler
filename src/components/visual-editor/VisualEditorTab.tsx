@@ -5,6 +5,7 @@ import { Toolbar } from './Toolbar';
 import { BlockLibrary } from './BlockLibrary';
 import { Canvas } from './Canvas';
 import { SettingsPanel } from './SettingsPanel';
+import { QuickTips } from './QuickTips';
 import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
 import { getTemplateByName } from '@/lib/visual-editor/block-templates';
@@ -140,24 +141,41 @@ export function VisualEditorTab() {
             {selectedBlockId ? (
               <SettingsPanel />
             ) : (
-              <div className="p-4 text-muted-foreground text-center">
-                Select a block to edit its settings
+              <div className="p-4 text-muted-foreground text-center space-y-4">
+                <div className="text-4xl">👈</div>
+                <p className="text-sm">Select a block to edit its settings</p>
+                <div className="text-xs bg-muted p-3 rounded">
+                  <p className="font-medium mb-1">Quick Tips:</p>
+                  <ul className="space-y-1 text-left">
+                    <li>• Click any block in the canvas</li>
+                    <li>• Use breadcrumbs for nested blocks</li>
+                    <li>• Double-click text to edit inline</li>
+                  </ul>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
       
-      <DragOverlay>
+      <DragOverlay dropAnimation={{
+        duration: 200,
+        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+      }}>
         {activeBlock && (
-          <div className="opacity-75 bg-primary text-primary-foreground border-2 border-primary rounded-lg p-3 shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{activeBlock.type === 'TEXT' ? '📝' : activeBlock.type === 'BUTTON' ? '🔘' : activeBlock.type === 'IMAGE' ? '📷' : activeBlock.type === 'CONTAINER' ? '🎨' : activeBlock.type === 'TABLE' ? '📊' : '📦'}</span>
-              <span className="font-medium">{activeBlock.name}</span>
+          <div className="opacity-90 bg-primary text-primary-foreground border-2 border-primary rounded-lg p-3 shadow-2xl backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{activeBlock.type === 'TEXT' ? '📝' : activeBlock.type === 'BUTTON' ? '🔘' : activeBlock.type === 'IMAGE' ? '📷' : activeBlock.type === 'CONTAINER' ? '🎨' : activeBlock.type === 'TABLE' ? '📊' : '📦'}</span>
+              <div>
+                <div className="font-bold text-sm">{activeBlock.name}</div>
+                <div className="text-xs opacity-80">{activeBlock.type}</div>
+              </div>
             </div>
           </div>
         )}
       </DragOverlay>
+      
+      <QuickTips />
     </DndContext>
   );
 }

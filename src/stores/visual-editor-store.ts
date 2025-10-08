@@ -11,6 +11,7 @@ interface VisualEditorState {
   // Canvas
   blocks: BlockInstance[];
   selectedBlockId: string | null;
+  canvasMode: 'structure' | 'visual';
   
   // UI
   previewMode: boolean;
@@ -20,6 +21,7 @@ interface VisualEditorState {
   
   // Actions
   setProjectName: (name: string) => void;
+  setCanvasMode: (mode: 'structure' | 'visual') => void;
   addBlock: (block: BlockInstance, parentId?: string, index?: number) => void;
   removeBlock: (id: string) => void;
   updateBlock: (id: string, updates: Partial<BlockInstance>) => void;
@@ -123,6 +125,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => ({
   projectName: 'Untitled Project',
   blocks: [],
   selectedBlockId: null,
+  canvasMode: 'structure',
   previewMode: false,
   isLoading: false,
   isSaving: false,
@@ -130,6 +133,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => ({
   
   // Actions
   setProjectName: (name) => set({ projectName: name }),
+  setCanvasMode: (mode) => set({ canvasMode: mode }),
   
   addBlock: (block, parentId, index) => {
     set(state => ({
@@ -460,6 +464,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => ({
     projectName: 'Untitled Project',
     blocks: [],
     selectedBlockId: null,
+    canvasMode: 'structure',
     previewMode: false,
     lastSavedAt: null,
   }),

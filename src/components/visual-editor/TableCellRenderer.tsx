@@ -25,8 +25,8 @@ export function TableCellRenderer({ blockId, cellKey, children, settings, level 
     <td
       ref={setNodeRef}
       className={cn(
-        'border border-border min-h-[80px] relative transition-colors',
-        isOver && 'bg-primary/10 border-primary border-2'
+        'border border-border min-h-[80px] relative transition-all duration-200',
+        isOver && 'bg-primary/10 border-primary border-2 shadow-inner'
       )}
       style={{
         backgroundColor: settings?.background,
@@ -36,8 +36,11 @@ export function TableCellRenderer({ blockId, cellKey, children, settings, level 
     >
       <div className="min-h-[60px]">
         {children.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-xs py-4">
-            Drop blocks here
+          <div className={cn(
+            "flex items-center justify-center h-full text-muted-foreground text-xs py-4 transition-all",
+            isOver && "text-primary font-medium"
+          )}>
+            {isOver ? '📦 Drop here' : 'Drop blocks here'}
           </div>
         ) : (
           <div className="space-y-2">
@@ -55,8 +58,8 @@ export function TableCellRenderer({ blockId, cellKey, children, settings, level 
       </div>
       
       {isOver && (
-        <div className="absolute inset-0 border-2 border-dashed border-primary rounded pointer-events-none flex items-center justify-center">
-          <span className="text-xs font-medium text-primary bg-background px-2 py-1 rounded">
+        <div className="absolute inset-0 border-2 border-dashed border-primary rounded pointer-events-none flex items-center justify-center animate-pulse">
+          <span className="text-xs font-medium text-primary bg-white px-3 py-1 rounded-full shadow-md">
             Drop here
           </span>
         </div>

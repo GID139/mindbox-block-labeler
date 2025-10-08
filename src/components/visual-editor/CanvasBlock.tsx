@@ -102,11 +102,11 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
     >
       <div
         ref={setDragRef}
-        className={`relative border rounded transition-all ${
+        className={`relative border rounded transition-all duration-200 ${
           isSelected
-            ? 'border-primary bg-primary/5 shadow-lg'
-            : 'border-border hover:border-primary/50'
-        } ${isOver && block.canContainChildren ? 'ring-2 ring-primary' : ''}`}
+            ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
+            : 'border-border hover:border-primary/50 hover:shadow-md'
+        } ${isOver && block.canContainChildren ? 'ring-2 ring-primary ring-offset-2' : ''}`}
       >
         {/* Drag handle - always visible on hover */}
         <div 
@@ -251,9 +251,9 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
 
         {/* Show drop zone indicator */}
         {isOver && block.canContainChildren && (
-          <div className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 pointer-events-none flex items-center justify-center">
-            <span className="text-sm font-medium text-primary bg-background px-2 py-1 rounded">
-              Drop here
+          <div className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 pointer-events-none flex items-center justify-center z-30 animate-pulse">
+            <span className="text-sm font-medium text-primary bg-white px-3 py-1.5 rounded-full shadow-lg">
+              📦 Drop inside
             </span>
           </div>
         )}

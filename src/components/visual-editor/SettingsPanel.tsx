@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HelpCircle } from 'lucide-react';
 import { validateBlockName } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
 import { ColorPickerInput } from './ColorPickerInput';
@@ -126,7 +128,19 @@ export function SettingsPanel() {
   return (
     <div className="p-4 space-y-4">
       <div>
-        <h3 className="text-sm font-semibold mb-2">Block Settings</h3>
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-semibold">Block Settings</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Customize this block's name and type</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <Card className="p-3">
           <div className="space-y-3">
             <div>
@@ -136,12 +150,15 @@ export function SettingsPanel() {
                 value={block.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 className="mt-1"
+                placeholder="e.g., button1, text1"
               />
             </div>
 
             <div>
               <Label className="text-xs">Type</Label>
-              <div className="text-sm text-muted-foreground mt-1">{block.type}</div>
+              <div className="text-sm text-muted-foreground mt-1 px-2 py-1 bg-muted rounded">
+                {block.type}
+              </div>
             </div>
           </div>
         </Card>
@@ -150,7 +167,19 @@ export function SettingsPanel() {
       <Separator />
 
       <div>
-        <h3 className="text-sm font-semibold mb-2">Properties</h3>
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-semibold">Properties</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Edit block properties and styles</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <Card className="p-3">
           <div className="space-y-3">
             {block.type === 'TABLE' ? (
@@ -224,8 +253,20 @@ export function SettingsPanel() {
           <div>
             <h3 className="text-sm font-semibold mb-2">Children</h3>
             <Card className="p-3">
-              <div className="text-xs text-muted-foreground">
-                {block.children.length} child block(s)
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">
+                  This block contains {block.children.length} child block{block.children.length !== 1 ? 's' : ''}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {block.children.map((child, index) => (
+                    <div 
+                      key={child.id}
+                      className="px-2 py-1 bg-muted rounded text-xs"
+                    >
+                      {child.name}
+                    </div>
+                  ))}
+                </div>
               </div>
             </Card>
           </div>

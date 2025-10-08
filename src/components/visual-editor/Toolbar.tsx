@@ -6,6 +6,8 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Save, Eye, Code, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
+import { CanvasModeToggle } from './CanvasModeToggle';
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 
 export function Toolbar() {
   const {
@@ -117,6 +119,12 @@ export function Toolbar() {
         )}
 
         <div className="flex-1" />
+
+        {/* Canvas Mode Toggle */}
+        <CanvasModeToggle />
+
+        {/* Keyboard Shortcuts */}
+        <KeyboardShortcutsHelp />
 
         {/* Auto-save indicator */}
         <div className="text-xs text-muted-foreground">

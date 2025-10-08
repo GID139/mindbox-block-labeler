@@ -40,10 +40,11 @@ export function DropZoneIndicator({ id, position, blockId, parentId, index }: Dr
       ref={setNodeRef}
       className={cn(
         positionClasses[position],
-        'transition-all opacity-0 hover:opacity-100',
-        isOver && 'opacity-100 bg-primary/10',
+        'transition-all duration-150 opacity-0 hover:opacity-100 z-20',
+        isOver && 'opacity-100 bg-primary/20',
         isOver && activeIndicatorClasses[position]
       )}
+      title={`Drop ${position}`}
     />
   );
 }
