@@ -1,18 +1,21 @@
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { BlockInstance } from '@/types/visual-editor';
 import Moveable from 'react-moveable';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface VisualBlockProps {
   block: BlockInstance;
 }
 
 function VisualBlock({ block }: VisualBlockProps) {
-  const { visualLayout, updateVisualLayout, selectedBlockIds, selectBlock } = useVisualEditorStore();
+  const { visualLayout, updateVisualLayout, selectedBlockIds, selectBlock, updateBlock } = useVisualEditorStore();
   const targetRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedBlockIds.includes(block.id);
   const [frame, setFrame] = useState({ translate: [0, 0], width: 0, height: 0 });
+  const [isEditing, setIsEditing] = useState(false);
+  const [previewHTML, setPreviewHTML] = useState('');
   
   const layout = visualLayout[block.id] || { 
     x: 0, 
@@ -22,29 +25,65 @@ function VisualBlock({ block }: VisualBlockProps) {
     zIndex: 0 
   };
 
-  const template = getTemplate(block.type);
-  const previewHTML = template.generateHTML(block);
+  // Мгновенное обновление HTML при изменении настроек
+  useEffect(() => {
+    const template = getTemplate(block.type);
+    setPreviewHTML(template.generateHTML(block));
+  }, [block.settings, block.type, block.children]);
 
   return (
     <>
-      <div
-        ref={targetRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          selectBlock(block.id);
-        }}
-        className={`absolute cursor-pointer border-2 overflow-hidden ${
-          isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
-        }`}
-        style={{
-          transform: `translate(${layout.x}px, ${layout.y}px)`,
-          width: `${layout.width}px`,
-          height: `${layout.height}px`,
-          zIndex: layout.zIndex,
-          transition: 'border-color 0.2s',
-        }}
-        dangerouslySetInnerHTML={{ __html: previewHTML }}
-      />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              ref={targetRef}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Selected block in Visual Mode:', block.id);
+                selectBlock(block.id);
+              }}
+              onDoubleClick={(e) => {
+                if (block.type === 'TEXT' || block.type === 'BUTTON') {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }
+              }}
+              contentEditable={isEditing}
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                if (isEditing) {
+                  updateBlock(block.id, {
+                    settings: { ...block.settings, text: e.currentTarget.textContent || '' }
+                  });
+                  setIsEditing(false);
+                }
+              }}
+              className={`absolute cursor-pointer border-2 overflow-hidden ${
+                isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
+              }`}
+              style={{
+                transform: `translate(${layout.x}px, ${layout.y}px)`,
+                width: `${layout.width}px`,
+                height: `${layout.height}px`,
+                zIndex: layout.zIndex,
+                transition: 'border-color 0.2s',
+              }}
+            >
+              {isEditing ? (
+                block.settings.text || ''
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+              )}
+            </div>
+          </TooltipTrigger>
+          {(block.type === 'TEXT' || block.type === 'BUTTON') && !isEditing && (
+            <TooltipContent>
+              <p>Double-click to edit text</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       
       {isSelected && targetRef.current && (
         <Moveable
