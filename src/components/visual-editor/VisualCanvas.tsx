@@ -33,7 +33,7 @@ function VisualBlock({ block }: VisualBlockProps) {
           e.stopPropagation();
           selectBlock(block.id);
         }}
-        className={`absolute cursor-pointer border-2 transition-all overflow-hidden ${
+        className={`absolute cursor-pointer border-2 overflow-hidden ${
           isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
         }`}
         style={{
@@ -41,6 +41,7 @@ function VisualBlock({ block }: VisualBlockProps) {
           width: `${layout.width}px`,
           height: `${layout.height}px`,
           zIndex: layout.zIndex,
+          transition: 'border-color 0.2s',
         }}
         dangerouslySetInnerHTML={{ __html: previewHTML }}
       />
@@ -50,6 +51,11 @@ function VisualBlock({ block }: VisualBlockProps) {
           target={targetRef.current}
           draggable
           resizable
+          throttleResize={0}
+          throttleDrag={0}
+          renderDirections={["nw", "ne", "sw", "se"]}
+          keepRatio={false}
+          edge={false}
           snappable
           snapThreshold={5}
           onDrag={({ translate }) => {
