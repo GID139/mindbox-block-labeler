@@ -4,6 +4,7 @@ import Moveable from 'react-moveable';
 import { useRef, useState, useEffect } from 'react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useDroppable } from '@dnd-kit/core';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -12,8 +13,8 @@ interface VisualBlockProps {
 function VisualBlock({ block }: VisualBlockProps) {
   const { visualLayout, updateVisualLayout, selectedBlockIds, selectBlock, updateBlock } = useVisualEditorStore();
   const targetRef = useRef<HTMLDivElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedBlockIds.includes(block.id);
-  const [frame, setFrame] = useState({ translate: [0, 0], width: 0, height: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const [previewHTML, setPreviewHTML] = useState('');
   
@@ -31,6 +32,38 @@ function VisualBlock({ block }: VisualBlockProps) {
     setPreviewHTML(template.generateHTML(block));
   }, [block.settings, block.type, block.children]);
 
+  // Автофокус и выделение текста при входе в режим редактирования
+  useEffect(() => {
+    if (isEditing && editableRef.current) {
+      editableRef.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editableRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (block.type === 'TEXT' || block.type === 'BUTTON') {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('Double click on editable block:', block.id);
+      setIsEditing(true);
+    }
+  };
+
+  const handleBlur = () => {
+    if (isEditing && editableRef.current) {
+      const newText = editableRef.current.textContent || '';
+      console.log('Saving text:', newText);
+      updateBlock(block.id, {
+        settings: { ...block.settings, text: newText }
+      });
+      setIsEditing(false);
+    }
+  };
+
   return (
     <>
       <TooltipProvider>
@@ -40,25 +73,12 @@ function VisualBlock({ block }: VisualBlockProps) {
               ref={targetRef}
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('Selected block in Visual Mode:', block.id);
-                selectBlock(block.id);
-              }}
-              onDoubleClick={(e) => {
-                if (block.type === 'TEXT' || block.type === 'BUTTON') {
-                  e.stopPropagation();
-                  setIsEditing(true);
+                if (!isEditing) {
+                  console.log('Selected block in Visual Mode:', block.id);
+                  selectBlock(block.id);
                 }
               }}
-              contentEditable={isEditing}
-              suppressContentEditableWarning
-              onBlur={(e) => {
-                if (isEditing) {
-                  updateBlock(block.id, {
-                    settings: { ...block.settings, text: e.currentTarget.textContent || '' }
-                  });
-                  setIsEditing(false);
-                }
-              }}
+              onDoubleClick={handleDoubleClick}
               className={`absolute cursor-pointer border-2 overflow-hidden ${
                 isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
               }`}
@@ -68,10 +88,29 @@ function VisualBlock({ block }: VisualBlockProps) {
                 height: `${layout.height}px`,
                 zIndex: layout.zIndex,
                 transition: 'border-color 0.2s',
+                pointerEvents: isEditing ? 'none' : 'auto',
               }}
             >
               {isEditing ? (
-                block.settings.text || ''
+                <div
+                  ref={editableRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={handleBlur}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      editableRef.current?.blur();
+                    }
+                    if (e.key === 'Escape') {
+                      setIsEditing(false);
+                    }
+                  }}
+                  className="w-full h-full p-2 outline-none"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  {block.settings.text || ''}
+                </div>
               ) : (
                 <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
               )}
@@ -85,7 +124,7 @@ function VisualBlock({ block }: VisualBlockProps) {
         </Tooltip>
       </TooltipProvider>
       
-      {isSelected && targetRef.current && (
+      {isSelected && !isEditing && targetRef.current && (
         <Moveable
           target={targetRef.current}
           draggable
@@ -98,7 +137,6 @@ function VisualBlock({ block }: VisualBlockProps) {
           snappable
           snapThreshold={5}
           onDrag={({ translate }) => {
-            setFrame({ ...frame, translate });
             if (targetRef.current) {
               targetRef.current.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
             }
@@ -112,7 +150,6 @@ function VisualBlock({ block }: VisualBlockProps) {
             }
           }}
           onResize={({ width, height, drag }) => {
-            setFrame({ translate: drag.translate, width, height });
             if (targetRef.current) {
               targetRef.current.style.transform = `translate(${drag.translate[0]}px, ${drag.translate[1]}px)`;
               targetRef.current.style.width = `${width}px`;
@@ -138,6 +175,13 @@ function VisualBlock({ block }: VisualBlockProps) {
 export function VisualCanvas() {
   const { blocks, showGrid, gridSize, zoom, deviceMode } = useVisualEditorStore();
   
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'visual-canvas-root',
+    data: {
+      type: 'visual-canvas-root',
+    },
+  });
+  
   const deviceWidths = {
     mobile: 375,
     tablet: 768,
@@ -154,7 +198,10 @@ export function VisualCanvas() {
   return (
     <div className="flex justify-center items-start p-8 bg-muted/20 min-h-full">
       <div 
-        className="relative bg-white shadow-lg"
+        ref={setNodeRef}
+        className={`relative bg-white shadow-lg transition-all ${
+          isOver ? 'ring-4 ring-primary/30' : ''
+        }`}
         style={{
           width: `${deviceWidths[deviceMode]}px`,
           minHeight: '800px',

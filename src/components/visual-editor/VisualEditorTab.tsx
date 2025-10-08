@@ -125,6 +125,29 @@ export function VisualEditorTab() {
           return;
         }
 
+        // Handle visual canvas drop
+        if (over.id === 'visual-canvas-root') {
+          addBlock(newBlock);
+          
+          // Автоматически создать layout для нового блока в Visual Mode
+          const store = useVisualEditorStore.getState();
+          const layoutValues = Object.values(store.visualLayout);
+          const currentY = layoutValues.length > 0
+            ? Math.max(...layoutValues.map(l => l.y + l.height))
+            : 0;
+          
+          store.updateVisualLayout(newBlock.id, {
+            x: 20,
+            y: currentY + 20,
+            width: 560,
+            height: 100,
+            zIndex: 0,
+          });
+          
+          toast.success(`Added ${template.name}`);
+          return;
+        }
+
         // Default: add to end of canvas
         addBlock(newBlock);
         toast.success(`Added ${template.name}`);
