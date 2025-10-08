@@ -1,4 +1,5 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getTemplate } from './index';
 
 export const textTemplate: BlockTemplate = {
   type: 'TEXT',
@@ -30,7 +31,7 @@ export const textTemplate: BlockTemplate = {
     // Process children recursively
     if (block.children && block.children.length > 0) {
       content += block.children.map(child => {
-        const childTemplate = require('./index').getTemplate(child.type);
+        const childTemplate = getTemplate(child.type);
         return childTemplate.generateHTML(child);
       }).join('');
     }
@@ -72,7 +73,7 @@ export const textTemplate: BlockTemplate = {
     // Process children recursively
     if (block.children && block.children.length > 0) {
       block.children.forEach(child => {
-        const childTemplate = require('./index').getTemplate(child.type);
+        const childTemplate = getTemplate(child.type);
         params.push(...childTemplate.generateJSON(child));
       });
     }

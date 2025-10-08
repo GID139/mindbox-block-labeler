@@ -1,4 +1,5 @@
 import { BlockTemplate, BlockInstance, TableSettings } from '@/types/visual-editor';
+import { getTemplate } from './index';
 
 export const tableTemplate: BlockTemplate = {
   type: 'TABLE',
@@ -47,7 +48,7 @@ export const tableTemplate: BlockTemplate = {
         // Process cell children
         if (cell.children && cell.children.length > 0) {
           cellContent = cell.children.map(child => {
-            const childTemplate = require('./index').getTemplate(child.type);
+            const childTemplate = getTemplate(child.type);
             return childTemplate.generateHTML(child);
           }).join('');
         }
@@ -89,7 +90,7 @@ export const tableTemplate: BlockTemplate = {
         
         if (cell && cell.children && cell.children.length > 0) {
           cell.children.forEach(child => {
-            const childTemplate = require('./index').getTemplate(child.type);
+            const childTemplate = getTemplate(child.type);
             params.push(...childTemplate.generateJSON(child));
           });
         }

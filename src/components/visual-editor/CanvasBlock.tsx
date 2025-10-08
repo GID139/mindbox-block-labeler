@@ -1,10 +1,12 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { BlockInstance } from '@/types/visual-editor';
+import { BlockInstance, TableSettings } from '@/types/visual-editor';
 import { Button } from '@/components/ui/button';
 import { Trash2, GripVertical } from 'lucide-react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
 import { useState, useRef, useEffect } from 'react';
+import { TableCellRenderer } from './TableCellRenderer';
+import { DropZoneIndicator } from './DropZoneIndicator';
 
 interface CanvasBlockProps {
   block: BlockInstance;
@@ -79,6 +81,10 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
 
   // Generate HTML preview
   const generatePreviewHTML = () => {
+    // For TABLE blocks, render them separately with React components
+    if (block.type === 'TABLE') {
+      return null;
+    }
     // For blocks with children, render them separately
     if (block.children && block.children.length > 0 && block.type !== 'TEXT' && block.type !== 'BUTTON') {
       return null; // Will render children as React components
@@ -152,6 +158,34 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
             >
               {block.settings.text}
             </div>
+          ) : block.type === 'TABLE' ? (
+            // Render TABLE with cells
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <tbody>
+                  {Array.from({ length: (block.settings as TableSettings).rows }, (_, rowIdx) => (
+                    <tr key={rowIdx}>
+                      {Array.from({ length: (block.settings as TableSettings).cols }, (_, colIdx) => {
+                        const cellKey = `${rowIdx},${colIdx}`;
+                        const cells = (block.settings as TableSettings).cells || {};
+                        const cell = cells[cellKey] || { children: [], settings: {} };
+                        
+                        return (
+                          <TableCellRenderer
+                            key={cellKey}
+                            blockId={block.id}
+                            cellKey={cellKey}
+                            children={cell.children || []}
+                            settings={cell.settings}
+                            level={level}
+                          />
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : previewHTML ? (
             <div 
               dangerouslySetInnerHTML={{ __html: previewHTML }}
@@ -180,6 +214,40 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
             </div>
           )}
         </div>
+
+        {/* Drop Zone Indicators - 4 directions */}
+        {!isEditing && (
+          <>
+            <DropZoneIndicator
+              id={`${block.id}-drop-top`}
+              position="top"
+              blockId={block.id}
+              parentId={parentId}
+              index={index}
+            />
+            <DropZoneIndicator
+              id={`${block.id}-drop-bottom`}
+              position="bottom"
+              blockId={block.id}
+              parentId={parentId}
+              index={index + 1}
+            />
+            <DropZoneIndicator
+              id={`${block.id}-drop-left`}
+              position="left"
+              blockId={block.id}
+              parentId={parentId}
+              index={index}
+            />
+            <DropZoneIndicator
+              id={`${block.id}-drop-right`}
+              position="right"
+              blockId={block.id}
+              parentId={parentId}
+              index={index + 1}
+            />
+          </>
+        )}
 
         {/* Show drop zone indicator */}
         {isOver && block.canContainChildren && (

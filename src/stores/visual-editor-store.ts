@@ -28,6 +28,11 @@ interface VisualEditorState {
   toggleSetting: (blockId: string, settingKey: string) => void;
   updateSetting: (blockId: string, settingKey: string, value: any) => void;
   
+  // Table-specific actions
+  addBlockToTableCell: (tableId: string, cellKey: string, block: BlockInstance) => void;
+  updateTableSize: (tableId: string, dimension: 'rows' | 'cols', delta: number) => void;
+  updateCellSetting: (tableId: string, cellKey: string, settingKey: string, value: any) => void;
+  
   // Preview
   togglePreviewMode: () => void;
   
@@ -205,6 +210,110 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => ({
       settings: {
         ...block.settings,
         [settingKey]: value,
+      },
+    });
+  },
+  
+  addBlockToTableCell: (tableId, cellKey, block) => {
+    const table = findBlockById(get().blocks, tableId);
+    if (!table || table.type !== 'TABLE') return;
+    
+    const cells = { ...table.settings.cells };
+    const cell = cells[cellKey] || { children: [], settings: {} };
+    
+    cells[cellKey] = {
+      ...cell,
+      children: [...(cell.children || []), block],
+    };
+    
+    get().updateBlock(tableId, {
+      settings: {
+        ...table.settings,
+        cells,
+      },
+    });
+  },
+  
+  updateTableSize: (tableId, dimension, delta) => {
+    const table = findBlockById(get().blocks, tableId);
+    if (!table || table.type !== 'TABLE') return;
+    
+    const currentRows = table.settings.rows || 2;
+    const currentCols = table.settings.cols || 2;
+    const cells = { ...table.settings.cells };
+    
+    if (dimension === 'rows') {
+      const newRows = Math.max(1, currentRows + delta);
+      
+      // If adding rows, initialize new cells
+      if (delta > 0) {
+        for (let row = currentRows; row < newRows; row++) {
+          for (let col = 0; col < currentCols; col++) {
+            const cellKey = `${row},${col}`;
+            if (!cells[cellKey]) {
+              cells[cellKey] = {
+                children: [],
+                settings: { verticalAlign: 'top', padding: '8px' },
+              };
+            }
+          }
+        }
+      }
+      
+      get().updateBlock(tableId, {
+        settings: {
+          ...table.settings,
+          rows: newRows,
+          cells,
+        },
+      });
+    } else if (dimension === 'cols') {
+      const newCols = Math.max(1, currentCols + delta);
+      
+      // If adding cols, initialize new cells
+      if (delta > 0) {
+        for (let row = 0; row < currentRows; row++) {
+          for (let col = currentCols; col < newCols; col++) {
+            const cellKey = `${row},${col}`;
+            if (!cells[cellKey]) {
+              cells[cellKey] = {
+                children: [],
+                settings: { verticalAlign: 'top', padding: '8px' },
+              };
+            }
+          }
+        }
+      }
+      
+      get().updateBlock(tableId, {
+        settings: {
+          ...table.settings,
+          cols: newCols,
+          cells,
+        },
+      });
+    }
+  },
+  
+  updateCellSetting: (tableId, cellKey, settingKey, value) => {
+    const table = findBlockById(get().blocks, tableId);
+    if (!table || table.type !== 'TABLE') return;
+    
+    const cells = { ...table.settings.cells };
+    const cell = cells[cellKey] || { children: [], settings: {} };
+    
+    cells[cellKey] = {
+      ...cell,
+      settings: {
+        ...cell.settings,
+        [settingKey]: value,
+      },
+    };
+    
+    get().updateBlock(tableId, {
+      settings: {
+        ...table.settings,
+        cells,
       },
     });
   },

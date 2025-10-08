@@ -9,9 +9,10 @@ import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
 import { getTemplateByName } from '@/lib/visual-editor/block-templates';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
+import { toast } from 'sonner';
 
 export function VisualEditorTab() {
-  const { blocks, addBlock, moveBlock, selectedBlockId } = useVisualEditorStore();
+  const { blocks, addBlock, moveBlock, selectedBlockId, addBlockToTableCell } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeBlock, setActiveBlock] = useState<BlockInstance | null>(null);
 
@@ -75,7 +76,14 @@ export function VisualEditorTab() {
           maxNestingLevel: template.maxNestingLevel,
         };
 
-        // Determine parent and index
+        // Check if dropping into table cell
+        if (over.data.current?.type === 'table-cell') {
+          const { blockId, cellKey } = over.data.current;
+          addBlockToTableCell(blockId, cellKey, newBlock);
+          return;
+        }
+
+        // Determine parent and index for regular drop
         const parentId = over.data.current?.parentId || null;
         const index = over.data.current?.index;
 
@@ -85,6 +93,20 @@ export function VisualEditorTab() {
     
     // Case 2: Reorder within Canvas
     if (active.data.current?.type === 'canvas-block') {
+      // Check if dropping into table cell
+      if (over.data.current?.type === 'table-cell') {
+        const { blockId, cellKey } = over.data.current;
+        const draggedBlock = activeBlock;
+        
+        if (draggedBlock) {
+          // First remove from old position, then add to table cell
+          // This is handled by moveBlock indirectly, but for table cells we use addBlockToTableCell
+          // For now, just show a toast - full implementation would need more complex logic
+          toast.error('Moving existing blocks to table cells is not yet supported. Please create new blocks in cells.');
+        }
+        return;
+      }
+
       const targetParentId = over.data.current?.parentId || null;
       const targetIndex = over.data.current?.index || 0;
       

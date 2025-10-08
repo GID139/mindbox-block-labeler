@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { validateBlockName } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
 import { ColorPickerInput } from './ColorPickerInput';
@@ -20,7 +21,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockId, updateBlock, updateSetting } = useVisualEditorStore();
+  const { blocks, selectedBlockId, updateBlock, updateSetting, updateTableSize, updateCellSetting } = useVisualEditorStore();
   
   if (!selectedBlockId) return null;
   
@@ -152,8 +153,66 @@ export function SettingsPanel() {
         <h3 className="text-sm font-semibold mb-2">Properties</h3>
         <Card className="p-3">
           <div className="space-y-3">
-            {Object.entries(block.settings).map(([key, value]) => 
-              renderSettingControl(key, value)
+            {block.type === 'TABLE' ? (
+              // Special handling for TABLE blocks
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">Rows: {block.settings.rows}</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateTableSize(selectedBlockId, 'rows', 1)}
+                      className="h-7 px-2"
+                    >
+                      + Row
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateTableSize(selectedBlockId, 'rows', -1)}
+                      disabled={block.settings.rows <= 1}
+                      className="h-7 px-2"
+                    >
+                      - Row
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">Cols: {block.settings.cols}</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateTableSize(selectedBlockId, 'cols', 1)}
+                      className="h-7 px-2"
+                    >
+                      + Col
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateTableSize(selectedBlockId, 'cols', -1)}
+                      disabled={block.settings.cols <= 1}
+                      className="h-7 px-2"
+                    >
+                      - Col
+                    </Button>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="text-xs text-muted-foreground">
+                  Total cells: {block.settings.rows * block.settings.cols}
+                </div>
+              </div>
+            ) : (
+              // Regular settings for other blocks
+              Object.entries(block.settings).map(([key, value]) => 
+                renderSettingControl(key, value)
+              )
             )}
           </div>
         </Card>
