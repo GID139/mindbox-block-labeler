@@ -9,8 +9,8 @@ export const imageTemplate: BlockTemplate = {
   canContainChildren: true,
   maxNestingLevel: 3,
   defaultSettings: {
-    url: 'https://via.placeholder.com/300x200',
-    alt: 'Image',
+    url: 'https://mindbox.ru/build/assets/images/m-green_Journal-C66qTIQ0.svg',
+    alt: 'Mindbox Logo',
     width: '300',
     height: '200',
     align: 'center',

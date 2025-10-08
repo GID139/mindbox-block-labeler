@@ -4,8 +4,11 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Toolbar } from './Toolbar';
 import { BlockLibrary } from './BlockLibrary';
 import { Canvas } from './Canvas';
+import { VisualCanvas } from './VisualCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
+import { OutlineView } from './OutlineView';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
 import { getTemplateByName } from '@/lib/visual-editor/block-templates';
@@ -13,9 +16,14 @@ import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming'
 import { toast } from 'sonner';
 
 export function VisualEditorTab() {
-  const { blocks, addBlock, moveBlock, selectedBlockId, addBlockToTableCell } = useVisualEditorStore();
+  const { blocks, addBlock, moveBlock, selectedBlockIds, addBlockToTableCell, canvasMode, showOutline } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeBlock, setActiveBlock] = useState<BlockInstance | null>(null);
+
+  const selectedBlockId = selectedBlockIds[0];
+
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts();
 
   // Auto-save every 5 minutes
   useEffect(() => {
@@ -133,12 +141,16 @@ export function VisualEditorTab() {
           
           {/* Center: Canvas */}
           <div className="flex-1 overflow-y-auto p-4">
-            <Canvas />
+            {canvasMode === 'structure' ? <Canvas /> : <VisualCanvas />}
           </div>
           
-          {/* Right: Settings Panel */}
+          {/* Right: Settings Panel or Outline */}
           <div className="w-80 border-l border-border overflow-y-auto">
-            {selectedBlockId ? (
+            {showOutline ? (
+              <div className="p-4">
+                <OutlineView />
+              </div>
+            ) : selectedBlockId ? (
               <SettingsPanel />
             ) : (
               <div className="p-4 text-muted-foreground text-center space-y-4">
@@ -150,6 +162,7 @@ export function VisualEditorTab() {
                     <li>• Click any block in the canvas</li>
                     <li>• Use breadcrumbs for nested blocks</li>
                     <li>• Double-click text to edit inline</li>
+                    <li>• Cmd/Ctrl + D to duplicate</li>
                   </ul>
                 </div>
               </div>

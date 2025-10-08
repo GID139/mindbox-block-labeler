@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Home, ChevronRight } from 'lucide-react';
 
 export function BreadcrumbNav() {
-  const { blocks, selectedBlockId, selectBlock } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, selectBlock } = useVisualEditorStore();
+
+  const selectedBlockId = selectedBlockIds[0];
 
   if (!selectedBlockId) return null;
 

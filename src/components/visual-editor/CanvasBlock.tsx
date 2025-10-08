@@ -16,8 +16,8 @@ interface CanvasBlockProps {
 }
 
 export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockProps) {
-  const { selectedBlockId, selectBlock, removeBlock, updateSetting } = useVisualEditorStore();
-  const isSelected = selectedBlockId === block.id;
+  const { selectedBlockIds, selectBlock, removeBlock, updateSetting } = useVisualEditorStore();
+  const isSelected = selectedBlockIds.includes(block.id);
   const [isEditing, setIsEditing] = useState(false);
   const editableRef = useRef<HTMLDivElement>(null);
   

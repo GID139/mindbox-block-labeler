@@ -23,7 +23,9 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockId, updateBlock, updateSetting, updateTableSize, updateCellSetting } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, updateSetting, updateTableSize, updateCellSetting } = useVisualEditorStore();
+  
+  const selectedBlockId = selectedBlockIds[0];
   
   if (!selectedBlockId) return null;
   
