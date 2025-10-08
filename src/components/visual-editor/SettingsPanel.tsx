@@ -260,7 +260,94 @@ export function SettingsPanel() {
 
       case 'CONTAINER':
         return (
-          <Accordion type="multiple" defaultValue={['style', 'layout']}>
+          <Accordion type="multiple" defaultValue={['autoLayout', 'style', 'layout']}>
+            <AccordionItem value="autoLayout">
+              <AccordionTrigger>✨ Auto Layout (Flexbox)</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Enable Auto Layout</Label>
+                  <input
+                    type="checkbox"
+                    checked={block.settings.autoLayout || false}
+                    onChange={(e) => updateSettings({ autoLayout: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                </div>
+
+                {block.settings.autoLayout && (
+                  <>
+                    <div>
+                      <Label>Direction</Label>
+                      <Select
+                        value={block.settings.flexDirection || 'column'}
+                        onValueChange={(value) => updateSettings({ flexDirection: value })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="row">→ Horizontal (Row)</SelectItem>
+                          <SelectItem value="column">↓ Vertical (Column)</SelectItem>
+                          <SelectItem value="row-reverse">← Horizontal Reverse</SelectItem>
+                          <SelectItem value="column-reverse">↑ Vertical Reverse</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Justify Content (Main Axis)</Label>
+                      <Select
+                        value={block.settings.justifyContent || 'flex-start'}
+                        onValueChange={(value) => updateSettings({ justifyContent: value })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flex-start">⬅️ Start</SelectItem>
+                          <SelectItem value="center">⬅️➡️ Center</SelectItem>
+                          <SelectItem value="flex-end">➡️ End</SelectItem>
+                          <SelectItem value="space-between">⬅️ ➡️ Space Between</SelectItem>
+                          <SelectItem value="space-around">⬅️  ➡️ Space Around</SelectItem>
+                          <SelectItem value="space-evenly">⬅️   ➡️ Space Evenly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Align Items (Cross Axis)</Label>
+                      <Select
+                        value={block.settings.alignItems || 'flex-start'}
+                        onValueChange={(value) => updateSettings({ alignItems: value })}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flex-start">⬆️ Start</SelectItem>
+                          <SelectItem value="center">↕️ Center</SelectItem>
+                          <SelectItem value="flex-end">⬇️ End</SelectItem>
+                          <SelectItem value="stretch">↕️ Stretch</SelectItem>
+                          <SelectItem value="baseline">— Baseline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Gap Between Items</Label>
+                      <Input
+                        type="number"
+                        value={block.settings.gap || '8'}
+                        onChange={(e) => updateSettings({ gap: e.target.value })}
+                        className="mt-1"
+                        placeholder="8"
+                      />
+                    </div>
+                  </>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
             <AccordionItem value="style">
               <AccordionTrigger>🎨 Style</AccordionTrigger>
               <AccordionContent className="space-y-3">
@@ -269,45 +356,253 @@ export function SettingsPanel() {
                   value={block.settings.backgroundColor || ''}
                   onChange={(value) => updateSettings({ backgroundColor: value })}
                 />
+
+                <div>
+                  <Label>Border Radius</Label>
+                  <Input
+                    type="number"
+                    value={block.settings.borderRadiusTopLeft || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateSettings({
+                        borderRadiusTopLeft: val,
+                        borderRadiusTopRight: val,
+                        borderRadiusBottomRight: val,
+                        borderRadiusBottomLeft: val,
+                      });
+                    }}
+                    className="mt-1"
+                    placeholder="4"
+                  />
+                </div>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="layout">
-              <AccordionTrigger>📐 Layout</AccordionTrigger>
+              <AccordionTrigger>📐 Size & Padding</AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div>
-                  <Label>Padding</Label>
+                  <Label>Width</Label>
                   <Input
-                    value={block.settings.padding || ''}
-                    onChange={(e) => updateSettings({ padding: e.target.value })}
+                    type="number"
+                    value={block.settings.width || ''}
+                    onChange={(e) => updateSettings({ width: e.target.value })}
                     className="mt-1"
-                    placeholder="e.g., 20px"
+                    placeholder="600"
                   />
                 </div>
 
                 <div>
+                  <Label>Height</Label>
+                  <Input
+                    value={block.settings.height || 'auto'}
+                    onChange={(e) => updateSettings({ height: e.target.value })}
+                    className="mt-1"
+                    placeholder="auto"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Padding Top</Label>
+                    <Input
+                      type="number"
+                      value={block.settings.paddingTop || ''}
+                      onChange={(e) => updateSettings({ paddingTop: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Padding Right</Label>
+                    <Input
+                      type="number"
+                      value={block.settings.paddingRight || ''}
+                      onChange={(e) => updateSettings({ paddingRight: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Padding Bottom</Label>
+                    <Input
+                      type="number"
+                      value={block.settings.paddingBottom || ''}
+                      onChange={(e) => updateSettings({ paddingBottom: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Padding Left</Label>
+                    <Input
+                      type="number"
+                      value={block.settings.paddingLeft || ''}
+                      onChange={(e) => updateSettings({ paddingLeft: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        );
+
+      case 'RECTANGLE':
+        return (
+          <Accordion type="multiple" defaultValue={['style', 'size']}>
+            <AccordionItem value="style">
+              <AccordionTrigger>🎨 Style</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <ColorPickerInput
+                  label="Background Color"
+                  value={block.settings.backgroundColor || '#3b82f6'}
+                  onChange={(value) => updateSettings({ backgroundColor: value })}
+                />
+
+                <div>
+                  <Label>Border Radius</Label>
+                  <Input
+                    value={block.settings.borderRadius || '0px'}
+                    onChange={(e) => updateSettings({ borderRadius: e.target.value })}
+                    className="mt-1"
+                    placeholder="0px"
+                  />
+                </div>
+
+                <div>
+                  <Label>Border Width</Label>
+                  <Input
+                    value={block.settings.borderWidth || '0px'}
+                    onChange={(e) => updateSettings({ borderWidth: e.target.value })}
+                    className="mt-1"
+                    placeholder="0px"
+                  />
+                </div>
+
+                {block.settings.borderWidth !== '0px' && (
+                  <ColorPickerInput
+                    label="Border Color"
+                    value={block.settings.borderColor || '#000000'}
+                    onChange={(value) => updateSettings({ borderColor: value })}
+                  />
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="size">
+              <AccordionTrigger>📐 Size</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div>
                   <Label>Width</Label>
                   <Input
-                    value={block.settings.width || ''}
+                    value={block.settings.width || '200px'}
                     onChange={(e) => updateSettings({ width: e.target.value })}
                     className="mt-1"
                   />
                 </div>
 
                 <div>
-                  <Label>Layout Direction</Label>
-                  <Select
-                    value={block.settings.layout || 'vertical'}
-                    onValueChange={(value) => updateSettings({ layout: value })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vertical">Vertical</SelectItem>
-                      <SelectItem value="horizontal">Horizontal</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Height</Label>
+                  <Input
+                    value={block.settings.height || '150px'}
+                    onChange={(e) => updateSettings({ height: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        );
+
+      case 'CIRCLE':
+        return (
+          <Accordion type="multiple" defaultValue={['style', 'size']}>
+            <AccordionItem value="style">
+              <AccordionTrigger>🎨 Style</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <ColorPickerInput
+                  label="Background Color"
+                  value={block.settings.backgroundColor || '#8b5cf6'}
+                  onChange={(value) => updateSettings({ backgroundColor: value })}
+                />
+
+                <div>
+                  <Label>Border Width</Label>
+                  <Input
+                    value={block.settings.borderWidth || '0px'}
+                    onChange={(e) => updateSettings({ borderWidth: e.target.value })}
+                    className="mt-1"
+                    placeholder="0px"
+                  />
+                </div>
+
+                {block.settings.borderWidth !== '0px' && (
+                  <ColorPickerInput
+                    label="Border Color"
+                    value={block.settings.borderColor || '#000000'}
+                    onChange={(value) => updateSettings({ borderColor: value })}
+                  />
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="size">
+              <AccordionTrigger>📐 Size</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div>
+                  <Label>Size (Diameter)</Label>
+                  <Input
+                    value={block.settings.size || '150px'}
+                    onChange={(e) => updateSettings({ size: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        );
+
+      case 'LINE':
+        return (
+          <Accordion type="multiple" defaultValue={['style', 'size']}>
+            <AccordionItem value="style">
+              <AccordionTrigger>🎨 Style</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <ColorPickerInput
+                  label="Line Color"
+                  value={block.settings.backgroundColor || '#000000'}
+                  onChange={(value) => updateSettings({ backgroundColor: value })}
+                />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="size">
+              <AccordionTrigger>📐 Size</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div>
+                  <Label>Length</Label>
+                  <Input
+                    value={block.settings.width || '200px'}
+                    onChange={(e) => updateSettings({ width: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>Thickness</Label>
+                  <Input
+                    value={block.settings.height || '2px'}
+                    onChange={(e) => updateSettings({ height: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>Rotation</Label>
+                  <Input
+                    value={block.settings.rotation || '0deg'}
+                    onChange={(e) => updateSettings({ rotation: e.target.value })}
+                    className="mt-1"
+                    placeholder="0deg"
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>

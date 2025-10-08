@@ -24,8 +24,14 @@ export const containerTemplate: BlockTemplate = {
     paddingBottom: '16',
     paddingLeft: '16',
     display: true,
+    // Auto Layout (Flexbox)
+    autoLayout: false,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: '8',
   },
-  availableSettings: ['display', 'background', 'border', 'borderRadius', 'size', 'padding'],
+  availableSettings: ['display', 'background', 'border', 'borderRadius', 'size', 'padding', 'autoLayout'],
   
   generateHTML: (block: BlockInstance): string => {
     const {
@@ -43,16 +49,34 @@ export const containerTemplate: BlockTemplate = {
       paddingRight,
       paddingBottom,
       paddingLeft,
+      autoLayout,
+      flexDirection,
+      justifyContent,
+      alignItems,
+      gap,
     } = block.settings;
     
-    const style = `
+    let style = `
       background-color: ${backgroundColor};
       border: ${borderWidth}px ${borderStyle} ${borderColor};
       border-radius: ${borderRadiusTopLeft}px ${borderRadiusTopRight}px ${borderRadiusBottomRight}px ${borderRadiusBottomLeft}px;
       width: ${width}px;
       ${height !== 'auto' ? `height: ${height}px;` : ''}
       padding: ${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px;
-    `.trim();
+    `;
+    
+    // Add flexbox if autoLayout is enabled
+    if (autoLayout) {
+      style += `
+        display: flex;
+        flex-direction: ${flexDirection};
+        justify-content: ${justifyContent};
+        align-items: ${alignItems};
+        gap: ${gap}px;
+      `;
+    }
+    
+    style = style.trim();
     
     let content = '';
     
