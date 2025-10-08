@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      visual_editor_projects: {
+        Row: {
+          canvas_state: Json
+          created_at: string
+          id: string
+          name: string
+          thumbnail: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canvas_state?: Json
+          created_at?: string
+          id?: string
+          name: string
+          thumbnail?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canvas_state?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          thumbnail?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
