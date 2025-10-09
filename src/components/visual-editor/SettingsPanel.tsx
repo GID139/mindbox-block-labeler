@@ -5,10 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ColorPickerInput } from './ColorPickerInput';
-import { X, Combine, Split } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { buttonPresets, textPresets } from '@/lib/visual-editor/presets';
 
 function findBlockById(blocks: any[], id: string): any {
@@ -42,606 +41,591 @@ export function SettingsPanel() {
     updateSettings(preset);
   };
 
-  const template = getTemplate(block.type);
+  const layout = visualLayout[block.id];
 
   const renderSettings = () => {
     switch (block.type) {
       case 'TEXT':
         return (
-          <Accordion type="multiple" defaultValue={['content', 'style']}>
-            <AccordionItem value="content">
-              <AccordionTrigger>📝 Content</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Text Content</Label>
-                  <Textarea
-                    value={block.settings.text || ''}
-                    onChange={(e) => updateSettings({ text: e.target.value })}
-                    className="mt-1 font-mono text-sm"
-                    rows={4}
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Text Content</Label>
+                <Textarea
+                  value={block.settings.text || ''}
+                  onChange={(e) => updateSettings({ text: e.target.value })}
+                  className="mt-1.5 min-h-[80px]"
+                  placeholder="Enter text..."
+                />
+              </div>
 
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>Presets</Label>
-                  <Select onValueChange={(preset) => applyPreset(textPresets[preset])}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Choose preset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="heading">Heading</SelectItem>
-                      <SelectItem value="subheading">Subheading</SelectItem>
-                      <SelectItem value="body">Body Text</SelectItem>
-                      <SelectItem value="caption">Caption</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Font Size</Label>
+                  <Label className="text-sm">Font Size</Label>
                   <Input
-                    type="number"
-                    value={block.settings.fontSize || ''}
+                    type="text"
+                    value={block.settings.fontSize || '16px'}
                     onChange={(e) => updateSettings({ fontSize: e.target.value })}
-                    className="mt-1"
+                    className="mt-1.5 h-9"
+                    placeholder="16px"
                   />
-                </div>
-
-                <div>
-                  <Label>Font Weight</Label>
-                  <Select
-                    value={block.settings.fontWeight}
-                    onValueChange={(value) => updateSettings({ fontWeight: value })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="bold">Bold</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <ColorPickerInput
-                  label="Text Color"
+                  label="Color"
                   value={block.settings.color || '#000000'}
                   onChange={(value) => updateSettings({ color: value })}
                 />
+              </div>
+            </div>
 
-                <div>
-                  <Label>Text Align</Label>
-                  <Select
-                    value={block.settings.textAlign}
-                    onValueChange={(value) => updateSettings({ textAlign: value })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="left">Left</SelectItem>
-                      <SelectItem value="center">Center</SelectItem>
-                      <SelectItem value="right">Right</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
+                  <div>
+                    <Label className="text-sm">Presets</Label>
+                    <Select onValueChange={(preset) => applyPreset(textPresets[preset])}>
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue placeholder="Choose preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="heading">Heading</SelectItem>
+                        <SelectItem value="subheading">Subheading</SelectItem>
+                        <SelectItem value="body">Body Text</SelectItem>
+                        <SelectItem value="caption">Caption</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Font Weight</Label>
+                    <Select
+                      value={block.settings.fontWeight || 'normal'}
+                      onValueChange={(value) => updateSettings({ fontWeight: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="bold">Bold</SelectItem>
+                        <SelectItem value="light">Light</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Text Align</Label>
+                    <Select
+                      value={block.settings.textAlign || 'left'}
+                      onValueChange={(value) => updateSettings({ textAlign: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Line Height</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.lineHeight || '1.5'}
+                      onChange={(e) => updateSettings({ lineHeight: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="1.5"
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         );
 
       case 'BUTTON':
         return (
-          <Accordion type="multiple" defaultValue={['content', 'style']}>
-            <AccordionItem value="content">
-              <AccordionTrigger>📝 Content</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Button Text</Label>
-                  <Input
-                    value={block.settings.text || ''}
-                    onChange={(e) => updateSettings({ text: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label>Link URL</Label>
-                  <Input
-                    value={block.settings.href || ''}
-                    onChange={(e) => updateSettings({ href: e.target.value })}
-                    className="mt-1"
-                    placeholder="https://example.com"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Presets</Label>
-                  <Select onValueChange={(preset) => applyPreset(buttonPresets[preset])}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Choose preset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="primary">Primary Button</SelectItem>
-                      <SelectItem value="secondary">Secondary Button</SelectItem>
-                      <SelectItem value="success">Success Button</SelectItem>
-                      <SelectItem value="danger">Danger Button</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <ColorPickerInput
-                  label="Background Color"
-                  value={block.settings.backgroundColor || '#39AA5D'}
-                  onChange={(value) => updateSettings({ backgroundColor: value })}
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Button Text</Label>
+                <Input
+                  value={block.settings.text || ''}
+                  onChange={(e) => updateSettings({ text: e.target.value })}
+                  className="mt-1.5 h-9"
+                  placeholder="Click me"
                 />
+              </div>
 
-                <ColorPickerInput
-                  label="Text Color"
-                  value={block.settings.textColor || '#FFFFFF'}
-                  onChange={(value) => updateSettings({ textColor: value })}
+              <ColorPickerInput
+                label="Background Color"
+                value={block.settings.backgroundColor || '#007bff'}
+                onChange={(value) => updateSettings({ backgroundColor: value })}
+              />
+
+              <div>
+                <Label className="text-sm">Link URL</Label>
+                <Input
+                  type="url"
+                  value={block.settings.href || ''}
+                  onChange={(e) => updateSettings({ href: e.target.value })}
+                  className="mt-1.5 h-9"
+                  placeholder="https://example.com"
                 />
+              </div>
+            </div>
 
-                <div>
-                  <Label>Border Radius</Label>
-                  <Input
-                    type="number"
-                    value={block.settings.borderRadius || ''}
-                    onChange={(e) => updateSettings({ borderRadius: e.target.value })}
-                    className="mt-1"
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
+                  <div>
+                    <Label className="text-sm">Presets</Label>
+                    <Select onValueChange={(preset) => applyPreset(buttonPresets[preset])}>
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue placeholder="Choose preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">Primary</SelectItem>
+                        <SelectItem value="secondary">Secondary</SelectItem>
+                        <SelectItem value="outline">Outline</SelectItem>
+                        <SelectItem value="ghost">Ghost</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <ColorPickerInput
+                    label="Text Color"
+                    value={block.settings.color || '#ffffff'}
+                    onChange={(value) => updateSettings({ color: value })}
                   />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+
+                  <div>
+                    <Label className="text-sm">Border Radius</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.borderRadius || '4px'}
+                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="4px"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Padding</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.padding || '8px 16px'}
+                      onChange={(e) => updateSettings({ padding: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="8px 16px"
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         );
 
       case 'IMAGE':
         return (
-          <Accordion type="multiple" defaultValue={['content', 'layout']}>
-            <AccordionItem value="content">
-              <AccordionTrigger>📝 Content</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Image URL</Label>
-                  <Input
-                    value={block.settings.url || ''}
-                    onChange={(e) => updateSettings({ url: e.target.value })}
-                    className="mt-1"
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Image URL</Label>
+                <Input
+                  type="url"
+                  value={block.settings.src || ''}
+                  onChange={(e) => updateSettings({ src: e.target.value })}
+                  className="mt-1.5 h-9"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
 
-                <div>
-                  <Label>Alt Text</Label>
-                  <Input
-                    value={block.settings.alt || ''}
-                    onChange={(e) => updateSettings({ alt: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+              <div>
+                <Label className="text-sm">Alt Text</Label>
+                <Input
+                  value={block.settings.alt || ''}
+                  onChange={(e) => updateSettings({ alt: e.target.value })}
+                  className="mt-1.5 h-9"
+                  placeholder="Image description"
+                />
+              </div>
+            </div>
 
-            <AccordionItem value="layout">
-              <AccordionTrigger>📐 Layout</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Width</Label>
-                  <Input
-                    value={block.settings.width || ''}
-                    onChange={(e) => updateSettings({ width: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-sm">Width</Label>
+                      <Input
+                        type="text"
+                        value={block.settings.width || 'auto'}
+                        onChange={(e) => updateSettings({ width: e.target.value })}
+                        className="mt-1.5 h-9"
+                        placeholder="auto"
+                      />
+                    </div>
 
-                <div>
-                  <Label>Height</Label>
-                  <Input
-                    value={block.settings.height || ''}
-                    onChange={(e) => updateSettings({ height: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                    <div>
+                      <Label className="text-sm">Height</Label>
+                      <Input
+                        type="text"
+                        value={block.settings.height || 'auto'}
+                        onChange={(e) => updateSettings({ height: e.target.value })}
+                        className="mt-1.5 h-9"
+                        placeholder="auto"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Border Radius</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.borderRadius || '0px'}
+                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="0px"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Object Fit</Label>
+                    <Select
+                      value={block.settings.objectFit || 'cover'}
+                      onValueChange={(value) => updateSettings({ objectFit: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cover">Cover</SelectItem>
+                        <SelectItem value="contain">Contain</SelectItem>
+                        <SelectItem value="fill">Fill</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         );
 
       case 'CONTAINER':
+      case 'FLEX_CONTAINER':
         return (
-          <Accordion type="multiple" defaultValue={['autoLayout', 'style', 'layout']}>
-            <AccordionItem value="autoLayout">
-              <AccordionTrigger>✨ Auto Layout (Flexbox)</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Enable Auto Layout</Label>
-                  <input
-                    type="checkbox"
-                    checked={block.settings.autoLayout || false}
-                    onChange={(e) => updateSettings({ autoLayout: e.target.checked })}
-                    className="h-4 w-4"
-                  />
-                </div>
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Layout Direction</Label>
+                <Select
+                  value={block.settings.flexDirection || 'row'}
+                  onValueChange={(value) => updateSettings({ flexDirection: value })}
+                >
+                  <SelectTrigger className="mt-1.5 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="row">Horizontal (Row)</SelectItem>
+                    <SelectItem value="column">Vertical (Column)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {block.settings.autoLayout && (
-                  <>
-                    <div>
-                      <Label>Direction</Label>
-                      <Select
-                        value={block.settings.flexDirection || 'column'}
-                        onValueChange={(value) => updateSettings({ flexDirection: value })}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="row">→ Horizontal (Row)</SelectItem>
-                          <SelectItem value="column">↓ Vertical (Column)</SelectItem>
-                          <SelectItem value="row-reverse">← Horizontal Reverse</SelectItem>
-                          <SelectItem value="column-reverse">↑ Vertical Reverse</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Justify Content (Main Axis)</Label>
-                      <Select
-                        value={block.settings.justifyContent || 'flex-start'}
-                        onValueChange={(value) => updateSettings({ justifyContent: value })}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="flex-start">⬅️ Start</SelectItem>
-                          <SelectItem value="center">⬅️➡️ Center</SelectItem>
-                          <SelectItem value="flex-end">➡️ End</SelectItem>
-                          <SelectItem value="space-between">⬅️ ➡️ Space Between</SelectItem>
-                          <SelectItem value="space-around">⬅️  ➡️ Space Around</SelectItem>
-                          <SelectItem value="space-evenly">⬅️   ➡️ Space Evenly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Align Items (Cross Axis)</Label>
-                      <Select
-                        value={block.settings.alignItems || 'flex-start'}
-                        onValueChange={(value) => updateSettings({ alignItems: value })}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="flex-start">⬆️ Start</SelectItem>
-                          <SelectItem value="center">↕️ Center</SelectItem>
-                          <SelectItem value="flex-end">⬇️ End</SelectItem>
-                          <SelectItem value="stretch">↕️ Stretch</SelectItem>
-                          <SelectItem value="baseline">— Baseline</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Gap Between Items</Label>
-                      <Input
-                        type="number"
-                        value={block.settings.gap || '8'}
-                        onChange={(e) => updateSettings({ gap: e.target.value })}
-                        className="mt-1"
-                        placeholder="8"
-                      />
-                    </div>
-                  </>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <ColorPickerInput
-                  label="Background Color"
-                  value={block.settings.backgroundColor || ''}
-                  onChange={(value) => updateSettings({ backgroundColor: value })}
+              <div>
+                <Label className="text-sm">Gap</Label>
+                <Input
+                  type="text"
+                  value={block.settings.gap || '0px'}
+                  onChange={(e) => updateSettings({ gap: e.target.value })}
+                  className="mt-1.5 h-9"
+                  placeholder="16px"
                 />
+              </div>
 
+              <ColorPickerInput
+                label="Background Color"
+                value={block.settings.backgroundColor || 'transparent'}
+                onChange={(value) => updateSettings({ backgroundColor: value })}
+              />
+            </div>
+
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
+                  <div>
+                    <Label className="text-sm">Justify Content</Label>
+                    <Select
+                      value={block.settings.justifyContent || 'flex-start'}
+                      onValueChange={(value) => updateSettings({ justifyContent: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="flex-start">Start</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="flex-end">End</SelectItem>
+                        <SelectItem value="space-between">Space Between</SelectItem>
+                        <SelectItem value="space-around">Space Around</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Align Items</Label>
+                    <Select
+                      value={block.settings.alignItems || 'stretch'}
+                      onValueChange={(value) => updateSettings({ alignItems: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="stretch">Stretch</SelectItem>
+                        <SelectItem value="flex-start">Start</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="flex-end">End</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Padding</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.padding || '0px'}
+                      onChange={(e) => updateSettings({ padding: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="16px"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Border Radius</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.borderRadius || '0px'}
+                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="0px"
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        );
+
+      case 'GRID_CONTAINER':
+        return (
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>Border Radius</Label>
+                  <Label className="text-sm font-medium">Columns</Label>
                   <Input
                     type="number"
-                    value={block.settings.borderRadiusTopLeft || ''}
+                    value={block.settings.gridTemplateColumns?.split(' ').length || 2}
                     onChange={(e) => {
-                      const val = e.target.value;
-                      updateSettings({
-                        borderRadiusTopLeft: val,
-                        borderRadiusTopRight: val,
-                        borderRadiusBottomRight: val,
-                        borderRadiusBottomLeft: val,
-                      });
+                      const cols = parseInt(e.target.value) || 2;
+                      updateSettings({ gridTemplateColumns: `repeat(${cols}, 1fr)` });
                     }}
-                    className="mt-1"
-                    placeholder="4"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="layout">
-              <AccordionTrigger>📐 Size & Padding</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Width</Label>
-                  <Input
-                    type="number"
-                    value={block.settings.width || ''}
-                    onChange={(e) => updateSettings({ width: e.target.value })}
-                    className="mt-1"
-                    placeholder="600"
+                    className="mt-1.5 h-9"
+                    min={1}
                   />
                 </div>
 
                 <div>
-                  <Label>Height</Label>
+                  <Label className="text-sm">Gap</Label>
                   <Input
-                    value={block.settings.height || 'auto'}
-                    onChange={(e) => updateSettings({ height: e.target.value })}
-                    className="mt-1"
-                    placeholder="auto"
+                    type="text"
+                    value={block.settings.gap || '16px'}
+                    onChange={(e) => updateSettings({ gap: e.target.value })}
+                    className="mt-1.5 h-9"
+                    placeholder="16px"
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2">
+              <ColorPickerInput
+                label="Background Color"
+                value={block.settings.backgroundColor || 'transparent'}
+                onChange={(value) => updateSettings({ backgroundColor: value })}
+              />
+            </div>
+
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
                   <div>
-                    <Label>Padding Top</Label>
+                    <Label className="text-sm">Grid Template</Label>
                     <Input
-                      type="number"
-                      value={block.settings.paddingTop || ''}
-                      onChange={(e) => updateSettings({ paddingTop: e.target.value })}
-                      className="mt-1"
+                      type="text"
+                      value={block.settings.gridTemplateColumns || 'repeat(2, 1fr)'}
+                      onChange={(e) => updateSettings({ gridTemplateColumns: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="repeat(2, 1fr)"
                     />
                   </div>
+
                   <div>
-                    <Label>Padding Right</Label>
+                    <Label className="text-sm">Padding</Label>
                     <Input
-                      type="number"
-                      value={block.settings.paddingRight || ''}
-                      onChange={(e) => updateSettings({ paddingRight: e.target.value })}
-                      className="mt-1"
+                      type="text"
+                      value={block.settings.padding || '0px'}
+                      onChange={(e) => updateSettings({ padding: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="16px"
                     />
                   </div>
-                  <div>
-                    <Label>Padding Bottom</Label>
-                    <Input
-                      type="number"
-                      value={block.settings.paddingBottom || ''}
-                      onChange={(e) => updateSettings({ paddingBottom: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Padding Left</Label>
-                    <Input
-                      type="number"
-                      value={block.settings.paddingLeft || ''}
-                      onChange={(e) => updateSettings({ paddingLeft: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         );
 
       case 'RECTANGLE':
-        return (
-          <Accordion type="multiple" defaultValue={['style', 'size']}>
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <ColorPickerInput
-                  label="Background Color"
-                  value={block.settings.backgroundColor || '#3b82f6'}
-                  onChange={(value) => updateSettings({ backgroundColor: value })}
-                />
-
-                <div>
-                  <Label>Border Radius</Label>
-                  <Input
-                    value={block.settings.borderRadius || '0px'}
-                    onChange={(e) => updateSettings({ borderRadius: e.target.value })}
-                    className="mt-1"
-                    placeholder="0px"
-                  />
-                </div>
-
-                <div>
-                  <Label>Border Width</Label>
-                  <Input
-                    value={block.settings.borderWidth || '0px'}
-                    onChange={(e) => updateSettings({ borderWidth: e.target.value })}
-                    className="mt-1"
-                    placeholder="0px"
-                  />
-                </div>
-
-                {block.settings.borderWidth !== '0px' && (
-                  <ColorPickerInput
-                    label="Border Color"
-                    value={block.settings.borderColor || '#000000'}
-                    onChange={(value) => updateSettings({ borderColor: value })}
-                  />
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="size">
-              <AccordionTrigger>📐 Size</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Width</Label>
-                  <Input
-                    value={block.settings.width || '200px'}
-                    onChange={(e) => updateSettings({ width: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label>Height</Label>
-                  <Input
-                    value={block.settings.height || '150px'}
-                    onChange={(e) => updateSettings({ height: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        );
-
       case 'CIRCLE':
         return (
-          <Accordion type="multiple" defaultValue={['style', 'size']}>
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <ColorPickerInput
-                  label="Background Color"
-                  value={block.settings.backgroundColor || '#8b5cf6'}
-                  onChange={(value) => updateSettings({ backgroundColor: value })}
-                />
+          <div className="space-y-4">
+            {/* Primary Settings */}
+            <div className="space-y-3">
+              <ColorPickerInput
+                label="Fill Color"
+                value={block.settings.fill || '#cccccc'}
+                onChange={(value) => updateSettings({ fill: value })}
+              />
 
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>Border Width</Label>
+                  <Label className="text-sm">Width</Label>
                   <Input
-                    value={block.settings.borderWidth || '0px'}
-                    onChange={(e) => updateSettings({ borderWidth: e.target.value })}
-                    className="mt-1"
-                    placeholder="0px"
-                  />
-                </div>
-
-                {block.settings.borderWidth !== '0px' && (
-                  <ColorPickerInput
-                    label="Border Color"
-                    value={block.settings.borderColor || '#000000'}
-                    onChange={(value) => updateSettings({ borderColor: value })}
-                  />
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="size">
-              <AccordionTrigger>📐 Size</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Size (Diameter)</Label>
-                  <Input
-                    value={block.settings.size || '150px'}
-                    onChange={(e) => updateSettings({ size: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        );
-
-      case 'LINE':
-        return (
-          <Accordion type="multiple" defaultValue={['style', 'size']}>
-            <AccordionItem value="style">
-              <AccordionTrigger>🎨 Style</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <ColorPickerInput
-                  label="Line Color"
-                  value={block.settings.backgroundColor || '#000000'}
-                  onChange={(value) => updateSettings({ backgroundColor: value })}
-                />
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="size">
-              <AccordionTrigger>📐 Size</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div>
-                  <Label>Length</Label>
-                  <Input
-                    value={block.settings.width || '200px'}
+                    type="text"
+                    value={block.settings.width || '100px'}
                     onChange={(e) => updateSettings({ width: e.target.value })}
-                    className="mt-1"
+                    className="mt-1.5 h-9"
+                    placeholder="100px"
                   />
                 </div>
 
                 <div>
-                  <Label>Thickness</Label>
+                  <Label className="text-sm">Height</Label>
                   <Input
-                    value={block.settings.height || '2px'}
+                    type="text"
+                    value={block.settings.height || '100px'}
                     onChange={(e) => updateSettings({ height: e.target.value })}
-                    className="mt-1"
+                    className="mt-1.5 h-9"
+                    placeholder="100px"
                   />
                 </div>
+              </div>
+            </div>
 
-                <div>
-                  <Label>Rotation</Label>
-                  <Input
-                    value={block.settings.rotation || '0deg'}
-                    onChange={(e) => updateSettings({ rotation: e.target.value })}
-                    className="mt-1"
-                    placeholder="0deg"
+            {/* Advanced Settings */}
+            <Accordion type="multiple" className="border rounded-md">
+              <AccordionItem value="advanced" className="border-0">
+                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    Advanced
+                    <Badge variant="outline" className="text-xs">Optional</Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-3">
+                  <ColorPickerInput
+                    label="Stroke Color"
+                    value={block.settings.stroke || '#000000'}
+                    onChange={(value) => updateSettings({ stroke: value })}
                   />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        );
 
-      case 'TABLE':
-        return (
-          <Accordion type="multiple" defaultValue={['structure']}>
-            <AccordionItem value="structure">
-              <AccordionTrigger>📊 Table Structure</AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label>Rows: {block.settings.rows}</Label>
+                    <Label className="text-sm">Stroke Width</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.strokeWidth || '1px'}
+                      onChange={(e) => updateSettings({ strokeWidth: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="1px"
+                    />
                   </div>
-                  <div>
-                    <Label>Cols: {block.settings.cols}</Label>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                  💡 Click on table cells in the canvas to add content. Use merge/resize controls on individual cells.
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+
+                  {block.type === 'RECTANGLE' && (
+                    <div>
+                      <Label className="text-sm">Border Radius</Label>
+                      <Input
+                        type="text"
+                        value={block.settings.borderRadius || '0px'}
+                        onChange={(e) => updateSettings({ borderRadius: e.target.value })}
+                        className="mt-1.5 h-9"
+                        placeholder="0px"
+                      />
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         );
 
       default:
         return (
-          <div className="space-y-3">
-            {Object.entries(block.settings).map(([key, value]) => (
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Settings for {block.type} block
+            </p>
+            
+            {Object.entries(block.settings || {}).map(([key, value]) => (
               <div key={key}>
-                <Label>{key}</Label>
+                <Label className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
                 <Input
-                  value={String(value)}
+                  value={String(value || '')}
                   onChange={(e) => updateSettings({ [key]: e.target.value })}
-                  className="mt-1"
+                  className="mt-1.5 h-9"
                 />
               </div>
             ))}
@@ -651,190 +635,83 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <Card className="p-4">
-        <div className="space-y-3">
+    <div className="w-80 border-l bg-background overflow-y-auto">
+      <div className="p-4 space-y-4">
+        {/* Block Header */}
+        <Card className="p-3 space-y-2 bg-muted/30">
           <div>
-            <Label>Block Name</Label>
-            <Input
-              value={block.name}
-              onChange={(e) => updateBlock(block.id, { name: e.target.value })}
-              className="mt-1"
-            />
+            <Label className="text-xs text-muted-foreground">Block Name</Label>
+            <p className="text-sm font-medium mt-0.5">{block.name}</p>
           </div>
-          
           <div>
-            <Label>Type</Label>
-            <div className="mt-1 px-3 py-2 bg-muted rounded text-sm">
-              {template.icon} {block.type}
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <h3 className="font-semibold mb-3">Settings</h3>
-        {renderSettings()}
-      </Card>
-
-      {block.children && block.children.length > 0 && (
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2">Children ({block.children.length})</h3>
-          <div className="flex flex-wrap gap-2">
-            {block.children.map((child: any) => (
-              <div key={child.id} className="px-2 py-1 bg-muted rounded text-xs">
-                {child.name}
-              </div>
-            ))}
+            <Label className="text-xs text-muted-foreground">Type</Label>
+            <Badge variant="secondary" className="mt-0.5">
+              {block.type}
+            </Badge>
           </div>
         </Card>
-      )}
 
-      {/* Resize Constraints (Visual Mode Only) */}
-      {canvasMode === 'visual' && (
+        {/* Settings */}
         <Card className="p-4">
-          <h3 className="font-medium mb-3">Resize Constraints</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="lockAspectRatio"
-                checked={block.constraints?.lockAspectRatio || false}
-                onChange={(e) =>
-                  updateBlock(block.id, {
-                    constraints: {
-                      ...block.constraints,
-                      lockAspectRatio: e.target.checked,
-                    },
-                  })
-                }
-                className="w-4 h-4"
-              />
-              <Label htmlFor="lockAspectRatio">Lock Aspect Ratio</Label>
-            </div>
+          {renderSettings()}
+        </Card>
 
+        {/* Visual Mode Position & Size (Only in Visual Mode) */}
+        {canvasMode === 'visual' && layout && (
+          <Card className="p-4 space-y-3">
+            <h3 className="text-sm font-medium">Position & Size</h3>
+            
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label>Min Width</Label>
+                <Label className="text-xs">X</Label>
                 <Input
                   type="number"
-                  value={block.constraints?.minWidth || ''}
-                  onChange={(e) =>
-                    updateBlock(block.id, {
-                      constraints: {
-                        ...block.constraints,
-                        minWidth: Number(e.target.value) || undefined,
-                      },
-                    })
-                  }
-                  placeholder="Auto"
+                  value={Math.round(layout.x)}
+                  onChange={(e) => updateVisualLayout(block.id, { x: parseInt(e.target.value) || 0 })}
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
               <div>
-                <Label>Max Width</Label>
+                <Label className="text-xs">Y</Label>
                 <Input
                   type="number"
-                  value={block.constraints?.maxWidth || ''}
-                  onChange={(e) =>
-                    updateBlock(block.id, {
-                      constraints: {
-                        ...block.constraints,
-                        maxWidth: Number(e.target.value) || undefined,
-                      },
-                    })
-                  }
-                  placeholder="Auto"
+                  value={Math.round(layout.y)}
+                  onChange={(e) => updateVisualLayout(block.id, { y: parseInt(e.target.value) || 0 })}
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
               <div>
-                <Label>Min Height</Label>
+                <Label className="text-xs">W</Label>
                 <Input
                   type="number"
-                  value={block.constraints?.minHeight || ''}
-                  onChange={(e) =>
-                    updateBlock(block.id, {
-                      constraints: {
-                        ...block.constraints,
-                        minHeight: Number(e.target.value) || undefined,
-                      },
-                    })
-                  }
-                  placeholder="Auto"
+                  value={Math.round(layout.width)}
+                  onChange={(e) => updateVisualLayout(block.id, { width: parseInt(e.target.value) || 0 })}
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
               <div>
-                <Label>Max Height</Label>
+                <Label className="text-xs">H</Label>
                 <Input
                   type="number"
-                  value={block.constraints?.maxHeight || ''}
-                  onChange={(e) =>
-                    updateBlock(block.id, {
-                      constraints: {
-                        ...block.constraints,
-                        maxHeight: Number(e.target.value) || undefined,
-                      },
-                    })
-                  }
-                  placeholder="Auto"
+                  value={Math.round(layout.height)}
+                  onChange={(e) => updateVisualLayout(block.id, { height: parseInt(e.target.value) || 0 })}
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
             </div>
-            
-            {/* Grid/Flex Settings for GRID_CONTAINER and FLEX_CONTAINER */}
-            {(block.type === 'GRID_CONTAINER' || block.type === 'FLEX_CONTAINER') && (
-              <div className="space-y-3 mt-4">
-                <h3 className="font-medium">Layout Settings</h3>
-                {block.type === 'GRID_CONTAINER' && (
-                  <>
-                    <div>
-                      <Label>Grid Columns</Label>
-                      <Input
-                        value={block.settings.gridTemplateColumns || ''}
-                        onChange={(e) => updateSettings({ gridTemplateColumns: e.target.value })}
-                        placeholder="1fr 1fr 1fr"
-                      />
-                    </div>
-                    <div>
-                      <Label>Gap</Label>
-                      <Input
-                        value={block.settings.gap || ''}
-                        onChange={(e) => updateSettings({ gap: e.target.value })}
-                        placeholder="10px"
-                      />
-                    </div>
-                  </>
-                )}
-                {block.type === 'FLEX_CONTAINER' && (
-                  <>
-                    <div>
-                      <Label>Flex Direction</Label>
-                      <Select value={block.settings.flexDirection} onValueChange={(v) => updateSettings({ flexDirection: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="row">Row</SelectItem>
-                          <SelectItem value="column">Column</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Justify Content</Label>
-                      <Select value={block.settings.justifyContent} onValueChange={(v) => updateSettings({ justifyContent: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="flex-start">Start</SelectItem>
-                          <SelectItem value="center">Center</SelectItem>
-                          <SelectItem value="flex-end">End</SelectItem>
-                          <SelectItem value="space-between">Space Between</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
+
+        {/* Children Info */}
+        {block.children && block.children.length > 0 && (
+          <Card className="p-3">
+            <Label className="text-xs text-muted-foreground">Children</Label>
+            <p className="text-sm mt-1">
+              {block.children.length} child block{block.children.length !== 1 ? 's' : ''}
+            </p>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

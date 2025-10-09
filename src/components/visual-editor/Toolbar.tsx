@@ -1,36 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { BlockType } from '@/types/visual-editor';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component, ChevronDown, Layers, Ruler as RulerIcon, Download, Upload, FileJson, Image as ImageIcon } from 'lucide-react';
+import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
-import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
-import { GlobalStylesDialog } from './GlobalStylesDialog';
-import { AlignmentToolbar } from './AlignmentToolbar';
+import { ViewDropdown } from './ViewDropdown';
+import { ToolsDropdown } from './ToolsDropdown';
+import { ZoomDropdown } from './ZoomDropdown';
+import { FileDropdown } from './FileDropdown';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
-import { exportToPNG, exportToSVG, exportToJSON, importFromJSON, importImage } from '@/lib/visual-editor/export-utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 
 export function Toolbar() {
   const {
@@ -49,51 +31,16 @@ export function Toolbar() {
     redo,
     canUndo,
     canRedo,
-    showGrid,
-    setShowGrid,
-    zoom,
-    setZoom,
     deviceMode,
     setDeviceMode,
-    showOutline,
-    setShowOutline,
     canvasMode,
     blocks,
-    drawingTool,
-    setDrawingTool,
-    selectedBlockIds,
-    createComponent,
-    groupBlocks,
-    ungroupBlock,
-    selectAll,
-    selectByType,
-    invertSelection,
-    bringToFront,
-    sendToBack,
-    bringForward,
-    sendBackward,
-    showRulers,
-    setShowRulers,
-    showMeasurements,
-    setShowMeasurements,
-    snapToGrid,
-    setSnapToGrid,
-    snapToObjects,
-    setSnapToObjects,
-    zoomToFit,
-    zoomToSelection,
-    resetZoom,
-    importBlocks,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [componentName, setComponentName] = useState('');
-  const [isComponentDialogOpen, setIsComponentDialogOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadProjectsList();
@@ -101,136 +48,66 @@ export function Toolbar() {
 
   const loadProjectsList = async () => {
     setIsLoadingProjects(true);
-    const data = await listProjects();
-    setProjects(data);
-    setIsLoadingProjects(false);
+    try {
+      const projectsList = await listProjects();
+      setProjects(projectsList);
+    } catch (error) {
+      toast.error('Failed to load projects');
+    } finally {
+      setIsLoadingProjects(false);
+    }
   };
 
-  const handleProjectChange = async (projectId: string) => {
-    if (projectId === 'new') {
-      const name = prompt('Enter project name:');
-      if (name) {
-        await createNewProject(name);
-        await loadProjectsList();
-        toast.success('New project created');
-      }
-    } else {
-      await loadProject(projectId);
+  const handleProjectChange = async (value: string) => {
+    if (value === 'new') {
+      const newName = `Project ${Date.now()}`;
+      await createNewProject(newName);
       await loadProjectsList();
+      toast.success('New project created');
+    } else {
+      await loadProject(value);
+      toast.success('Project loaded');
     }
   };
 
   const handleSave = async () => {
-    await saveProject();
-    await loadProjectsList();
+    try {
+      await saveProject();
+      toast.success('Project saved');
+    } catch (error) {
+      toast.error('Failed to save project');
+    }
   };
 
   const formatLastSaved = () => {
-    if (!lastSavedAt) return 'Never';
-    const diff = Date.now() - lastSavedAt.getTime();
+    if (!lastSavedAt) return 'Never saved';
+    const now = new Date();
+    const diff = now.getTime() - lastSavedAt.getTime();
     const minutes = Math.floor(diff / 60000);
-    if (minutes === 0) return 'Just now';
-    if (minutes === 1) return '1 min ago';
-    return `${minutes} mins ago`;
+    if (minutes < 1) return 'Just now';
+    if (minutes === 1) return '1 minute ago';
+    if (minutes < 60) return `${minutes} minutes ago`;
+    return lastSavedAt.toLocaleTimeString();
   };
 
   const handleCopyCode = () => {
     const html = generateHTML(blocks);
     const json = JSON.stringify(blocks, null, 2);
-    const code = `<!-- HTML -->\n${html}\n\n<!-- JSON -->\n${json}`;
-    
-    navigator.clipboard.writeText(code);
-    toast.success('Code copied to clipboard!');
-  };
-
-  const handleCreateComponent = () => {
-    if (componentName.trim() && selectedBlockIds.length === 1) {
-      createComponent(componentName.trim(), selectedBlockIds[0]);
-      setComponentName('');
-      setIsComponentDialogOpen(false);
-    }
-  };
-
-  const handleExportPNG = () => {
-    const canvas = document.querySelector('.visual-canvas-content');
-    if (canvas) {
-      exportToPNG(canvas as HTMLElement, `${projectName}.png`);
-    }
-  };
-
-  const handleExportSVG = () => {
-    const canvas = document.querySelector('.visual-canvas-content');
-    if (canvas) {
-      exportToSVG(canvas as HTMLElement, `${projectName}.svg`);
-    }
-  };
-
-  const handleExportJSON = () => {
-    exportToJSON(blocks, `${projectName}.json`);
-  };
-
-  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const importedBlocks = await importFromJSON(file);
-        importBlocks(importedBlocks);
-      } catch (error) {
-        // Error is already handled in importFromJSON
-      }
-    }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleImportImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const dataUrl = await importImage(file);
-        // Create an image block with the imported image
-        const newBlock = {
-          id: `image-${Date.now()}`,
-          type: 'IMAGE' as BlockType,
-          name: `image${Date.now()}`,
-          settings: {
-            src: dataUrl,
-            alt: file.name,
-            width: '300px',
-            height: 'auto',
-          },
-          children: [],
-          canContainChildren: false,
-          maxNestingLevel: 0,
-        };
-        // This will be handled in VisualCanvas with drag & drop
-      } catch (error) {
-        // Error is already handled in importImage
-      }
-    }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    const combined = `<!-- HTML -->\n${html}\n\n<!-- JSON -->\n${json}`;
+    navigator.clipboard.writeText(combined);
+    toast.success('Code copied to clipboard');
   };
 
   return (
     <>
-      <div className="flex items-center gap-2 p-3 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-wrap">
-        {/* Project Selector */}
-        <Select value={currentProjectId || undefined} onValueChange={handleProjectChange} disabled={isLoadingProjects}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select project..." />
+      <div className="flex items-center gap-2 p-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-wrap">
+        {/* Project Selection */}
+        <Select value={currentProjectId || ''} onValueChange={handleProjectChange} disabled={isLoadingProjects}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Select project" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="new">
-              <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span>New Project</span>
-              </div>
-            </SelectItem>
+            <SelectItem value="new">+ New Project</SelectItem>
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.id}>
                 {project.name}
@@ -240,446 +117,151 @@ export function Toolbar() {
         </Select>
 
         {/* Project Name */}
-        {currentProjectId && (
-          isEditingName ? (
-            <Input
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingName(false); }}
-              className="w-40"
-              autoFocus
-            />
-          ) : (
-            <div className="text-sm font-medium cursor-pointer hover:text-primary" onClick={() => setIsEditingName(true)}>
-              {projectName}
-            </div>
-          )
+        {isEditingName ? (
+          <Input
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            onBlur={() => setIsEditingName(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setIsEditingName(false);
+            }}
+            className="w-[180px] h-9"
+            autoFocus
+          />
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsEditingName(true)}
+            className="font-medium"
+          >
+            {projectName}
+          </Button>
         )}
 
         <div className="h-6 w-px bg-border" />
 
-        {/* History */}
-        <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo} title="Undo (Cmd+Z)">
+        {/* History Controls */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
           <Undo className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo} title="Redo (Cmd+Shift+Z)">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Y)"
+        >
           <Redo className="h-4 w-4" />
         </Button>
 
         <div className="h-6 w-px bg-border" />
 
         {/* Canvas Mode Toggle */}
-        <div className="canvas-mode-toggle">
-          <CanvasModeToggle />
-        </div>
+        <CanvasModeToggle />
 
-        {/* Drawing Tools (Visual Mode Only) */}
+        <div className="h-6 w-px bg-border" />
+
+        {/* Tools & View (Visual Mode Only) */}
         {canvasMode === 'visual' && (
           <>
+            <ToolsDropdown />
+            <ViewDropdown />
             <div className="h-6 w-px bg-border" />
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
-              <Button 
-                variant={drawingTool === 'select' ? 'default' : 'ghost'} 
-                size="icon" 
-                onClick={() => setDrawingTool('select')}
-                title="Select Tool (V)"
-                className="h-8 w-8"
-              >
-                <MousePointer className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant={drawingTool === 'rectangle' ? 'default' : 'ghost'} 
-                size="icon" 
-                onClick={() => setDrawingTool('rectangle')}
-                title="Rectangle Tool (R)"
-                className="h-8 w-8"
-              >
-                <Square className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant={drawingTool === 'circle' ? 'default' : 'ghost'} 
-                size="icon" 
-                onClick={() => setDrawingTool('circle')}
-                title="Circle Tool (C)"
-                className="h-8 w-8"
-              >
-                <Circle className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant={drawingTool === 'line' ? 'default' : 'ghost'} 
-                size="icon" 
-                onClick={() => setDrawingTool('line')}
-                title="Line Tool (L)"
-                className="h-8 w-8"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-            </div>
           </>
         )}
 
-        <div className="h-6 w-px bg-border" />
-
-        {/* Select Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Layers className="h-4 w-4 mr-1" />
-              Select
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => selectAll()}>
-              Select All
-              <span className="ml-auto text-xs text-muted-foreground">⌘A</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => selectByType('TEXT')}>
-              Select All Text
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => selectByType('BUTTON')}>
-              Select All Buttons
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => selectByType('IMAGE')}>
-              Select All Images
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => selectByType('CONTAINER')}>
-              Select All Containers
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => invertSelection()}>
-              Invert Selection
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Arrange Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              disabled={selectedBlockIds.length === 0}
-            >
-              <Layers className="h-4 w-4 mr-1" />
-              Arrange
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem 
-              onClick={() => selectedBlockIds[0] && bringToFront(selectedBlockIds[0])}
-              disabled={selectedBlockIds.length !== 1}
-            >
-              Bring to Front
-              <span className="ml-auto text-xs text-muted-foreground">⌘]</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => selectedBlockIds[0] && bringForward(selectedBlockIds[0])}
-              disabled={selectedBlockIds.length !== 1}
-            >
-              Bring Forward
-              <span className="ml-auto text-xs text-muted-foreground">⌘[</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => selectedBlockIds[0] && sendBackward(selectedBlockIds[0])}
-              disabled={selectedBlockIds.length !== 1}
-            >
-              Send Backward
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => selectedBlockIds[0] && sendToBack(selectedBlockIds[0])}
-              disabled={selectedBlockIds.length !== 1}
-            >
-              Send to Back
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="h-6 w-px bg-border" />
-
-        {/* Component Creation */}
-        <Dialog open={isComponentDialogOpen} onOpenChange={setIsComponentDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={selectedBlockIds.length !== 1}
-              title="Create Component from Selection"
-            >
-              <Component className="h-4 w-4 mr-1" />
-              Component
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Component</DialogTitle>
-              <DialogDescription>
-                Create a reusable component from the selected block
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="component-name">Component Name</Label>
-                <Input
-                  id="component-name"
-                  value={componentName}
-                  onChange={(e) => setComponentName(e.target.value)}
-                  placeholder="e.g., Hero Button, Card Header"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateComponent();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleCreateComponent}>
-                Create Component
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <div className="h-6 w-px bg-border" />
-
-        {/* Group/Ungroup */}
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={selectedBlockIds.length < 2}
-          onClick={() => groupBlocks(selectedBlockIds)}
-          title="Group Blocks (Ctrl+G)"
-        >
-          <Component className="h-4 w-4 mr-1" />
-          Group
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={selectedBlockIds.length !== 1 || blocks.find(b => b.id === selectedBlockIds[0])?.type !== 'GROUP'}
-          onClick={() => ungroupBlock(selectedBlockIds[0])}
-          title="Ungroup"
-        >
-          <Component className="h-4 w-4 mr-1" />
-          Ungroup
-        </Button>
-
-        {/* Visual Mode Controls */}
+        {/* Zoom Control (Visual Mode Only) */}
         {canvasMode === 'visual' && (
           <>
-            <AlignmentToolbar />
-            
+            <ZoomDropdown />
             <div className="h-6 w-px bg-border" />
-            
-            <Button 
-              variant={showGrid ? 'default' : 'ghost'} 
-              size="icon" 
-              onClick={() => setShowGrid(!showGrid)} 
-              title="Toggle Grid (G)"
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-            
-            <Button 
-              variant={showRulers ? 'default' : 'ghost'} 
-              size="icon" 
-              onClick={() => setShowRulers(!showRulers)} 
-              title="Toggle Rulers (Ctrl+R)"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 3v18h18" />
-                <path d="M7 3v4M11 3v4M15 3v4M19 3v4" />
-                <path d="M3 7h4M3 11h4M3 15h4M3 19h4" />
-              </svg>
-            </Button>
-            
-            <Button 
-              variant={showMeasurements ? 'default' : 'ghost'} 
-              size="icon" 
-              onClick={() => setShowMeasurements(!showMeasurements)} 
-              title="Toggle Measurements"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M9 3v18M15 3v18" />
-                <path d="M3 9h18M3 15h18" />
-              </svg>
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  Snap
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setSnapToGrid(!snapToGrid)}>
-                  {snapToGrid ? '✓ ' : ''}Snap to Grid
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSnapToObjects(!snapToObjects)}>
-                  {snapToObjects ? '✓ ' : ''}Snap to Objects
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <div className="h-6 w-px bg-border" />
-            
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(25, zoom - 25))} title="Zoom Out">
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <span className="text-xs w-12 text-center">{zoom}%</span>
-              <Button variant="ghost" size="icon" onClick={() => setZoom(Math.min(200, zoom + 25))} title="Zoom In">
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </div>
+          </>
+        )}
 
-            <Tabs value={deviceMode} onValueChange={(v: any) => setDeviceMode(v)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="mobile" className="px-2"><Smartphone className="h-3 w-3" /></TabsTrigger>
-                <TabsTrigger value="tablet" className="px-2"><Tablet className="h-3 w-3" /></TabsTrigger>
-                <TabsTrigger value="desktop" className="px-2"><Monitor className="h-3 w-3" /></TabsTrigger>
+        {/* Device Mode (Visual Mode Only) */}
+        {canvasMode === 'visual' && (
+          <>
+            <Tabs value={deviceMode} onValueChange={(v) => setDeviceMode(v as typeof deviceMode)}>
+              <TabsList className="h-9">
+                <TabsTrigger value="desktop" className="px-3">
+                  <Monitor className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="tablet" className="px-3">
+                  <Tablet className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="mobile" className="px-3">
+                  <Smartphone className="h-4 w-4" />
+                </TabsTrigger>
               </TabsList>
             </Tabs>
+            <div className="h-6 w-px bg-border" />
           </>
         )}
+
+        {/* File Operations */}
+        <FileDropdown />
 
         <div className="flex-1" />
 
-        {/* Outline Toggle */}
-        <Button variant="ghost" size="icon" onClick={() => setShowOutline(!showOutline)} title="Toggle Outline">
-          <List className="h-4 w-4" />
-        </Button>
-
-        {/* Global Styles */}
-        <GlobalStylesDialog />
-
-        {/* Keyboard Shortcuts */}
-        <KeyboardShortcutsHelp />
-
-        {/* Auto-save */}
-        <div className="text-xs text-muted-foreground hidden md:block">
-          {formatLastSaved()}
-        </div>
-
-        {/* Preview */}
-        <Button variant={previewMode !== 'editor' ? 'default' : 'outline'} size="sm" onClick={togglePreviewMode}>
-          <Eye className="h-4 w-4 mr-1" />
+        {/* Preview & Code */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={togglePreviewMode}
+          className="gap-1"
+        >
+          <Eye className="h-4 w-4" />
           Preview
         </Button>
 
-        {/* Copy Code */}
-        <Button variant="outline" size="sm" onClick={handleCopyCode}>
-          <Copy className="h-4 w-4 mr-1" />
-          Copy Code
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowCodeModal(true)}
+          className="gap-1"
+        >
+          <Code className="h-4 w-4" />
+          Code
         </Button>
 
-        {/* Generate Code */}
-        <Button variant="outline" size="sm" onClick={() => setShowCodeModal(true)}>
-          <Code className="h-4 w-4 mr-1" />
-          View Code
+        {/* Save Button */}
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          size="sm"
+          className="gap-1"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Save
+            </>
+          )}
         </Button>
-        
-        {/* Export/Import */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" />
-              Export
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={handleExportPNG}>
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Export as PNG
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportSVG}>
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Export as SVG
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportJSON}>
-              <FileJson className="h-4 w-4 mr-2" />
-              Export as JSON
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".json,image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              if (file.type === 'application/json') {
-                handleImportJSON(e);
-              } else if (file.type.startsWith('image/')) {
-                handleImportImage(e);
-              }
-            }
-          }}
-        />
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-1" />
-              Import
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <FileJson className="h-4 w-4 mr-2" />
-              Import JSON
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Import Image
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        {/* Zoom Controls */}
-        {canvasMode === 'visual' && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {zoom}%
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={zoomToFit}>
-                Zoom to Fit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={zoomToSelection} disabled={selectedBlockIds.length === 0}>
-                Zoom to Selection
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={resetZoom}>
-                Reset Zoom (100%)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+        {lastSavedAt && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {formatLastSaved()}
+          </span>
         )}
-
-        {/* Save */}
-        <Button size="sm" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-          Save
-        </Button>
       </div>
 
-      <CodePreviewModal open={showCodeModal} onClose={() => setShowCodeModal(false)} />
+      <CodePreviewModal
+        open={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+      />
     </>
   );
 }
