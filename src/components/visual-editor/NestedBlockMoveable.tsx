@@ -23,13 +23,12 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
   }, [block.settings, block.type, block.children]);
 
   useEffect(() => {
-    if (targetRef.current && parentRef && !visualLayout[block.id]) {
-      // Initialize layout for nested blocks with default position and size
-      const defaultSize = getTemplate(block.type).defaultSettings;
-      const { width, height } = {
-        width: parseInt(String(defaultSize.width || 200)) || 200,
-        height: parseInt(String(defaultSize.height || 100)) || 100,
-      };
+    if (!visualLayout[block.id]) {
+      // Initialize layout immediately without waiting for parentRef
+      const template = getTemplate(block.type);
+      const defaultSize = template.defaultSettings;
+      const width = parseInt(String(defaultSize.width)) || 200;
+      const height = parseInt(String(defaultSize.height)) || 100;
       
       updateVisualLayout(block.id, {
         x: 10,
@@ -39,10 +38,16 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
         zIndex: 0,
       });
     }
-  }, [parentRef, visualLayout[block.id]]);
+  }, [block.id, visualLayout[block.id]]);
 
-  // Don't render if layout not initialized
-  if (!layout) return null;
+  // Use default layout if not initialized yet
+  const currentLayout = layout || {
+    x: 10,
+    y: 10,
+    width: 200,
+    height: 100,
+    zIndex: 0,
+  };
 
   return (
     <>
@@ -56,17 +61,17 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
           isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
         }`}
         style={{
-          transform: `translate(${layout.x}px, ${layout.y}px)`,
-          width: `${layout.width}px`,
-          height: `${layout.height}px`,
-          zIndex: layout.zIndex + 1,
+          transform: `translate(${currentLayout.x}px, ${currentLayout.y}px)`,
+          width: `${currentLayout.width}px`,
+          height: `${currentLayout.height}px`,
+          zIndex: currentLayout.zIndex + 1,
           transition: 'border-color 0.2s',
         }}
       >
         <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
       </div>
 
-      {isSelected && targetRef.current && parentRef && (
+      {isSelected && targetRef.current && (
         <Moveable
           target={targetRef.current}
           draggable={true}
@@ -79,20 +84,24 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
           zoom={1}
           origin={false}
           padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-          bounds={{
+          bounds={parentRef ? {
             left: 0,
             top: 0,
             right: parentRef.offsetWidth,
             bottom: parentRef.offsetHeight,
             position: 'css'
-          }}
+          } : undefined}
           onDrag={({ target, left, top }) => {
-            // Constrain to parent bounds
-            const maxX = parentRef.offsetWidth - layout.width;
-            const maxY = parentRef.offsetHeight - layout.height;
-            const constrainedX = Math.max(0, Math.min(left, maxX));
-            const constrainedY = Math.max(0, Math.min(top, maxY));
-            target.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
+            // Constrain to parent bounds if parentRef exists
+            if (parentRef) {
+              const maxX = parentRef.offsetWidth - currentLayout.width;
+              const maxY = parentRef.offsetHeight - currentLayout.height;
+              const constrainedX = Math.max(0, Math.min(left, maxX));
+              const constrainedY = Math.max(0, Math.min(top, maxY));
+              target.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
+            } else {
+              target.style.transform = `translate(${left}px, ${top}px)`;
+            }
           }}
           onDragEnd={({ target }) => {
             const transform = target.style.transform;
@@ -104,15 +113,21 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
             }
           }}
           onResize={({ target, width, height, drag }) => {
-            // Constrain resize within parent bounds
-            const maxWidth = parentRef.offsetWidth - drag.left;
-            const maxHeight = parentRef.offsetHeight - drag.top;
-            const constrainedWidth = Math.min(width, maxWidth);
-            const constrainedHeight = Math.min(height, maxHeight);
-            
-            target.style.width = `${constrainedWidth}px`;
-            target.style.height = `${constrainedHeight}px`;
-            target.style.transform = `translate(${drag.left}px, ${drag.top}px)`;
+            // Constrain resize within parent bounds if parentRef exists
+            if (parentRef) {
+              const maxWidth = parentRef.offsetWidth - drag.left;
+              const maxHeight = parentRef.offsetHeight - drag.top;
+              const constrainedWidth = Math.min(width, maxWidth);
+              const constrainedHeight = Math.min(height, maxHeight);
+              
+              target.style.width = `${constrainedWidth}px`;
+              target.style.height = `${constrainedHeight}px`;
+              target.style.transform = `translate(${drag.left}px, ${drag.top}px)`;
+            } else {
+              target.style.width = `${width}px`;
+              target.style.height = `${height}px`;
+              target.style.transform = `translate(${drag.left}px, ${drag.top}px)`;
+            }
           }}
           onResizeEnd={({ target }) => {
             const width = parseFloat(target.style.width);

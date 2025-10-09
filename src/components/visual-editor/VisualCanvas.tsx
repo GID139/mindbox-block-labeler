@@ -143,21 +143,25 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   >
                     {block.settings.text || ''}
                   </div>
-                ) : block.children && block.children.length > 0 && block.canContainChildren ? (
-                  // Render nested blocks with Moveable support
-                  <div className="relative w-full h-full pointer-events-none">
-                    {block.children.map((child) => (
-                      <NestedBlockMoveable
-                        key={child.id}
-                        block={child}
-                        parentRef={targetRef.current}
-                        isSelected={selectedBlockIds.includes(child.id)}
-                      />
-                    ))}
-                  </div>
                 ) : (
-                  // Render preview HTML for blocks without children
-                  <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                  <>
+                    {/* Always render the parent block's content */}
+                    <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                    
+                    {/* Render nested blocks on top if they exist */}
+                    {block.children && block.children.length > 0 && block.canContainChildren && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {block.children.map((child) => (
+                          <NestedBlockMoveable
+                            key={child.id}
+                            block={child}
+                            parentRef={targetRef.current}
+                            isSelected={selectedBlockIds.includes(child.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TooltipTrigger>
