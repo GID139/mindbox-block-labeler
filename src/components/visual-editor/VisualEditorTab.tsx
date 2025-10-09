@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
 import { BlockInstance } from '@/types/visual-editor';
-import { getTemplateByName } from '@/lib/visual-editor/block-templates';
+import { getTemplateByName, getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
 
@@ -140,11 +140,12 @@ export function VisualEditorTab() {
             ? Math.max(...layoutValues.map(l => l.y + l.height))
             : 0;
           
+          const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
           store.updateVisualLayout(newBlock.id, {
             x: 20,
             y: currentY + 20,
-            width: 560,
-            height: 100,
+            width: defaultSize.width,
+            height: defaultSize.height,
             zIndex: 0,
           });
           

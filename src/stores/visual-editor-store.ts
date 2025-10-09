@@ -733,7 +733,23 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     })),
     
     updateVisualLayout: (blockId, layout) => {
-      const current = get().visualLayout[blockId] || { x: 0, y: 0, width: 600, height: 100, zIndex: 0 };
+      const blocks = get().blocks;
+      const findBlockById = (blocks: BlockInstance[], id: string): BlockInstance | null => {
+        for (const block of blocks) {
+          if (block.id === id) return block;
+          if (block.children.length > 0) {
+            const found = findBlockById(block.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const block = findBlockById(blocks, blockId);
+      const { getDefaultBlockSize } = require('@/lib/visual-editor/block-templates');
+      const defaultSize = block ? getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
+      const current = get().visualLayout[blockId] || { x: 0, y: 0, width: defaultSize.width, height: defaultSize.height, zIndex: 0 };
+      
       set({
         visualLayout: {
           ...get().visualLayout,

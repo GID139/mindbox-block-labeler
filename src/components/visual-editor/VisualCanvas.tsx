@@ -2,7 +2,7 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { BlockInstance, BlockType } from '@/types/visual-editor';
 import Moveable from 'react-moveable';
 import { useRef, useState, useEffect } from 'react';
-import { getTemplate } from '@/lib/visual-editor/block-templates';
+import { getTemplate, getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDroppable } from '@dnd-kit/core';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
@@ -449,15 +449,14 @@ export function VisualCanvas() {
       
       addBlock(newBlock);
       
-      // Set layout for visual mode
-      const defaultSize = drawingTool === 'rectangle' ? { width: 200, height: 150 } :
-                         drawingTool === 'circle' ? { width: 150, height: 150 } :
-                         { width: 200, height: 2 };
+      // Set layout for visual mode with default sizes from template
+      const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
       
       updateVisualLayout(newBlock.id, {
         x: Math.max(0, x - defaultSize.width / 2),
         y: Math.max(0, y - defaultSize.height / 2),
-        ...defaultSize,
+        width: defaultSize.width,
+        height: defaultSize.height,
         zIndex: 0,
       });
       
@@ -512,11 +511,12 @@ export function VisualCanvas() {
           };
           
           addBlock(newBlock);
+          const defaultSize = getDefaultBlockSize('IMAGE', newBlock.settings);
           updateVisualLayout(newBlock.id, {
-            x: Math.max(0, x - 150),
-            y: Math.max(0, y - 150),
-            width: 300,
-            height: 200,
+            x: Math.max(0, x - defaultSize.width / 2),
+            y: Math.max(0, y - defaultSize.height / 2),
+            width: defaultSize.width,
+            height: defaultSize.height,
             zIndex: 0,
           });
         }
