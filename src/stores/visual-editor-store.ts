@@ -37,7 +37,6 @@ interface VisualEditorState {
   // Canvas
   blocks: BlockInstance[];
   selectedBlockIds: string[];
-  canvasMode: 'structure' | 'visual';
   visualLayout: VisualLayout;
   drawingTool: 'select' | 'rectangle' | 'circle' | 'line';
   
@@ -83,7 +82,6 @@ interface VisualEditorState {
   
   // Actions
   setProjectName: (name: string) => void;
-  setCanvasMode: (mode: 'structure' | 'visual') => void;
   addBlock: (block: BlockInstance, parentId?: string, index?: number) => void;
   removeBlock: (id: string) => void;
   removeSelectedBlocks: () => void;
@@ -200,10 +198,6 @@ interface VisualEditorState {
   
   // Utility
   reset: () => void;
-  
-  // Sync
-  syncLayoutToStructure: () => void;
-  syncStructureToLayout: () => void;
 }
 
 const findBlockById = (blocks: BlockInstance[], id: string): BlockInstance | null => {
@@ -296,7 +290,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     projectName: 'Untitled Project',
     blocks: [],
     selectedBlockIds: [],
-    canvasMode: 'structure',
     visualLayout: {},
     drawingTool: 'select',
     marqueeStart: null,
@@ -321,7 +314,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     lastSavedAt: null,
     showGrid: true,
     gridSize: 10,
-    zoom: 100,
+    zoom: 1,
     deviceMode: 'desktop',
     showOutline: false,
     showRulers: false,
@@ -333,15 +326,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     // Actions
     setProjectName: (name) => set({ projectName: name }),
-    setCanvasMode: (mode) => {
-      const store = get();
-      if (mode === 'visual') {
-        store.syncStructureToLayout();
-      } else if (mode === 'structure') {
-        store.syncLayoutToStructure();
-      }
-      set({ canvasMode: mode });
-    },
     
     addBlock: (block, parentId, index) => {
       pushHistory();
@@ -679,8 +663,8 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       instance.id = newId;
       instance.name = `${instance.name}_instance`;
 
-      // Set position if in visual mode
-      if (position && get().canvasMode === 'visual') {
+      // Set position in visual mode
+      if (position) {
         get().updateVisualLayout(newId, {
           x: position.x,
           y: position.y,
@@ -1035,51 +1019,12 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         components: [],
         selectedComponentId: null,
         selectedBlockIds: [],
-        canvasMode: 'structure',
         previewMode: 'editor',
         visualLayout: {},
         lastSavedAt: null,
         canUndo: false,
         canRedo: false,
       });
-    },
-    
-    syncLayoutToStructure: () => {
-      const { blocks, visualLayout } = get();
-      
-      // Собрать все блоки с их Y-координатами
-      const blocksWithY = blocks.map(block => ({
-        block,
-        y: visualLayout[block.id]?.y || 0
-      }));
-      
-      // Отсортировать по Y
-      blocksWithY.sort((a, b) => a.y - b.y);
-      
-      // Обновить порядок блоков
-      set({ blocks: blocksWithY.map(item => item.block) });
-    },
-    
-    syncStructureToLayout: () => {
-      const { blocks, visualLayout } = get();
-      const newLayout = { ...visualLayout };
-      
-      // Расположить блоки вертикально с отступом 20px
-      let currentY = 20;
-      blocks.forEach(block => {
-        if (!newLayout[block.id]) {
-          newLayout[block.id] = {
-            x: 20,
-            y: currentY,
-            width: 560, // 600 - 40px margins
-            height: 100,
-            zIndex: 0
-          };
-          currentY += 120; // 100 + 20px gap
-        }
-      });
-      
-      set({ visualLayout: newLayout });
     },
     
     // Marquee selection

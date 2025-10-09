@@ -83,8 +83,10 @@ export interface VisualEditorProject {
 }
 
 export interface BackgroundSetting {
-  type: 'color' | 'image' | 'transparent';
-  value?: string; // hex color or image URL
+  type: 'color' | 'image' | 'gradient' | 'transparent';
+  color?: string; // hex color
+  imageUrl?: string; // image URL
+  gradient?: string; // CSS gradient string
 }
 
 export interface BorderSetting {

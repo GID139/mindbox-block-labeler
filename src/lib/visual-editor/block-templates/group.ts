@@ -9,7 +9,8 @@ export const groupTemplate: BlockTemplate = {
   maxNestingLevel: 5,
   defaultSettings: {
     display: 'block',
-    background: { type: 'transparent' },
+    background: { type: 'transparent' as const },
+    padding: '0px',
   },
   availableSettings: ['display', 'background'],
   

@@ -24,6 +24,8 @@ export const buttonTemplate: BlockTemplate = {
     height: '50',
     align: 'center',
     display: true,
+    background: { type: 'color' as const, color: '#39AA5D' },
+    padding: '12px 24px',
   },
   availableSettings: ['display', 'text', 'link', 'background', 'textStyles', 'size', 'borderRadius', 'padding'],
   

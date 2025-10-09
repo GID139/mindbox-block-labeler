@@ -15,6 +15,8 @@ export const rectangleTemplate: BlockTemplate = {
     borderWidth: '0px',
     borderColor: '#000000',
     borderStyle: 'solid',
+    background: { type: 'color' as const, color: '#3b82f6' },
+    padding: '0px',
   },
   availableSettings: ['width', 'height', 'backgroundColor', 'borderRadius', 'border'],
   generateHTML: (block: BlockInstance) => {

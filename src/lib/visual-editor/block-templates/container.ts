@@ -30,6 +30,8 @@ export const containerTemplate: BlockTemplate = {
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
     gap: '8',
+    background: { type: 'color' as const, color: '#F5F5F5' },
+    padding: '16px',
   },
   availableSettings: ['display', 'background', 'border', 'borderRadius', 'size', 'padding', 'autoLayout'],
   

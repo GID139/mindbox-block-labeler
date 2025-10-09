@@ -12,6 +12,7 @@ export const lineTemplate: BlockTemplate = {
     height: '2px',
     backgroundColor: '#000000',
     rotation: '0deg',
+    background: { type: 'color' as const, color: '#000000' },
   },
   availableSettings: ['width', 'height', 'backgroundColor', 'rotation'],
   generateHTML: (block: BlockInstance) => {

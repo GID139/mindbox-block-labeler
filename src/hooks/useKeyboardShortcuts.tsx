@@ -10,7 +10,6 @@ export function useKeyboardShortcuts() {
     duplicateBlock,
     saveProject,
     setDrawingTool,
-    canvasMode,
     groupBlocks,
     cancelMarqueeSelection,
     isMarqueeSelecting,
@@ -25,7 +24,7 @@ export function useKeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Tool shortcuts (only in visual mode)
-      if (canvasMode === 'visual' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
         if (e.key === 'v' || e.key === 'V') {
           e.preventDefault();
           setDrawingTool('select');
@@ -138,5 +137,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide]);
 }

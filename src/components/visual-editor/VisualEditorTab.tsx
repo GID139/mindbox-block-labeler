@@ -3,11 +3,11 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } 
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Toolbar } from './Toolbar';
 import { BlockLibrary } from './BlockLibrary';
-import { Canvas } from './Canvas';
 import { VisualCanvas } from './VisualCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
 import { LayersPanel } from './LayersPanel';
+import { LayersPanelWithDragDrop } from './LayersDragDrop';
 import { InteractiveTutorial } from './InteractiveTutorial';
 import { ComponentsLibrary } from './ComponentsLibrary';
 import { PresetsLibrary } from './PresetsLibrary';
@@ -20,7 +20,7 @@ import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming'
 import { toast } from 'sonner';
 
 export function VisualEditorTab() {
-  const { blocks, addBlock, moveBlock, selectedBlockIds, addBlockToTableCell, canvasMode, showOutline } = useVisualEditorStore();
+  const { blocks, addBlock, moveBlock, selectedBlockIds, addBlockToTableCell } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeBlock, setActiveBlock] = useState<BlockInstance | null>(null);
   const [rightPanelMode, setRightPanelMode] = useState<'layers' | 'settings'>('layers');
@@ -246,7 +246,7 @@ export function VisualEditorTab() {
           
           {/* Center: Canvas */}
           <div className="flex-1 overflow-y-auto p-4 canvas-container">
-            {canvasMode === 'structure' ? <Canvas /> : <VisualCanvas />}
+            <VisualCanvas />
           </div>
           
           {/* Right: Layers Panel or Settings Panel */}
@@ -278,7 +278,7 @@ export function VisualEditorTab() {
             {/* Panel Content */}
             <div className="flex-1 overflow-y-auto">
               {rightPanelMode === 'layers' ? (
-                <LayersPanel />
+                <LayersPanelWithDragDrop />
               ) : selectedBlockId ? (
                 <SettingsPanel />
               ) : (

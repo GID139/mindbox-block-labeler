@@ -18,6 +18,8 @@ export const textTemplate: BlockTemplate = {
     align: 'left',
     display: true,
     link: '',
+    background: { type: 'transparent' as const },
+    padding: '0px',
   },
   availableSettings: ['display', 'text', 'textStyles', 'link'],
   

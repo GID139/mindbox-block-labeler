@@ -13,6 +13,8 @@ export const circleTemplate: BlockTemplate = {
     borderWidth: '0px',
     borderColor: '#000000',
     borderStyle: 'solid',
+    background: { type: 'color' as const, color: '#8b5cf6' },
+    padding: '0px',
   },
   availableSettings: ['size', 'backgroundColor', 'border'],
   generateHTML: (block: BlockInstance) => {

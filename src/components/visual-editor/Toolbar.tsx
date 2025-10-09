@@ -7,7 +7,6 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
-import { CanvasModeToggle } from './CanvasModeToggle';
 import { ViewDropdown } from './ViewDropdown';
 import { ToolsDropdown } from './ToolsDropdown';
 import { ZoomDropdown } from './ZoomDropdown';
@@ -33,7 +32,6 @@ export function Toolbar() {
     canRedo,
     deviceMode,
     setDeviceMode,
-    canvasMode,
     blocks,
   } = useVisualEditorStore();
 
@@ -163,47 +161,30 @@ export function Toolbar() {
 
         <div className="h-6 w-px bg-border" />
 
-        {/* Canvas Mode Toggle */}
-        <CanvasModeToggle />
-
+        {/* Tools & View */}
+        <ToolsDropdown />
+        <ViewDropdown />
         <div className="h-6 w-px bg-border" />
 
-        {/* Tools & View (Visual Mode Only) */}
-        {canvasMode === 'visual' && (
-          <>
-            <ToolsDropdown />
-            <ViewDropdown />
-            <div className="h-6 w-px bg-border" />
-          </>
-        )}
+        {/* Zoom Control */}
+        <ZoomDropdown />
+        <div className="h-6 w-px bg-border" />
 
-        {/* Zoom Control (Visual Mode Only) */}
-        {canvasMode === 'visual' && (
-          <>
-            <ZoomDropdown />
-            <div className="h-6 w-px bg-border" />
-          </>
-        )}
-
-        {/* Device Mode (Visual Mode Only) */}
-        {canvasMode === 'visual' && (
-          <>
-            <Tabs value={deviceMode} onValueChange={(v) => setDeviceMode(v as typeof deviceMode)}>
-              <TabsList className="h-9">
-                <TabsTrigger value="desktop" className="px-3">
-                  <Monitor className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="tablet" className="px-3">
-                  <Tablet className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="mobile" className="px-3">
-                  <Smartphone className="h-4 w-4" />
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="h-6 w-px bg-border" />
-          </>
-        )}
+        {/* Device Mode */}
+        <Tabs value={deviceMode} onValueChange={(v) => setDeviceMode(v as typeof deviceMode)}>
+          <TabsList className="h-9">
+            <TabsTrigger value="desktop" className="px-3">
+              <Monitor className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="tablet" className="px-3">
+              <Tablet className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="mobile" className="px-3">
+              <Smartphone className="h-4 w-4" />
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="h-6 w-px bg-border" />
 
         {/* File Operations */}
         <FileDropdown />

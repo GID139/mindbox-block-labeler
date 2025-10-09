@@ -16,6 +16,8 @@ export const imageTemplate: BlockTemplate = {
     align: 'center',
     link: '',
     display: true,
+    background: { type: 'transparent' as const },
+    padding: '0px',
   },
   availableSettings: ['display', 'url', 'size', 'link'],
   

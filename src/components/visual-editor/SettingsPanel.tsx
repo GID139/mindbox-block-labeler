@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ColorPickerInput } from './ColorPickerInput';
+import { BackgroundPicker } from './BackgroundPicker';
 import { Badge } from '@/components/ui/badge';
 import { buttonPresets, textPresets } from '@/lib/visual-editor/presets';
+import { BackgroundSetting } from '@/types/visual-editor';
 
 function findBlockById(blocks: any[], id: string): any {
   for (const block of blocks) {
@@ -22,7 +24,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock, canvasMode, visualLayout, updateVisualLayout } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout } = useVisualEditorStore();
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -90,6 +92,22 @@ export function SettingsPanel() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="px-3 pb-3 space-y-3">
+                  <BackgroundPicker
+                    value={block.settings.background || { type: 'transparent' }}
+                    onChange={(background) => updateSettings({ background })}
+                  />
+                  
+                  <div>
+                    <Label className="text-sm">Padding</Label>
+                    <Input
+                      type="text"
+                      value={block.settings.padding || '0px'}
+                      onChange={(e) => updateSettings({ padding: e.target.value })}
+                      className="mt-1.5 h-9"
+                      placeholder="0px"
+                    />
+                  </div>
+
                   <div>
                     <Label className="text-sm">Presets</Label>
                     <Select onValueChange={(preset) => applyPreset(textPresets[preset])}>
@@ -656,8 +674,8 @@ export function SettingsPanel() {
           {renderSettings()}
         </Card>
 
-        {/* Visual Mode Position & Size (Only in Visual Mode) */}
-        {canvasMode === 'visual' && layout && (
+        {/* Position & Size */}
+        {layout && (
           <Card className="p-4 space-y-3">
             <h3 className="text-sm font-medium">Position & Size</h3>
             
