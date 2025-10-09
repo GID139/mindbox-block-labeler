@@ -12,6 +12,8 @@ export function useKeyboardShortcuts() {
     setDrawingTool,
     canvasMode,
     groupBlocks,
+    cancelMarqueeSelection,
+    isMarqueeSelecting,
   } = useVisualEditorStore();
 
   useEffect(() => {
@@ -37,6 +39,14 @@ export function useKeyboardShortcuts() {
           e.preventDefault();
           setDrawingTool('line');
           return;
+        }
+      }
+
+      // Escape - cancel marquee selection
+      if (e.key === 'Escape') {
+        if (isMarqueeSelecting) {
+          e.preventDefault();
+          cancelMarqueeSelection();
         }
       }
 
@@ -79,5 +89,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting]);
 }

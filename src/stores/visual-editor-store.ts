@@ -41,6 +41,11 @@ interface VisualEditorState {
   visualLayout: VisualLayout;
   drawingTool: 'select' | 'rectangle' | 'circle' | 'line';
   
+  // Marquee selection
+  marqueeStart: { x: number; y: number } | null;
+  marqueeEnd: { x: number; y: number } | null;
+  isMarqueeSelecting: boolean;
+  
   // Components
   components: ComponentDefinition[];
   selectedComponentId: string | null;
@@ -106,6 +111,12 @@ interface VisualEditorState {
   // Visual mode
   updateVisualLayout: (blockId: string, layout: Partial<VisualLayout[string]>) => void;
   setDrawingTool: (tool: 'select' | 'rectangle' | 'circle' | 'line') => void;
+  
+  // Marquee selection
+  startMarqueeSelection: (x: number, y: number) => void;
+  updateMarqueeSelection: (x: number, y: number) => void;
+  endMarqueeSelection: (isAdditive: boolean) => void;
+  cancelMarqueeSelection: () => void;
   
   // UI controls
   setShowGrid: (show: boolean) => void;
@@ -238,6 +249,9 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     canvasMode: 'structure',
     visualLayout: {},
     drawingTool: 'select',
+    marqueeStart: null,
+    marqueeEnd: null,
+    isMarqueeSelecting: false,
   components: [],
   selectedComponentId: null,
   customPresets: [],
@@ -1006,6 +1020,72 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       });
       
       set({ visualLayout: newLayout });
+    },
+    
+    // Marquee selection
+    startMarqueeSelection: (x, y) => {
+      set({
+        marqueeStart: { x, y },
+        marqueeEnd: { x, y },
+        isMarqueeSelecting: true,
+      });
+    },
+    
+    updateMarqueeSelection: (x, y) => {
+      set({ marqueeEnd: { x, y } });
+    },
+    
+    endMarqueeSelection: (isAdditive) => {
+      const { marqueeStart, marqueeEnd, visualLayout, blocks, selectedBlockIds } = get();
+      
+      if (!marqueeStart || !marqueeEnd) {
+        set({ marqueeStart: null, marqueeEnd: null, isMarqueeSelecting: false });
+        return;
+      }
+      
+      // Calculate marquee rectangle
+      const minX = Math.min(marqueeStart.x, marqueeEnd.x);
+      const maxX = Math.max(marqueeStart.x, marqueeEnd.x);
+      const minY = Math.min(marqueeStart.y, marqueeEnd.y);
+      const maxY = Math.max(marqueeStart.y, marqueeEnd.y);
+      
+      // Find blocks that intersect with marquee
+      const collectBlockIds = (blocks: BlockInstance[]): string[] => {
+        return blocks.flatMap(block => {
+          const layout = visualLayout[block.id];
+          if (!layout) return [];
+          
+          // AABB collision detection
+          const blockLeft = layout.x;
+          const blockRight = layout.x + layout.width;
+          const blockTop = layout.y;
+          const blockBottom = layout.y + layout.height;
+          
+          const intersects = !(blockRight < minX || blockLeft > maxX || blockBottom < minY || blockTop > maxY);
+          
+          const result = intersects ? [block.id] : [];
+          return [...result, ...collectBlockIds(block.children)];
+        });
+      };
+      
+      const intersectingIds = collectBlockIds(blocks);
+      
+      // Update selection
+      if (isAdditive) {
+        // Add to existing selection
+        const newSelection = Array.from(new Set([...selectedBlockIds, ...intersectingIds]));
+        set({ selectedBlockIds: newSelection });
+      } else {
+        // Replace selection
+        set({ selectedBlockIds: intersectingIds });
+      }
+      
+      // Reset marquee state
+      set({ marqueeStart: null, marqueeEnd: null, isMarqueeSelecting: false });
+    },
+    
+    cancelMarqueeSelection: () => {
+      set({ marqueeStart: null, marqueeEnd: null, isMarqueeSelecting: false });
     },
   };
 });

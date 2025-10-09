@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useDroppable } from '@dnd-kit/core';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
+import { MarqueeSelection } from './MarqueeSelection';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -185,7 +186,16 @@ export function VisualCanvas() {
     addBlock, 
     updateVisualLayout,
     setDrawingTool,
+    marqueeStart,
+    marqueeEnd,
+    isMarqueeSelecting,
+    startMarqueeSelection,
+    updateMarqueeSelection,
+    endMarqueeSelection,
+    clearSelection,
   } = useVisualEditorStore();
+  
+  const canvasRef = useRef<HTMLDivElement>(null);
   
   const { setNodeRef, isOver } = useDroppable({
     id: 'visual-canvas-root',
@@ -198,6 +208,40 @@ export function VisualCanvas() {
     mobile: 375,
     tablet: 768,
     desktop: 600,
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only start marquee if clicking directly on canvas (not on blocks)
+    if (e.target !== e.currentTarget) return;
+    
+    if (drawingTool === 'select') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / (zoom / 100);
+      const y = (e.clientY - rect.top) / (zoom / 100);
+      
+      // Clear selection if not holding Shift
+      if (!e.shiftKey) {
+        clearSelection();
+      }
+      
+      startMarqueeSelection(x, y);
+      e.preventDefault();
+    }
+  };
+  
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMarqueeSelecting && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / (zoom / 100);
+      const y = (e.clientY - rect.top) / (zoom / 100);
+      updateMarqueeSelection(x, y);
+    }
+  };
+  
+  const handleCanvasMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMarqueeSelecting) {
+      endMarqueeSelection(e.shiftKey);
+    }
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -252,8 +296,14 @@ export function VisualCanvas() {
   return (
     <div className="flex justify-center items-start p-8 bg-muted/20 min-h-full">
       <div 
-        ref={setNodeRef}
+        ref={(node) => {
+          setNodeRef(node);
+          (canvasRef as any).current = node;
+        }}
         onClick={handleCanvasClick}
+        onMouseDown={handleCanvasMouseDown}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleCanvasMouseUp}
         className={`relative bg-white shadow-lg transition-all ${
           isOver ? 'ring-4 ring-primary/30' : ''
         } ${drawingTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
@@ -270,6 +320,9 @@ export function VisualCanvas() {
         }}
       >
         {renderBlocks(blocks)}
+        {isMarqueeSelecting && marqueeStart && marqueeEnd && (
+          <MarqueeSelection start={marqueeStart} end={marqueeEnd} zoom={zoom} />
+        )}
       </div>
     </div>
   );
