@@ -150,7 +150,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     
                     {/* Render nested blocks on top if they exist */}
                     {block.children && block.children.length > 0 && block.canContainChildren && (
-                      <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute inset-0 pointer-events-auto" style={{ zIndex: 10 }}>
                         {block.children.map((child) => (
                           <NestedBlockMoveable
                             key={child.id}
@@ -173,7 +173,8 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
           </Tooltip>
         </TooltipProvider>
         
-        {isSelected && !isEditing && !block.locked && targetRef.current && (
+        {isSelected && !isEditing && !block.locked && targetRef.current && 
+          !block.children?.some(child => selectedBlockIds.includes(child.id)) && (
           <>
             <Moveable
               target={targetRef.current}

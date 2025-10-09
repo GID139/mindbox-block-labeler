@@ -12,7 +12,7 @@ interface NestedBlockMoveableProps {
 
 export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBlockMoveableProps) {
   const targetRef = useRef<HTMLDivElement>(null);
-  const { visualLayout, updateVisualLayout, selectBlock } = useVisualEditorStore();
+  const { visualLayout, updateVisualLayout, selectBlock, selectedBlockIds } = useVisualEditorStore();
   const [previewHTML, setPreviewHTML] = useState('');
 
   const layout = visualLayout[block.id];
@@ -55,23 +55,41 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
         ref={targetRef}
         onClick={(e) => {
           e.stopPropagation();
+          console.log('NestedBlock clicked:', block.id, 'type:', block.type);
           selectBlock(block.id);
         }}
-        className={`absolute cursor-pointer border-2 overflow-hidden pointer-events-auto ${
-          isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
+        className={`absolute cursor-pointer border-2 overflow-hidden pointer-events-auto transition-all ${
+          isSelected 
+            ? 'border-primary shadow-lg' 
+            : 'border-transparent hover:border-primary/50 hover:shadow-md'
         }`}
         style={{
           transform: `translate(${currentLayout.x}px, ${currentLayout.y}px)`,
           width: `${currentLayout.width}px`,
           height: `${currentLayout.height}px`,
-          zIndex: currentLayout.zIndex + 1,
-          transition: 'border-color 0.2s',
+          zIndex: isSelected ? currentLayout.zIndex + 100 : currentLayout.zIndex + 1,
+          transition: 'border-color 0.2s, box-shadow 0.2s',
         }}
       >
         <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+        
+        {/* Recursively render nested children */}
+        {block.children && block.children.length > 0 && block.canContainChildren && (
+          <div className="absolute inset-0 pointer-events-auto" style={{ zIndex: 10 }}>
+            {block.children.map((child) => (
+              <NestedBlockMoveable
+                key={child.id}
+                block={child}
+                parentRef={targetRef.current}
+                isSelected={selectedBlockIds.includes(child.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {isSelected && targetRef.current && (
+      {isSelected && targetRef.current && 
+        !block.children?.some(child => selectedBlockIds.includes(child.id)) && (
         <Moveable
           target={targetRef.current}
           draggable={true}
