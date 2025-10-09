@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -11,7 +11,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component, ChevronDown, Layers } from 'lucide-react';
+import { BlockType } from '@/types/visual-editor';
+import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component, ChevronDown, Layers, Ruler as RulerIcon, Download, Upload, FileJson, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
@@ -19,6 +20,7 @@ import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { GlobalStylesDialog } from './GlobalStylesDialog';
 import { AlignmentToolbar } from './AlignmentToolbar';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
+import { exportToPNG, exportToSVG, exportToJSON, importFromJSON, importImage } from '@/lib/visual-editor/export-utils';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +80,10 @@ export function Toolbar() {
     setSnapToGrid,
     snapToObjects,
     setSnapToObjects,
+    zoomToFit,
+    zoomToSelection,
+    resetZoom,
+    importBlocks,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -86,6 +92,8 @@ export function Toolbar() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [componentName, setComponentName] = useState('');
   const [isComponentDialogOpen, setIsComponentDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadProjectsList();
@@ -140,6 +148,71 @@ export function Toolbar() {
       createComponent(componentName.trim(), selectedBlockIds[0]);
       setComponentName('');
       setIsComponentDialogOpen(false);
+    }
+  };
+
+  const handleExportPNG = () => {
+    const canvas = document.querySelector('.visual-canvas-content');
+    if (canvas) {
+      exportToPNG(canvas as HTMLElement, `${projectName}.png`);
+    }
+  };
+
+  const handleExportSVG = () => {
+    const canvas = document.querySelector('.visual-canvas-content');
+    if (canvas) {
+      exportToSVG(canvas as HTMLElement, `${projectName}.svg`);
+    }
+  };
+
+  const handleExportJSON = () => {
+    exportToJSON(blocks, `${projectName}.json`);
+  };
+
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const importedBlocks = await importFromJSON(file);
+        importBlocks(importedBlocks);
+      } catch (error) {
+        // Error is already handled in importFromJSON
+      }
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const dataUrl = await importImage(file);
+        // Create an image block with the imported image
+        const newBlock = {
+          id: `image-${Date.now()}`,
+          type: 'IMAGE' as BlockType,
+          name: `image${Date.now()}`,
+          settings: {
+            src: dataUrl,
+            alt: file.name,
+            width: '300px',
+            height: 'auto',
+          },
+          children: [],
+          canContainChildren: false,
+          maxNestingLevel: 0,
+        };
+        // This will be handled in VisualCanvas with drag & drop
+      } catch (error) {
+        // Error is already handled in importImage
+      }
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -512,6 +585,92 @@ export function Toolbar() {
           <Code className="h-4 w-4 mr-1" />
           View Code
         </Button>
+        
+        {/* Export/Import */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              Export
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleExportPNG}>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Export as PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportSVG}>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Export as SVG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportJSON}>
+              <FileJson className="h-4 w-4 mr-2" />
+              Export as JSON
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".json,image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              if (file.type === 'application/json') {
+                handleImportJSON(e);
+              } else if (file.type.startsWith('image/')) {
+                handleImportImage(e);
+              }
+            }
+          }}
+        />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-1" />
+              Import
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <FileJson className="h-4 w-4 mr-2" />
+              Import JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Import Image
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        {/* Zoom Controls */}
+        {canvasMode === 'visual' && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                {zoom}%
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={zoomToFit}>
+                Zoom to Fit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={zoomToSelection} disabled={selectedBlockIds.length === 0}>
+                Zoom to Selection
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={resetZoom}>
+                Reset Zoom (100%)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Save */}
         <Button size="sm" onClick={handleSave} disabled={isSaving}>

@@ -9,6 +9,8 @@ import { rectangleTemplate } from './rectangle';
 import { circleTemplate } from './circle';
 import { lineTemplate } from './line';
 import { groupTemplate } from './group';
+import { gridContainerTemplate } from './grid-container';
+import { flexContainerTemplate } from './flex-container';
 
 export const blockTemplates: BlockTemplate[] = [
   textTemplate,
@@ -16,6 +18,8 @@ export const blockTemplates: BlockTemplate[] = [
   buttonTemplate,
   imageTemplate,
   containerTemplate,
+  gridContainerTemplate,
+  flexContainerTemplate,
   tableTemplate,
   spacerTemplate,
   rectangleTemplate,

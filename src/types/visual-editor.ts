@@ -1,4 +1,4 @@
-export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE' | 'GROUP';
+export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE' | 'GROUP' | 'GRID_CONTAINER' | 'FLEX_CONTAINER';
 export type BlockCategory = 'BASIC' | 'LAYOUT' | 'CONTENT';
 
 export interface ResizeConstraints {
@@ -96,4 +96,29 @@ export interface BorderSetting {
 export interface SizeSetting {
   width?: string;
   height?: string;
+}
+
+export interface Guide {
+  id: string;
+  orientation: 'horizontal' | 'vertical';
+  position: number; // pixels from top/left
+  color?: string;
+}
+
+export interface GridSettings {
+  display: 'grid';
+  gridTemplateColumns?: string; // e.g., '1fr 1fr 1fr'
+  gridTemplateRows?: string;
+  gap?: string; // e.g., '10px'
+  alignItems?: 'start' | 'center' | 'end' | 'stretch';
+  justifyItems?: 'start' | 'center' | 'end' | 'stretch';
+}
+
+export interface FlexSettings {
+  display: 'flex';
+  flexDirection?: 'row' | 'column';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  gap?: string;
+  flexWrap?: 'nowrap' | 'wrap';
 }

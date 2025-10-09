@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BlockInstance, ComponentDefinition, ComponentVariant } from '@/types/visual-editor';
+import { BlockInstance, ComponentDefinition, ComponentVariant, Guide } from '@/types/visual-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Preset } from '@/lib/visual-editor/presets';
@@ -48,6 +48,9 @@ interface VisualEditorState {
   
   // Clipboard
   clipboard: BlockInstance[];
+  
+  // Guides
+  guides: Guide[];
   
   // Components
   components: ComponentDefinition[];
@@ -144,6 +147,19 @@ interface VisualEditorState {
   sendToBack: (blockId: string) => void;
   bringForward: (blockId: string) => void;
   sendBackward: (blockId: string) => void;
+  
+  // Guides
+  addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
+  removeGuide: (guideId: string) => void;
+  updateGuide: (guideId: string, position: number) => void;
+  
+  // Zoom
+  zoomToFit: () => void;
+  zoomToSelection: () => void;
+  resetZoom: () => void;
+  
+  // Import/Export
+  importBlocks: (blocks: BlockInstance[]) => void;
   
   // Utility
   updateBlockSettings: (blockId: string, settings: Partial<BlockInstance>) => void;
@@ -287,6 +303,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     marqueeEnd: null,
     isMarqueeSelecting: false,
     clipboard: [],
+    guides: [],
   components: [],
   selectedComponentId: null,
   customPresets: [],
@@ -1294,9 +1311,124 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       toast.success('Sent backward');
     },
     
-    // Utility
+    // Guides
+    addGuide: (orientation, position) => {
+      const newGuide: Guide = {
+        id: `guide-${Date.now()}`,
+        orientation,
+        position,
+        color: '#3b82f6',
+      };
+      
+      set(state => ({
+        guides: [...state.guides, newGuide],
+      }));
+    },
+    
+    removeGuide: (guideId) => {
+      set(state => ({
+        guides: state.guides.filter(g => g.id !== guideId),
+      }));
+    },
+    
+    updateGuide: (guideId, position) => {
+      set(state => ({
+        guides: state.guides.map(g =>
+          g.id === guideId ? { ...g, position } : g
+        ),
+      }));
+    },
+    
+    // Zoom
+    zoomToFit: () => {
+      const { blocks, visualLayout } = get();
+      
+      if (blocks.length === 0) {
+        set({ zoom: 100 });
+        return;
+      }
+      
+      // Calculate bounding box of all blocks
+      const positions = Object.values(visualLayout);
+      if (positions.length === 0) {
+        set({ zoom: 100 });
+        return;
+      }
+      
+      const minX = Math.min(...positions.map(p => p.x));
+      const minY = Math.min(...positions.map(p => p.y));
+      const maxX = Math.max(...positions.map(p => p.x + p.width));
+      const maxY = Math.max(...positions.map(p => p.y + p.height));
+      
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+      
+      // Assume canvas size (you may want to make this dynamic)
+      const canvasWidth = 1200;
+      const canvasHeight = 800;
+      
+      const zoomX = (canvasWidth / contentWidth) * 100;
+      const zoomY = (canvasHeight / contentHeight) * 100;
+      
+      const newZoom = Math.min(zoomX, zoomY, 200); // Max 200%
+      set({ zoom: Math.max(10, newZoom) }); // Min 10%
+      toast.success('Zoomed to fit');
+    },
+    
+    zoomToSelection: () => {
+      const { selectedBlockIds, visualLayout } = get();
+      
+      if (selectedBlockIds.length === 0) {
+        toast.error('No blocks selected');
+        return;
+      }
+      
+      const selectedPositions = selectedBlockIds
+        .map(id => visualLayout[id])
+        .filter(Boolean);
+      
+      if (selectedPositions.length === 0) {
+        toast.error('Selected blocks have no position');
+        return;
+      }
+      
+      const minX = Math.min(...selectedPositions.map(p => p.x));
+      const minY = Math.min(...selectedPositions.map(p => p.y));
+      const maxX = Math.max(...selectedPositions.map(p => p.x + p.width));
+      const maxY = Math.max(...selectedPositions.map(p => p.y + p.height));
+      
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+      
+      const canvasWidth = 1200;
+      const canvasHeight = 800;
+      
+      const zoomX = (canvasWidth / contentWidth) * 100;
+      const zoomY = (canvasHeight / contentHeight) * 100;
+      
+      const newZoom = Math.min(zoomX, zoomY, 200);
+      set({ zoom: Math.max(10, newZoom) });
+      toast.success('Zoomed to selection');
+    },
+    
+    resetZoom: () => {
+      set({ zoom: 100 });
+      toast.success('Zoom reset');
+    },
+    
+    // Import/Export
+    importBlocks: (blocks) => {
+      pushHistory();
+      set(state => ({
+        blocks: [...state.blocks, ...blocks],
+      }));
+      toast.success(`Imported ${blocks.length} blocks`);
+    },
+    
     updateBlockSettings: (blockId, settings) => {
       get().updateBlock(blockId, settings);
     },
+    
+    // Table-specific actions
   };
 });

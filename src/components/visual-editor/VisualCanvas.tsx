@@ -11,6 +11,8 @@ import { MarqueeSelection } from './MarqueeSelection';
 import { BlockContextMenu } from './BlockContextMenu';
 import { Ruler } from './Ruler';
 import { Measurements } from './Measurements';
+import { GuideLines } from './GuideLines';
+import { importImage } from '@/lib/visual-editor/export-utils';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -216,9 +218,11 @@ export function VisualCanvas() {
     showMeasurements,
     gridSize,
     updateVisualLayout,
+    guides,
   } = useVisualEditorStore();
   
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   const { setNodeRef, isOver } = useDroppable({
     id: 'visual-canvas-root',
@@ -315,6 +319,59 @@ export function VisualCanvas() {
       ...renderBlocks(block.children),
     ]);
   };
+  
+  // Handle image drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+  
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+  
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      try {
+        const dataUrl = await importImage(file);
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const x = (e.clientX - rect.left) / (zoom / 100);
+          const y = (e.clientY - rect.top) / (zoom / 100);
+          
+          const newBlock: BlockInstance = {
+            id: `image-${Date.now()}`,
+            type: 'IMAGE',
+            name: `image${Date.now()}`,
+            settings: {
+              src: dataUrl,
+              alt: file.name,
+              width: '300px',
+              height: 'auto',
+            },
+            children: [],
+            canContainChildren: false,
+            maxNestingLevel: 0,
+          };
+          
+          addBlock(newBlock);
+          updateVisualLayout(newBlock.id, {
+            x: Math.max(0, x - 150),
+            y: Math.max(0, y - 150),
+            width: 300,
+            height: 200,
+            zIndex: 0,
+          });
+        }
+      } catch (error) {
+        // Error already handled
+      }
+    }
+  };
 
   return (
     <div className="flex justify-center items-start p-8 bg-muted/20 min-h-full">
@@ -327,8 +384,11 @@ export function VisualCanvas() {
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
-        className={`relative bg-white shadow-lg transition-all ${
-          isOver ? 'ring-4 ring-primary/30' : ''
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`visual-canvas-content relative bg-white shadow-lg transition-all ${
+          isOver || isDraggingOver ? 'ring-4 ring-primary/30' : ''
         } ${drawingTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
         style={{
           width: `${deviceWidths[deviceMode]}px`,
@@ -346,6 +406,9 @@ export function VisualCanvas() {
         {isMarqueeSelecting && marqueeStart && marqueeEnd && (
           <MarqueeSelection start={marqueeStart} end={marqueeEnd} zoom={zoom} />
         )}
+        
+        {/* Guide Lines */}
+        <GuideLines guides={guides} zoom={zoom} />
       </div>
 
       {/* Rulers */}

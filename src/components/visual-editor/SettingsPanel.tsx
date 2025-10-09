@@ -23,7 +23,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock, canvasMode } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, canvasMode, visualLayout, updateVisualLayout } = useVisualEditorStore();
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -779,6 +779,59 @@ export function SettingsPanel() {
                 />
               </div>
             </div>
+            
+            {/* Grid/Flex Settings for GRID_CONTAINER and FLEX_CONTAINER */}
+            {(block.type === 'GRID_CONTAINER' || block.type === 'FLEX_CONTAINER') && (
+              <div className="space-y-3 mt-4">
+                <h3 className="font-medium">Layout Settings</h3>
+                {block.type === 'GRID_CONTAINER' && (
+                  <>
+                    <div>
+                      <Label>Grid Columns</Label>
+                      <Input
+                        value={block.settings.gridTemplateColumns || ''}
+                        onChange={(e) => updateSettings({ gridTemplateColumns: e.target.value })}
+                        placeholder="1fr 1fr 1fr"
+                      />
+                    </div>
+                    <div>
+                      <Label>Gap</Label>
+                      <Input
+                        value={block.settings.gap || ''}
+                        onChange={(e) => updateSettings({ gap: e.target.value })}
+                        placeholder="10px"
+                      />
+                    </div>
+                  </>
+                )}
+                {block.type === 'FLEX_CONTAINER' && (
+                  <>
+                    <div>
+                      <Label>Flex Direction</Label>
+                      <Select value={block.settings.flexDirection} onValueChange={(v) => updateSettings({ flexDirection: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="row">Row</SelectItem>
+                          <SelectItem value="column">Column</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Justify Content</Label>
+                      <Select value={block.settings.justifyContent} onValueChange={(v) => updateSettings({ justifyContent: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flex-start">Start</SelectItem>
+                          <SelectItem value="center">Center</SelectItem>
+                          <SelectItem value="flex-end">End</SelectItem>
+                          <SelectItem value="space-between">Space Between</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </Card>
       )}
