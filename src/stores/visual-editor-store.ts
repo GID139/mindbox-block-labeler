@@ -1341,13 +1341,28 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         return 1 + getDepth(block.parentId);
       };
       
-      // Assign z-index based on depth
-      blocks.forEach((block, index) => {
+      // Group blocks by depth
+      const blocksByDepth: Map<number, string[]> = new Map();
+      blocks.forEach(block => {
         const depth = getDepth(block.id);
-        const zIndex = depth * 1000 + index;
-        if (newLayout[block.id]) {
-          newLayout[block.id] = { ...newLayout[block.id], zIndex };
+        if (!blocksByDepth.has(depth)) {
+          blocksByDepth.set(depth, []);
         }
+        blocksByDepth.get(depth)!.push(block.id);
+      });
+      
+      // Sort depths (0, 1, 2, ...)
+      const sortedDepths = Array.from(blocksByDepth.keys()).sort((a, b) => a - b);
+      
+      // Assign z-index: depth * 1000 + order within depth
+      sortedDepths.forEach(depth => {
+        const blocksAtDepth = blocksByDepth.get(depth)!;
+        blocksAtDepth.forEach((blockId, order) => {
+          const zIndex = depth * 1000 + order;
+          if (newLayout[blockId]) {
+            newLayout[blockId] = { ...newLayout[blockId], zIndex };
+          }
+        });
       });
       
       set({ visualLayout: newLayout });
