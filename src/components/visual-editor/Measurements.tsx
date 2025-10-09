@@ -1,8 +1,9 @@
-import { useVisualEditorStore } from '@/stores/visual-editor-store';
+interface MeasurementsProps {
+  selectedBlockIds: string[];
+  visualLayout: Record<string, any>;
+}
 
-export function Measurements() {
-  const { selectedBlockIds, visualLayout } = useVisualEditorStore();
-
+export function Measurements({ selectedBlockIds, visualLayout }: MeasurementsProps) {
   if (selectedBlockIds.length === 0) return null;
 
   return (
@@ -11,6 +12,9 @@ export function Measurements() {
         const layout = visualLayout[blockId];
         if (!layout) return null;
 
+        const showTopMeasurement = layout.y >= 30;
+        const topMeasurementY = showTopMeasurement ? layout.y - 24 : layout.y + layout.height + 8;
+
         return (
           <div key={blockId}>
             {/* Width measurement */}
@@ -18,103 +22,45 @@ export function Measurements() {
               className="absolute pointer-events-none z-[9997]"
               style={{
                 left: `${layout.x}px`,
-                top: `${layout.y - 20}px`,
+                top: `${topMeasurementY}px`,
                 width: `${layout.width}px`,
-                height: '16px',
+                height: '20px',
               }}
             >
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium">
-                  {Math.round(layout.width)}px
+              <div className="relative w-full h-full">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium shadow-md whitespace-nowrap">
+                  {Math.round(layout.width)} × {Math.round(layout.height)}
                 </div>
               </div>
               <svg
                 width={layout.width}
-                height="16"
+                height="20"
                 className="absolute top-0 left-0"
               >
                 <line
                   x1="0"
-                  y1="8"
+                  y1="10"
                   x2={layout.width}
-                  y2="8"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
+                  y2="10"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="1.5"
+                  strokeDasharray="2,2"
                 />
                 <line
                   x1="0"
-                  y1="4"
+                  y1="6"
                   x2="0"
-                  y2="12"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
+                  y2="14"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="1.5"
                 />
                 <line
                   x1={layout.width}
-                  y1="4"
+                  y1="6"
                   x2={layout.width}
-                  y2="12"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
-                />
-              </svg>
-            </div>
-
-            {/* Height measurement */}
-            <div
-              className="absolute pointer-events-none z-[9997]"
-              style={{
-                left: `${layout.x + layout.width + 4}px`,
-                top: `${layout.y}px`,
-                width: '16px',
-                height: `${layout.height}px`,
-              }}
-            >
-              <div className="w-full h-full flex items-center justify-center">
-                <div
-                  className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium"
-                  style={{
-                    transform: 'rotate(-90deg)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {Math.round(layout.height)}px
-                </div>
-              </div>
-              <svg
-                width="16"
-                height={layout.height}
-                className="absolute top-0 left-0"
-              >
-                <line
-                  x1="8"
-                  y1="0"
-                  x2="8"
-                  y2={layout.height}
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
-                />
-                <line
-                  x1="4"
-                  y1="0"
-                  x2="12"
-                  y2="0"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
-                />
-                <line
-                  x1="4"
-                  y1={layout.height}
-                  x2="12"
-                  y2={layout.height}
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-primary"
+                  y2="14"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="1.5"
                 />
               </svg>
             </div>

@@ -503,19 +503,20 @@ export function VisualCanvas() {
         }}
       >
         {renderBlocks(blocks, canvasWidth, canvasHeight)}
+        
         {isMarqueeSelecting && marqueeStart && marqueeEnd && (
           <MarqueeSelection start={marqueeStart} end={marqueeEnd} zoom={zoom} />
         )}
         
         {/* Guide Lines */}
-        <GuideLines guides={guides} zoom={zoom} />
+        <GuideLines guides={guides} />
+        
+        {/* Rulers */}
+        {showRulers && <Ruler canvasWidth={canvasWidth} canvasHeight={canvasHeight} />}
+
+        {/* Measurements */}
+        {showMeasurements && <Measurements selectedBlockIds={selectedBlockIds} visualLayout={visualLayout} />}
       </div>
-
-      {/* Rulers */}
-      {showRulers && <Ruler />}
-
-      {/* Measurements */}
-      {showMeasurements && <Measurements />}
     </div>
   );
 }
