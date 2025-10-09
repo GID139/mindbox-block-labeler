@@ -1302,19 +1302,24 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const { blocks, visualLayout } = get();
       const newLayout = { ...visualLayout };
       
-      const assignZIndex = (blocks: BlockInstance[], baseZIndex: number = 0) => {
+      // Рекурсивная функция для присвоения z-index с учетом глубины вложенности
+      // Более вложенные элементы получают больший z-index
+      const assignZIndex = (blocks: BlockInstance[], depth: number = 0) => {
         blocks.forEach((block, index) => {
-          const zIndex = baseZIndex + index;
+          // z-index = глубина_вложенности * 1000 + позиция_в_массиве
+          // Это гарантирует, что дочерние элементы всегда выше родительских
+          const zIndex = depth * 1000 + index;
           if (newLayout[block.id]) {
             newLayout[block.id] = { ...newLayout[block.id], zIndex };
           }
+          // Рекурсивно обрабатываем дочерние элементы с увеличенной глубиной
           if (block.children.length > 0) {
-            assignZIndex(block.children, zIndex * 1000);
+            assignZIndex(block.children, depth + 1);
           }
         });
       };
       
-      assignZIndex(blocks);
+      assignZIndex(blocks, 0);
       set({ visualLayout: newLayout });
     },
     
