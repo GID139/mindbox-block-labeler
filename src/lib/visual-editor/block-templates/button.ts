@@ -1,5 +1,6 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const buttonTemplate: BlockTemplate = {
   type: 'BUTTON',
@@ -10,57 +11,54 @@ export const buttonTemplate: BlockTemplate = {
   maxNestingLevel: 3,
   defaultSettings: {
     text: 'Click me',
-    link: 'https://example.com',
-    backgroundColor: '#39AA5D',
-    textColor: '#FFFFFF',
-    fontSize: '16',
-    fontWeight: 'bold',
-    borderRadius: '4',
-    paddingTop: '12',
-    paddingRight: '24',
-    paddingBottom: '12',
-    paddingLeft: '24',
-    width: '200',
-    height: '50',
-    align: 'center',
-    display: true,
-    background: { type: 'color' as const, color: '#39AA5D' },
+    href: '#',
+    backgroundColor: '#007bff',
+    color: '#ffffff',
+    borderRadius: '4px',
     padding: '12px 24px',
+    fontSize: '14px',
+    fontWeight: 'normal',
+    textAlign: 'center',
+    display: true,
+    border: 'none',
+    link: '',
+    background: { type: 'color' as const, color: '#007bff' },
   },
   availableSettings: ['display', 'text', 'link', 'background', 'textStyles', 'size', 'borderRadius', 'padding'],
   
   generateHTML: (block: BlockInstance): string => {
-    const {
-      text,
-      link,
-      backgroundColor,
-      textColor,
-      fontSize,
-      fontWeight,
-      borderRadius,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
-      width,
-      height,
-      align,
+    const { 
+      text, 
+      href, 
+      backgroundColor, 
+      color, 
+      borderRadius, 
+      padding, 
+      fontSize, 
+      fontWeight, 
+      textAlign,
+      border,
+      background
     } = block.settings;
     
-    const style = `
+    // Use background setting if available, otherwise fallback to backgroundColor
+    const bgStyle = background && background.type !== 'transparent' 
+      ? getBackgroundStyle(background)
+      : `background-color: ${backgroundColor};`;
+    
+    let style = `
       display: inline-block;
-      background-color: ${backgroundColor};
-      color: ${textColor};
-      font-size: ${fontSize}px;
+      ${bgStyle}
+      color: ${color};
+      padding: ${padding};
+      border-radius: ${borderRadius};
+      font-size: ${fontSize};
       font-weight: ${fontWeight};
+      text-align: ${textAlign};
       text-decoration: none;
-      border-radius: ${borderRadius}px;
-      padding: ${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px;
-      width: ${width}px;
-      height: ${height}px;
-      text-align: ${align};
-      line-height: ${height}px;
-    `.trim();
+      border: ${border || 'none'};
+      cursor: pointer;
+    `.replace(/\s+/g, ' ').trim();
     
     let content = text || 'Click me';
     
@@ -72,7 +70,7 @@ export const buttonTemplate: BlockTemplate = {
       }).join('');
     }
     
-    return `<a href="${link}" style="${style}">${content}</a>`;
+    return `<a href="${href}" style="${style}">${content}</a>`;
   },
   
   generateJSON: (block: BlockInstance): any[] => {

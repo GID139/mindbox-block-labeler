@@ -1,4 +1,5 @@
 import { BlockTemplate } from '@/types/visual-editor';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const groupTemplate: BlockTemplate = {
   type: 'GROUP',
@@ -20,9 +21,11 @@ export const groupTemplate: BlockTemplate = {
     // Container styles
     const styles: string[] = [];
     
-    if (block.settings.background?.type === 'color') {
-      styles.push(`background-color: ${block.settings.background.value}`);
-    }
+    const bgStyle = getBackgroundStyle(block.settings.background);
+    if (bgStyle) styles.push(bgStyle.replace(/;$/, ''));
+    
+    const padStyle = getPaddingStyle(block.settings.padding);
+    if (padStyle) styles.push(padStyle.replace(/;$/, ''));
     
     if (styles.length > 0) {
       html += ` style="${styles.join('; ')}"`;

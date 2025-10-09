@@ -1,5 +1,6 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const imageTemplate: BlockTemplate = {
   type: 'IMAGE',
@@ -22,7 +23,7 @@ export const imageTemplate: BlockTemplate = {
   availableSettings: ['display', 'url', 'size', 'link'],
   
   generateHTML: (block: BlockInstance): string => {
-    const { url, alt, width, height, align, link } = block.settings;
+    const { url, alt, width, height, align, link, background, padding } = block.settings;
     
     const imgTag = `<img src="${url}" alt="${alt}" width="${width}" height="${height}" style="display: block; max-width: 100%;" />`;
     
@@ -36,11 +37,18 @@ export const imageTemplate: BlockTemplate = {
       }).join('');
     }
     
+    // Build styles for outer div
+    const styles: string[] = [`text-align: ${align}`];
+    const bgStyle = getBackgroundStyle(background);
+    if (bgStyle) styles.push(bgStyle.replace(/;$/, ''));
+    const padStyle = getPaddingStyle(padding);
+    if (padStyle) styles.push(padStyle.replace(/;$/, ''));
+    
     if (link) {
-      return `<a href="${link}" style="text-align: ${align};">${content}</a>`;
+      return `<a href="${link}" style="${styles.join('; ')};">${content}</a>`;
     }
     
-    return `<div style="text-align: ${align};">${content}</div>`;
+    return `<div style="${styles.join('; ')};">${content}</div>`;
   },
   
   generateJSON: (block: BlockInstance): any[] => {

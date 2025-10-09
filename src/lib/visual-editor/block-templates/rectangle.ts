@@ -1,4 +1,5 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getBackgroundStyle } from '../background-utils';
 
 export const rectangleTemplate: BlockTemplate = {
   type: 'RECTANGLE',
@@ -20,10 +21,15 @@ export const rectangleTemplate: BlockTemplate = {
   },
   availableSettings: ['width', 'height', 'backgroundColor', 'borderRadius', 'border'],
   generateHTML: (block: BlockInstance) => {
-    const { width, height, backgroundColor, borderRadius, borderWidth, borderColor, borderStyle } = block.settings;
+    const { width, height, backgroundColor, borderRadius, borderWidth, borderColor, borderStyle, background } = block.settings;
     const border = borderWidth !== '0px' ? `${borderWidth} ${borderStyle} ${borderColor}` : 'none';
     
-    return `<div style="width: ${width}; height: ${height}; background-color: ${backgroundColor}; border-radius: ${borderRadius}; border: ${border};"></div>`;
+    // Use background setting if available
+    const bgStyle = background && background.type !== 'transparent' 
+      ? getBackgroundStyle(background).replace(/;$/, '')
+      : `background-color: ${backgroundColor}`;
+    
+    return `<div style="width: ${width}; height: ${height}; ${bgStyle}; border-radius: ${borderRadius}; border: ${border};"></div>`;
   },
   generateJSON: (block: BlockInstance) => {
     const { width, height, backgroundColor, borderRadius, borderWidth, borderColor, borderStyle } = block.settings;

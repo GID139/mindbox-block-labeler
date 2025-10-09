@@ -1,5 +1,6 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const textTemplate: BlockTemplate = {
   type: 'TEXT',
@@ -11,11 +12,11 @@ export const textTemplate: BlockTemplate = {
   defaultSettings: {
     text: 'Enter text...',
     font: 'Arial',
-    fontSize: '16',
+    fontSize: '16px',
     fontWeight: 'normal',
     color: '#000000',
     lineHeight: '1.5',
-    align: 'left',
+    textAlign: 'left',
     display: true,
     link: '',
     background: { type: 'transparent' as const },
@@ -24,9 +25,17 @@ export const textTemplate: BlockTemplate = {
   availableSettings: ['display', 'text', 'textStyles', 'link'],
   
   generateHTML: (block: BlockInstance): string => {
-    const { text, font, fontSize, fontWeight, color, lineHeight, align, link } = block.settings;
+    const { text, font, fontSize, fontWeight, color, lineHeight, textAlign, link, background, padding } = block.settings;
     
-    let style = `font-family: ${font}, sans-serif; font-size: ${fontSize}px; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineHeight}; text-align: ${align};`;
+    // Outer div for padding and background
+    const outerStyles: string[] = [];
+    const bgStyle = getBackgroundStyle(background);
+    if (bgStyle) outerStyles.push(bgStyle);
+    const padStyle = getPaddingStyle(padding);
+    if (padStyle) outerStyles.push(padStyle);
+    
+    // Inner span for text styles
+    const innerStyle = `font-family: ${font}, sans-serif; font-size: ${fontSize}; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineHeight}; text-align: ${textAlign}; display: inline-block; width: 100%;`;
     
     let content = text || 'Enter text...';
     
@@ -38,11 +47,16 @@ export const textTemplate: BlockTemplate = {
       }).join('');
     }
     
-    if (link) {
-      return `<a href="${link}" style="${style}">${content}</a>`;
+    const innerHTML = link 
+      ? `<a href="${link}" style="${innerStyle}">${content}</a>`
+      : `<span style="${innerStyle}">${content}</span>`;
+    
+    // Two-layer structure
+    if (outerStyles.length > 0) {
+      return `<div style="${outerStyles.join(' ')}">${innerHTML}</div>`;
     }
     
-    return `<span style="${style}">${content}</span>`;
+    return innerHTML;
   },
   
   generateJSON: (block: BlockInstance): any[] => {
@@ -60,7 +74,7 @@ export const textTemplate: BlockTemplate = {
       params.push({
         name: `${block.name}_fontSize`,
         type: 'size',
-        value: block.settings.fontSize,
+        value: block.settings.fontSize.replace('px', ''),
       });
     }
     
@@ -92,7 +106,7 @@ export const headingTemplate: BlockTemplate = {
   defaultSettings: {
     ...textTemplate.defaultSettings,
     text: 'Heading',
-    fontSize: '24',
+    fontSize: '24px',
     fontWeight: 'bold',
     lineHeight: '1.2',
   },

@@ -1,4 +1,6 @@
-import { BlockTemplate } from '@/types/visual-editor';
+import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const gridContainerTemplate: BlockTemplate = {
   type: 'GRID_CONTAINER',
@@ -13,7 +15,7 @@ export const gridContainerTemplate: BlockTemplate = {
     gridTemplateRows: 'auto',
     gap: '10px',
     padding: '20px',
-    background: { type: 'transparent' },
+    background: { type: 'transparent' as const },
     border: { style: 'none', width: 0, color: '#000000' },
     width: '100%',
     minHeight: '200px',
@@ -21,30 +23,46 @@ export const gridContainerTemplate: BlockTemplate = {
     justifyItems: 'stretch',
   },
   availableSettings: ['display', 'gridTemplateColumns', 'gridTemplateRows', 'gap', 'padding', 'background', 'border', 'width', 'height', 'alignItems', 'justifyItems'],
-  generateHTML: (block) => {
-    const settings = block.settings;
-    const childrenHTML = block.children.map(child => {
-      const template = require('./index').getTemplate(child.type);
-      return template.generateHTML(child);
-    }).join('\n');
-
-    const styles = [
-      `display: grid`,
-      settings.gridTemplateColumns && `grid-template-columns: ${settings.gridTemplateColumns}`,
-      settings.gridTemplateRows && `grid-template-rows: ${settings.gridTemplateRows}`,
-      settings.gap && `gap: ${settings.gap}`,
-      settings.padding && `padding: ${settings.padding}`,
-      settings.width && `width: ${settings.width}`,
-      settings.height && `height: ${settings.height}`,
-      settings.minHeight && `min-height: ${settings.minHeight}`,
-      settings.alignItems && `align-items: ${settings.alignItems}`,
-      settings.justifyItems && `justify-items: ${settings.justifyItems}`,
-      settings.background?.type === 'color' && `background-color: ${settings.background.value}`,
-      settings.background?.type === 'image' && `background-image: url(${settings.background.value})`,
-      settings.border?.style !== 'none' && `border: ${settings.border.width}px ${settings.border.style} ${settings.border.color}`,
-    ].filter(Boolean).join('; ');
-
-    return `<div id="${block.id}" style="${styles}">\n${childrenHTML}\n</div>`;
+  
+  generateHTML: (block: BlockInstance): string => {
+    const { gridTemplateColumns, gridTemplateRows, gap, background, padding, width, height, minHeight, alignItems, justifyItems } = block.settings;
+    
+    let html = '<div';
+    
+    // Grid styles
+    const styles: string[] = ['display: grid'];
+    
+    if (gridTemplateColumns) styles.push(`grid-template-columns: ${gridTemplateColumns}`);
+    if (gridTemplateRows) styles.push(`grid-template-rows: ${gridTemplateRows}`);
+    if (gap) styles.push(`gap: ${gap}`);
+    if (alignItems) styles.push(`align-items: ${alignItems}`);
+    if (justifyItems) styles.push(`justify-items: ${justifyItems}`);
+    
+    // Background
+    const bgStyle = getBackgroundStyle(background);
+    if (bgStyle) styles.push(bgStyle.replace(/;$/, ''));
+    
+    // Padding
+    const padStyle = getPaddingStyle(padding);
+    if (padStyle) styles.push(padStyle.replace(/;$/, ''));
+    
+    // Size
+    if (width) styles.push(`width: ${width}`);
+    if (height) styles.push(`height: ${height}`);
+    if (minHeight) styles.push(`min-height: ${minHeight}`);
+    
+    html += ` style="${styles.join('; ')}">\n`;
+    
+    // Render children
+    if (block.children && block.children.length > 0) {
+      block.children.forEach(child => {
+        const childTemplate = getTemplate(child.type);
+        html += childTemplate.generateHTML(child);
+      });
+    }
+    
+    html += '</div>\n';
+    return html;
   },
   generateJSON: (block) => {
     return [{

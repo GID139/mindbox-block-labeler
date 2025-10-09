@@ -1,5 +1,6 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const containerTemplate: BlockTemplate = {
   type: 'CONTAINER',
@@ -11,86 +12,95 @@ export const containerTemplate: BlockTemplate = {
   defaultSettings: {
     backgroundColor: '#F5F5F5',
     borderStyle: 'solid',
-    borderWidth: '1',
+    borderWidth: '1px',
     borderColor: '#DDDDDD',
-    borderRadiusTopLeft: '4',
-    borderRadiusTopRight: '4',
-    borderRadiusBottomRight: '4',
-    borderRadiusBottomLeft: '4',
-    width: '600',
+    borderRadius: '4px',
+    width: '600px',
     height: 'auto',
-    paddingTop: '16',
-    paddingRight: '16',
-    paddingBottom: '16',
-    paddingLeft: '16',
+    padding: '16px',
     display: true,
-    // Auto Layout (Flexbox)
     autoLayout: false,
     flexDirection: 'column',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    gap: '8',
+    gap: '8px',
     background: { type: 'color' as const, color: '#F5F5F5' },
-    padding: '16px',
   },
   availableSettings: ['display', 'background', 'border', 'borderRadius', 'size', 'padding', 'autoLayout'],
   
   generateHTML: (block: BlockInstance): string => {
-    const {
-      backgroundColor,
-      borderStyle,
-      borderWidth,
-      borderColor,
-      borderRadiusTopLeft,
-      borderRadiusTopRight,
-      borderRadiusBottomRight,
-      borderRadiusBottomLeft,
+    const { 
+      background, 
+      borderWidth, 
+      borderColor, 
+      borderStyle, 
+      borderRadius,
+      padding,
       width,
       height,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
       autoLayout,
       flexDirection,
       justifyContent,
       alignItems,
-      gap,
+      gap
     } = block.settings;
     
-    let style = `
-      background-color: ${backgroundColor};
-      border: ${borderWidth}px ${borderStyle} ${borderColor};
-      border-radius: ${borderRadiusTopLeft}px ${borderRadiusTopRight}px ${borderRadiusBottomRight}px ${borderRadiusBottomLeft}px;
-      width: ${width}px;
-      ${height !== 'auto' ? `height: ${height}px;` : ''}
-      padding: ${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px;
-    `;
+    let html = '<div';
     
-    // Add flexbox if autoLayout is enabled
+    // Container styles
+    const styles: string[] = [];
+    
+    // Background
+    const bgStyle = getBackgroundStyle(background);
+    if (bgStyle) styles.push(bgStyle.replace(/;$/, ''));
+    
+    // Border
+    if (borderWidth && borderWidth !== '0px') {
+      styles.push(`border: ${borderWidth} ${borderStyle || 'solid'} ${borderColor || '#000000'}`);
+    }
+    
+    if (borderRadius && borderRadius !== '0px') {
+      styles.push(`border-radius: ${borderRadius}`);
+    }
+    
+    // Padding
+    const padStyle = getPaddingStyle(padding);
+    if (padStyle) styles.push(padStyle.replace(/;$/, ''));
+    
+    // Size
+    if (width) {
+      styles.push(`width: ${width}`);
+    }
+    
+    if (height && height !== 'auto') {
+      styles.push(`height: ${height}`);
+    }
+    
+    // Auto layout (Flexbox)
     if (autoLayout) {
-      style += `
-        display: flex;
-        flex-direction: ${flexDirection};
-        justify-content: ${justifyContent};
-        align-items: ${alignItems};
-        gap: ${gap}px;
-      `;
+      styles.push('display: flex');
+      if (flexDirection) styles.push(`flex-direction: ${flexDirection}`);
+      if (justifyContent) styles.push(`justify-content: ${justifyContent}`);
+      if (alignItems) styles.push(`align-items: ${alignItems}`);
+      if (gap) styles.push(`gap: ${gap}`);
     }
     
-    style = style.trim();
+    if (styles.length > 0) {
+      html += ` style="${styles.join('; ')}"`;
+    }
     
-    let content = '';
+    html += '>\n';
     
-    // Process children recursively
+    // Render children
     if (block.children && block.children.length > 0) {
-      content = block.children.map(child => {
+      block.children.forEach(child => {
         const childTemplate = getTemplate(child.type);
-        return childTemplate.generateHTML(child);
-      }).join('');
+        html += childTemplate.generateHTML(child);
+      });
     }
     
-    return `<div style="${style}">${content}</div>`;
+    html += '</div>\n';
+    return html;
   },
   
   generateJSON: (block: BlockInstance): any[] => {

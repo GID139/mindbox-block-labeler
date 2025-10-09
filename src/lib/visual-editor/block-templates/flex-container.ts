@@ -1,4 +1,6 @@
-import { BlockTemplate } from '@/types/visual-editor';
+import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getTemplate } from './index';
+import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
 
 export const flexContainerTemplate: BlockTemplate = {
   type: 'FLEX_CONTAINER',
@@ -14,37 +16,53 @@ export const flexContainerTemplate: BlockTemplate = {
     alignItems: 'center',
     gap: '10px',
     padding: '20px',
-    background: { type: 'transparent' },
+    background: { type: 'transparent' as const },
     border: { style: 'none', width: 0, color: '#000000' },
     width: '100%',
     minHeight: '100px',
     flexWrap: 'nowrap',
   },
   availableSettings: ['display', 'flexDirection', 'justifyContent', 'alignItems', 'gap', 'padding', 'background', 'border', 'width', 'height', 'flexWrap'],
-  generateHTML: (block) => {
-    const settings = block.settings;
-    const childrenHTML = block.children.map(child => {
-      const template = require('./index').getTemplate(child.type);
-      return template.generateHTML(child);
-    }).join('\n');
-
-    const styles = [
-      `display: flex`,
-      settings.flexDirection && `flex-direction: ${settings.flexDirection}`,
-      settings.justifyContent && `justify-content: ${settings.justifyContent}`,
-      settings.alignItems && `align-items: ${settings.alignItems}`,
-      settings.gap && `gap: ${settings.gap}`,
-      settings.padding && `padding: ${settings.padding}`,
-      settings.width && `width: ${settings.width}`,
-      settings.height && `height: ${settings.height}`,
-      settings.minHeight && `min-height: ${settings.minHeight}`,
-      settings.flexWrap && `flex-wrap: ${settings.flexWrap}`,
-      settings.background?.type === 'color' && `background-color: ${settings.background.value}`,
-      settings.background?.type === 'image' && `background-image: url(${settings.background.value})`,
-      settings.border?.style !== 'none' && `border: ${settings.border.width}px ${settings.border.style} ${settings.border.color}`,
-    ].filter(Boolean).join('; ');
-
-    return `<div id="${block.id}" style="${styles}">\n${childrenHTML}\n</div>`;
+  
+  generateHTML: (block: BlockInstance): string => {
+    const { flexDirection, justifyContent, alignItems, gap, background, padding, width, height, minHeight, flexWrap } = block.settings;
+    
+    let html = '<div';
+    
+    // Flexbox styles
+    const styles: string[] = ['display: flex'];
+    
+    if (flexDirection) styles.push(`flex-direction: ${flexDirection}`);
+    if (justifyContent) styles.push(`justify-content: ${justifyContent}`);
+    if (alignItems) styles.push(`align-items: ${alignItems}`);
+    if (gap) styles.push(`gap: ${gap}`);
+    if (flexWrap) styles.push(`flex-wrap: ${flexWrap}`);
+    
+    // Background
+    const bgStyle = getBackgroundStyle(background);
+    if (bgStyle) styles.push(bgStyle.replace(/;$/, ''));
+    
+    // Padding
+    const padStyle = getPaddingStyle(padding);
+    if (padStyle) styles.push(padStyle.replace(/;$/, ''));
+    
+    // Size
+    if (width) styles.push(`width: ${width}`);
+    if (height) styles.push(`height: ${height}`);
+    if (minHeight) styles.push(`min-height: ${minHeight}`);
+    
+    html += ` style="${styles.join('; ')}">\n`;
+    
+    // Render children
+    if (block.children && block.children.length > 0) {
+      block.children.forEach(child => {
+        const childTemplate = getTemplate(child.type);
+        html += childTemplate.generateHTML(child);
+      });
+    }
+    
+    html += '</div>\n';
+    return html;
   },
   generateJSON: (block) => {
     return [{

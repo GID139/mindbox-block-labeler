@@ -68,7 +68,13 @@ export function SettingsPanel() {
                   <Input
                     type="text"
                     value={block.settings.fontSize || '16px'}
-                    onChange={(e) => updateSettings({ fontSize: e.target.value })}
+                    onChange={(e) => {
+                      // Validate CSS size value
+                      const value = e.target.value;
+                      if (value === '' || /^\d+(?:px|em|rem|%)?$/.test(value)) {
+                        updateSettings({ fontSize: value.endsWith('px') || value.endsWith('em') || value.endsWith('rem') || value.endsWith('%') ? value : `${value}px` });
+                      }
+                    }}
                     className="mt-1.5 h-9"
                     placeholder="16px"
                   />

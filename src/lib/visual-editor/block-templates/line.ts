@@ -1,4 +1,5 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getBackgroundStyle } from '../background-utils';
 
 export const lineTemplate: BlockTemplate = {
   type: 'LINE',
@@ -16,10 +17,15 @@ export const lineTemplate: BlockTemplate = {
   },
   availableSettings: ['width', 'height', 'backgroundColor', 'rotation'],
   generateHTML: (block: BlockInstance) => {
-    const { width, height, backgroundColor, rotation } = block.settings;
+    const { width, height, backgroundColor, rotation, background } = block.settings;
     const transform = rotation !== '0deg' ? `transform: rotate(${rotation});` : '';
     
-    return `<div style="width: ${width}; height: ${height}; background-color: ${backgroundColor}; ${transform}"></div>`;
+    // Use background setting if available
+    const bgStyle = background && background.type !== 'transparent' 
+      ? getBackgroundStyle(background).replace(/;$/, '')
+      : `background-color: ${backgroundColor}`;
+    
+    return `<div style="width: ${width}; height: ${height}; ${bgStyle}; ${transform}"></div>`;
   },
   generateJSON: (block: BlockInstance) => {
     const { width, height, backgroundColor, rotation } = block.settings;

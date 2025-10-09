@@ -1,4 +1,5 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
+import { getBackgroundStyle } from '../background-utils';
 
 export const circleTemplate: BlockTemplate = {
   type: 'CIRCLE',
@@ -18,10 +19,15 @@ export const circleTemplate: BlockTemplate = {
   },
   availableSettings: ['size', 'backgroundColor', 'border'],
   generateHTML: (block: BlockInstance) => {
-    const { size, backgroundColor, borderWidth, borderColor, borderStyle } = block.settings;
+    const { size, backgroundColor, borderWidth, borderColor, borderStyle, background } = block.settings;
     const border = borderWidth !== '0px' ? `${borderWidth} ${borderStyle} ${borderColor}` : 'none';
     
-    return `<div style="width: ${size}; height: ${size}; background-color: ${backgroundColor}; border-radius: 50%; border: ${border};"></div>`;
+    // Use background setting if available
+    const bgStyle = background && background.type !== 'transparent' 
+      ? getBackgroundStyle(background).replace(/;$/, '')
+      : `background-color: ${backgroundColor}`;
+    
+    return `<div style="width: ${size}; height: ${size}; ${bgStyle}; border-radius: 50%; border: ${border};"></div>`;
   },
   generateJSON: (block: BlockInstance) => {
     const { size, backgroundColor, borderWidth, borderColor, borderStyle } = block.settings;

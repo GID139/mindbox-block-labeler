@@ -275,6 +275,59 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     x,
                     y,
                   });
+
+                  // Update block settings based on type (Фаза 2: Синхронизация размеров)
+                  const oldWidth = layout.width;
+                  const oldHeight = layout.height;
+                  const widthRatio = newWidth / oldWidth;
+                  const heightRatio = newHeight / oldHeight;
+
+                  const updatedSettings: any = {};
+
+                  switch (block.type) {
+                    case 'TEXT':
+                      // Scale font size proportionally
+                      const currentFontSize = parseInt(block.settings.fontSize) || 16;
+                      updatedSettings.fontSize = `${Math.round(currentFontSize * Math.min(widthRatio, heightRatio))}px`;
+                      break;
+
+                    case 'BUTTON':
+                      updatedSettings.width = `${newWidth}px`;
+                      updatedSettings.height = `${newHeight}px`;
+                      break;
+
+                    case 'IMAGE':
+                      updatedSettings.width = `${newWidth}px`;
+                      updatedSettings.height = `${newHeight}px`;
+                      break;
+
+                    case 'RECTANGLE':
+                      updatedSettings.width = `${newWidth}px`;
+                      updatedSettings.height = `${newHeight}px`;
+                      break;
+
+                    case 'CIRCLE':
+                      updatedSettings.size = `${Math.min(newWidth, newHeight)}px`;
+                      break;
+
+                    case 'LINE':
+                      updatedSettings.width = `${newWidth}px`;
+                      updatedSettings.height = `${newHeight}px`;
+                      break;
+
+                    case 'CONTAINER':
+                    case 'FLEX_CONTAINER':
+                    case 'GRID_CONTAINER':
+                      updatedSettings.width = `${newWidth}px`;
+                      updatedSettings.height = `${newHeight}px`;
+                      break;
+                  }
+
+                  if (Object.keys(updatedSettings).length > 0) {
+                    updateBlock(block.id, {
+                      settings: { ...block.settings, ...updatedSettings }
+                    });
+                  }
                 }
               }}
             />
