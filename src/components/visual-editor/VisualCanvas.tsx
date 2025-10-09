@@ -121,6 +121,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   zIndex: layout.zIndex,
                   transition: 'border-color 0.2s',
                   pointerEvents: isEditing ? 'none' : 'auto',
+                  position: 'relative',
                 }}
               >
                 {isEditing ? (
@@ -156,7 +157,6 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                             key={child.id}
                             block={child}
                             parentRef={targetRef.current}
-                            isSelected={selectedBlockIds.includes(child.id)}
                           />
                         ))}
                       </div>

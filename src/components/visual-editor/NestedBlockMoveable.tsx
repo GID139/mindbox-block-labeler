@@ -7,12 +7,12 @@ import { getTemplate } from '@/lib/visual-editor/block-templates';
 interface NestedBlockMoveableProps {
   block: BlockInstance;
   parentRef: HTMLElement | null;
-  isSelected: boolean;
 }
 
-export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBlockMoveableProps) {
+export function NestedBlockMoveable({ block, parentRef }: NestedBlockMoveableProps) {
   const targetRef = useRef<HTMLDivElement>(null);
   const { visualLayout, updateVisualLayout, selectBlock, selectedBlockIds } = useVisualEditorStore();
+  const isSelected = selectedBlockIds.includes(block.id);
   const [previewHTML, setPreviewHTML] = useState('');
   const [parentElement, setParentElement] = useState<HTMLElement | null>(null);
 
@@ -65,7 +65,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
           console.log('NestedBlock clicked:', block.id, 'type:', block.type, 'isSelected:', isSelected, 'selectedBlockIds:', selectedBlockIds);
           selectBlock(block.id);
         }}
-        className={`absolute cursor-pointer border-2 overflow-hidden pointer-events-auto transition-all ${
+        className={`absolute cursor-pointer border-2 overflow-visible pointer-events-auto transition-all ${
           isSelected 
             ? 'border-primary shadow-lg' 
             : 'border-transparent hover:border-primary/50 hover:shadow-md'
@@ -76,6 +76,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
           height: `${currentLayout.height}px`,
           zIndex: isSelected ? currentLayout.zIndex + 100 : currentLayout.zIndex + 1,
           transition: 'border-color 0.2s, box-shadow 0.2s',
+          outline: '2px dashed orange',
         }}
       >
         <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
@@ -88,7 +89,6 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
                 key={child.id}
                 block={child}
                 parentRef={parentElement}
-                isSelected={selectedBlockIds.includes(child.id)}
               />
             ))}
           </div>
@@ -126,7 +126,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
             top: 0,
             right: parentRef.offsetWidth,
             bottom: parentRef.offsetHeight,
-            position: 'client'
+            position: 'css'
           } : undefined}
           onDrag={({ target, left, top }) => {
             // Constrain to parent bounds if parentRef exists
