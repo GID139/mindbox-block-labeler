@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getTemplate } from '@/lib/visual-editor/block-templates';
 import { useState } from 'react';
+import { getChildren, getRootBlocks } from '@/lib/visual-editor/coordinate-utils';
 
 export function OutlineView() {
   const { blocks, selectedBlockIds, selectBlock } = useVisualEditorStore();
@@ -17,7 +18,8 @@ export function OutlineView() {
   const renderTree = (blocks: BlockInstance[], level = 0): JSX.Element[] => {
     return blocks.map(block => {
       const template = getTemplate(block.type);
-      const hasChildren = block.children.length > 0;
+      const children = getChildren(blocks, block.id);
+      const hasChildren = children.length > 0;
       const isExpanded = expanded[block.id] !== false; // default to expanded
       const isSelected = selectedBlockIds.includes(block.id);
 
@@ -48,12 +50,12 @@ export function OutlineView() {
             <span className="flex-1 text-xs truncate">{block.name}</span>
             {hasChildren && (
               <span className="text-xs text-muted-foreground ml-2">
-                ({block.children.length})
+                ({children.length})
               </span>
             )}
           </Button>
           {hasChildren && isExpanded && (
-            <div>{renderTree(block.children, level + 1)}</div>
+            <div>{renderTree(children, level + 1)}</div>
           )}
         </div>
       );
@@ -69,7 +71,7 @@ export function OutlineView() {
             No blocks yet
           </p>
         ) : (
-          renderTree(blocks)
+          renderTree(getRootBlocks(blocks))
         )}
       </div>
     </Card>

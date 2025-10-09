@@ -17,6 +17,7 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, DragEndEvent, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
+import { getChildren, getRootBlocks, findBlockById } from '@/lib/visual-editor/coordinate-utils';
 
 function DraggableLayerItem({ block, level, isSelected, onSelect }: {
   block: BlockInstance;
@@ -25,8 +26,9 @@ function DraggableLayerItem({ block, level, isSelected, onSelect }: {
   onSelect: (id: string, isMulti: boolean) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const { toggleLock, toggleHide, duplicateBlock, removeBlock } = useVisualEditorStore();
-  const hasChildren = block.children && block.children.length > 0;
+  const { toggleLock, toggleHide, duplicateBlock, removeBlock, blocks } = useVisualEditorStore();
+  const children = getChildren(blocks, block.id);
+  const hasChildren = children.length > 0;
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -159,7 +161,7 @@ function DraggableLayerItem({ block, level, isSelected, onSelect }: {
       {/* Children */}
       {hasChildren && isExpanded && (
         <div>
-          {block.children.map(child => (
+          {children.map(child => (
             <DraggableLayerItem
               key={child.id}
               block={child}
@@ -193,24 +195,14 @@ export function LayersPanelWithDragDrop() {
 
     if (targetData?.type === 'layer-drop') {
       const targetId = targetData.blockId;
-      // Find the target block to get its children count
-      const findBlock = (blocks: BlockInstance[], id: string): BlockInstance | null => {
-        for (const block of blocks) {
-          if (block.id === id) return block;
-          if (block.children.length > 0) {
-            const found = findBlock(block.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      
-      const targetBlock = findBlock(blocks, targetId);
-      const insertIndex = targetBlock ? targetBlock.children.length : 0;
+      // Get children count of target block
+      const targetChildren = getChildren(blocks, targetId);
+      const insertIndex = targetChildren.length;
       moveBlock(draggedId, targetId, insertIndex);
     } else if (targetData?.type === 'layer-root') {
       // Move to root level at the end
-      moveBlock(draggedId, null, blocks.length);
+      const rootBlocks = getRootBlocks(blocks);
+      moveBlock(draggedId, null, rootBlocks.length);
     }
   };
 
@@ -238,21 +230,21 @@ export function LayersPanelWithDragDrop() {
                 No blocks yet. Add blocks from the library.
               </div>
             ) : (
-              blocks.map(block => (
-                <DraggableLayerItem
-                  key={block.id}
-                  block={block}
-                  level={0}
-                  isSelected={selectedBlockIds.includes(block.id)}
-                  onSelect={(id, isMulti) => {
-                    if (isMulti) {
-                      toggleBlockSelection(id, true);
-                    } else {
-                      selectBlock(id);
-                    }
-                  }}
-                />
-              ))
+            getRootBlocks(blocks).map(block => (
+              <DraggableLayerItem
+                key={block.id}
+                block={block}
+                level={0}
+                isSelected={selectedBlockIds.includes(block.id)}
+                onSelect={(id, isMulti) => {
+                  if (isMulti) {
+                    toggleBlockSelection(id, true);
+                  } else {
+                    selectBlock(id);
+                  }
+                }}
+              />
+            ))
             )}
           </div>
         </ScrollArea>

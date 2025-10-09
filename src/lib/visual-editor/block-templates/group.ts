@@ -33,31 +33,15 @@ export const groupTemplate: BlockTemplate = {
     
     html += '>\n';
     
-    // Render children
-    if (block.children && block.children.length > 0) {
-      const { getTemplate } = require('./index');
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        html += childTemplate.generateHTML(child);
-      });
-    }
+    // Children will be injected by code-generator
     
     html += '</div>\n';
     return html;
   },
   
   generateJSON: (block) => {
-    const params: any[] = [];
-    
-    // Generate JSON for all children
-    if (block.children && block.children.length > 0) {
-      const { getTemplate } = require('./index');
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        params.push(...childTemplate.generateJSON(child));
-      });
-    }
-    
-    return params;
+    // Group doesn't generate its own params, only children
+    // Children will be handled by code-generator
+    return [];
   },
 };

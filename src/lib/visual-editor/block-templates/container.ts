@@ -91,13 +91,7 @@ export const containerTemplate: BlockTemplate = {
     
     html += '>\n';
     
-    // Render children
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        html += childTemplate.generateHTML(child);
-      });
-    }
+    // Children will be injected by code-generator, don't render them here
     
     html += '</div>\n';
     return html;
@@ -124,13 +118,7 @@ export const containerTemplate: BlockTemplate = {
       }
     );
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        params.push(...childTemplate.generateJSON(child));
-      });
-    }
+    // Children params will be added by code-generator, not here
     
     return params;
   },

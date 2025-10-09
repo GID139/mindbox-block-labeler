@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
+import { findBlockById, getChildren, getRootBlocks } from '@/lib/visual-editor/coordinate-utils';
 
 export function LayersPanel() {
   const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection, toggleLock, toggleHide, duplicateBlock, removeBlock } = useVisualEditorStore();
@@ -57,7 +57,8 @@ export function LayersPanel() {
   const renderBlock = (block: BlockInstance, level: number = 0) => {
     const isSelected = selectedBlockIds.includes(block.id);
     const isExpanded = expandedGroups.has(block.id);
-    const hasChildren = block.children && block.children.length > 0;
+    const children = getChildren(blocks, block.id);
+    const hasChildren = children.length > 0;
 
     return (
       <div key={block.id} className="select-none">
@@ -164,7 +165,7 @@ export function LayersPanel() {
         {/* Children */}
         {hasChildren && isExpanded && (
           <div>
-            {block.children.map(child => renderBlock(child, level + 1))}
+            {children.map(child => renderBlock(child, level + 1))}
           </div>
         )}
       </div>
@@ -185,7 +186,7 @@ export function LayersPanel() {
               No blocks yet. Add blocks from the library.
             </div>
           ) : (
-            blocks.map(block => renderBlock(block, 0))
+            getRootBlocks(blocks).map(block => renderBlock(block, 0))
           )}
         </div>
       </ScrollArea>

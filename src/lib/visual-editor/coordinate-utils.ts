@@ -2,36 +2,74 @@ import { BlockInstance } from '@/types/visual-editor';
 import { VisualLayout } from '@/stores/visual-editor-store';
 
 /**
- * Recursively finds a block by ID in the block tree
+ * Finds a block by ID in flat array (O(n) lookup)
  */
 export function findBlockById(blocks: BlockInstance[], id: string): BlockInstance | null {
-  for (const block of blocks) {
-    if (block.id === id) return block;
-    if (block.children.length > 0) {
-      const found = findBlockById(block.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
+  return blocks.find(block => block.id === id) || null;
 }
 
 /**
- * Flattens nested blocks into a single array
+ * Flattens nested blocks into a single array (now just returns the array as-is)
  */
 export function flattenBlocks(blocks: BlockInstance[]): BlockInstance[] {
+  return blocks; // Already flat!
+}
+
+/**
+ * Get all direct children of a block
+ */
+export function getChildren(blocks: BlockInstance[], parentId: string): BlockInstance[] {
+  return blocks.filter(block => block.parentId === parentId);
+}
+
+/**
+ * Get all descendants of a block recursively
+ */
+export function getAllDescendants(blocks: BlockInstance[], parentId: string): BlockInstance[] {
   const result: BlockInstance[] = [];
+  const directChildren = getChildren(blocks, parentId);
   
-  const flatten = (blockList: BlockInstance[]) => {
-    blockList.forEach(block => {
-      result.push(block);
-      if (block.children.length > 0) {
-        flatten(block.children);
-      }
-    });
-  };
+  directChildren.forEach(child => {
+    result.push(child);
+    result.push(...getAllDescendants(blocks, child.id));
+  });
   
-  flatten(blocks);
   return result;
+}
+
+/**
+ * Check if blockId is an ancestor of ancestorId
+ */
+export function isAncestor(blocks: BlockInstance[], blockId: string, ancestorId: string): boolean {
+  const block = blocks.find(b => b.id === blockId);
+  if (!block || !block.parentId) return false;
+  
+  if (block.parentId === ancestorId) return true;
+  return isAncestor(blocks, block.parentId, ancestorId);
+}
+
+/**
+ * Get path from root to block
+ */
+export function getBlockPath(blocks: BlockInstance[], blockId: string): BlockInstance[] {
+  const path: BlockInstance[] = [];
+  let currentBlock = blocks.find(b => b.id === blockId);
+  
+  while (currentBlock) {
+    path.unshift(currentBlock);
+    currentBlock = currentBlock.parentId 
+      ? blocks.find(b => b.id === currentBlock!.parentId) 
+      : undefined;
+  }
+  
+  return path;
+}
+
+/**
+ * Get only root blocks (no parent)
+ */
+export function getRootBlocks(blocks: BlockInstance[]): BlockInstance[] {
+  return blocks.filter(block => !block.parentId);
 }
 
 /**
@@ -89,14 +127,14 @@ export function updateChildrenAbsoluteCoordinates(
       };
     }
     
-    // Update all children recursively
-    block.children.forEach(child => updateRecursive(child.id));
+    // Update all children recursively using getChildren
+    const children = getChildren(blocks, blockId);
+    children.forEach(child => updateRecursive(child.id));
   };
   
-  const parent = findBlockById(blocks, parentId);
-  if (parent) {
-    parent.children.forEach(child => updateRecursive(child.id));
-  }
+  // Update all direct children
+  const children = getChildren(blocks, parentId);
+  children.forEach(child => updateRecursive(child.id));
   
   return updatedLayout;
 }

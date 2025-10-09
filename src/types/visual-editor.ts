@@ -14,13 +14,12 @@ export interface BlockInstance {
   type: BlockType;
   name: string; // e.g., 'button1', 'text1'
   settings: Record<string, any>;
-  children: BlockInstance[];
   canContainChildren: boolean;
   maxNestingLevel: number;
   locked?: boolean; // Prevents editing/moving
   hidden?: boolean; // Hides from canvas but shows in layers
   constraints?: ResizeConstraints;
-  parentId?: string | null; // NEW: Track parent relationship for unified coordinate system
+  parentId?: string | null; // Track parent relationship - only way to define hierarchy
 }
 
 export interface BlockTemplate {

@@ -53,13 +53,7 @@ export const flexContainerTemplate: BlockTemplate = {
     
     html += ` style="${styles.join('; ')}">\n`;
     
-    // Render children
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        html += childTemplate.generateHTML(child);
-      });
-    }
+    // Children will be injected by code-generator
     
     html += '</div>\n';
     return html;
@@ -80,11 +74,8 @@ export const flexContainerTemplate: BlockTemplate = {
           "height": block.settings.height,
           "flex-wrap": block.settings.flexWrap,
         }
-      },
-      "content": block.children.map(child => {
-        const template = require('./index').getTemplate(child.type);
-        return template.generateJSON(child);
-      }).flat()
+      }
+      // Children content will be added by code-generator
     }];
   },
 };
