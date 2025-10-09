@@ -25,7 +25,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout, selectedTableCell } = useVisualEditorStore();
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -640,6 +640,11 @@ export function SettingsPanel() {
         );
 
       case 'TABLE':
+        const { selectedTableCell, selectTableCell, clearTableCellSelection, updateCellSetting } = useVisualEditorStore.getState();
+        const tableSettings = block.settings as any;
+        const rows = tableSettings.rows || 2;
+        const cols = tableSettings.cols || 2;
+        
         return (
           <div className="space-y-4">
             {/* Table Size Controls */}
@@ -661,12 +666,11 @@ export function SettingsPanel() {
                     </Button>
                     <Input
                       type="number"
-                      value={block.settings.rows || 2}
+                      value={rows}
                       onChange={(e) => {
                         const newRows = parseInt(e.target.value) || 2;
-                        const currentRows = block.settings.rows || 2;
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'rows', newRows - currentRows);
+                        updateTableSize(block.id, 'rows', newRows - rows);
                       }}
                       className="h-9 text-center"
                       min={1}
@@ -701,12 +705,11 @@ export function SettingsPanel() {
                     </Button>
                     <Input
                       type="number"
-                      value={block.settings.cols || 2}
+                      value={cols}
                       onChange={(e) => {
                         const newCols = parseInt(e.target.value) || 2;
-                        const currentCols = block.settings.cols || 2;
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'cols', newCols - currentCols);
+                        updateTableSize(block.id, 'cols', newCols - cols);
                       }}
                       className="h-9 text-center"
                       min={1}
@@ -726,24 +729,84 @@ export function SettingsPanel() {
                 </div>
               </div>
             </div>
-          </div>
-        );
-        return (
-          <div className="space-y-3 text-sm">
-            <p className="text-muted-foreground">
-              Settings for {block.type} block
-            </p>
-            
-            {Object.entries(block.settings || {}).map(([key, value]) => (
-              <div key={key}>
-                <Label className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
-                <Input
-                  value={String(value || '')}
-                  onChange={(e) => updateSettings({ [key]: e.target.value })}
-                  className="mt-1.5 h-9"
-                />
+
+            {/* Table Cell Selector */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Select Cell to Configure</Label>
+              <div className="border rounded-md p-2 bg-muted/30">
+                <div className="space-y-1">
+                  {Array.from({ length: rows }, (_, rowIdx) => (
+                    <div key={rowIdx} className="flex gap-1">
+                      {Array.from({ length: cols }, (_, colIdx) => {
+                        const cellKey = `${rowIdx},${colIdx}`;
+                        const isSelected = selectedTableCell?.tableId === block.id && selectedTableCell?.cellKey === cellKey;
+                        return (
+                          <Button
+                            key={cellKey}
+                            variant={isSelected ? 'default' : 'outline'}
+                            size="sm"
+                            className="flex-1 h-10 text-xs"
+                            onClick={() => selectTableCell(block.id, cellKey)}
+                          >
+                            {String.fromCharCode(65 + rowIdx)}{colIdx + 1}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Selected Cell Settings */}
+            {selectedTableCell?.tableId === block.id && (
+              <div className="space-y-3 border rounded-md p-3 bg-accent/5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Cell {selectedTableCell.cellKey.split(',').map((v, i) => i === 0 ? String.fromCharCode(65 + parseInt(v)) : parseInt(v) + 1).join('')} Settings</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => clearTableCellSelection()}
+                  >
+                    ✕
+                  </Button>
+                </div>
+
+                <ColorPickerInput
+                  label="Background Color"
+                  value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.background || 'transparent'}
+                  onChange={(value) => updateCellSetting(block.id, selectedTableCell.cellKey, 'background', value)}
+                />
+
+                <div>
+                  <Label className="text-sm">Padding</Label>
+                  <Input
+                    type="text"
+                    value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.padding || '8px'}
+                    onChange={(e) => updateCellSetting(block.id, selectedTableCell.cellKey, 'padding', e.target.value)}
+                    className="mt-1.5 h-9"
+                    placeholder="8px"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm">Vertical Align</Label>
+                  <Select
+                    value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.verticalAlign || 'top'}
+                    onValueChange={(value) => updateCellSetting(block.id, selectedTableCell.cellKey, 'verticalAlign', value)}
+                  >
+                    <SelectTrigger className="mt-1.5 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">Top</SelectItem>
+                      <SelectItem value="middle">Middle</SelectItem>
+                      <SelectItem value="bottom">Bottom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
         );
     }

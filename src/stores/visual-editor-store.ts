@@ -38,6 +38,7 @@ interface VisualEditorState {
   // Canvas
   blocks: BlockInstance[];
   selectedBlockIds: string[];
+  selectedTableCell: { tableId: string; cellKey: string } | null;
   visualLayout: VisualLayout;
   drawingTool: 'select' | 'rectangle' | 'circle' | 'line';
   
@@ -180,6 +181,8 @@ interface VisualEditorState {
   addBlockToTableCell: (tableId: string, cellKey: string, block: BlockInstance) => void;
   updateTableSize: (tableId: string, dimension: 'rows' | 'cols', delta: number) => void;
   updateCellSetting: (tableId: string, cellKey: string, settingKey: string, value: any) => void;
+  selectTableCell: (tableId: string, cellKey: string) => void;
+  clearTableCellSelection: () => void;
   
   // Preview
   togglePreviewMode: () => void;
@@ -293,6 +296,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     projectName: 'Untitled Project',
     blocks: [],
     selectedBlockIds: [],
+    selectedTableCell: null,
     visualLayout: {},
     drawingTool: 'select',
     marqueeStart: null,
@@ -871,6 +875,14 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
           cells,
         },
       });
+    },
+    
+    selectTableCell: (tableId, cellKey) => {
+      set({ selectedTableCell: { tableId, cellKey } });
+    },
+    
+    clearTableCellSelection: () => {
+      set({ selectedTableCell: null });
     },
     
     togglePreviewMode: () => {

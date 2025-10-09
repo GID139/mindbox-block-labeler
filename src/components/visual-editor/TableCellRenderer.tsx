@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { BlockInstance } from '@/types/visual-editor';
 import { CanvasBlock } from './CanvasBlock';
 import { cn } from '@/lib/utils';
+import { useVisualEditorStore } from '@/stores/visual-editor-store';
 
 interface TableCellRendererProps {
   blockId: string;
@@ -12,6 +13,7 @@ interface TableCellRendererProps {
 }
 
 export function TableCellRenderer({ blockId, cellKey, children, settings, level }: TableCellRendererProps) {
+  const { selectTableCell, selectedTableCell } = useVisualEditorStore();
   const { setNodeRef, isOver } = useDroppable({
     id: `${blockId}-cell-${cellKey}`,
     data: {
@@ -21,12 +23,19 @@ export function TableCellRenderer({ blockId, cellKey, children, settings, level 
     },
   });
 
+  const isSelected = selectedTableCell?.tableId === blockId && selectedTableCell?.cellKey === cellKey;
+
   return (
     <td
       ref={setNodeRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        selectTableCell(blockId, cellKey);
+      }}
       className={cn(
-        'border border-border min-h-[80px] relative transition-all duration-200',
-        isOver && 'bg-primary/10 border-primary border-2 shadow-inner'
+        'border border-border min-h-[80px] relative transition-all duration-200 cursor-pointer',
+        isOver && 'bg-primary/10 border-primary border-2 shadow-inner',
+        isSelected && 'ring-2 ring-primary ring-offset-2'
       )}
       style={{
         backgroundColor: settings?.background,

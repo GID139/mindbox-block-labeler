@@ -38,7 +38,9 @@ export const buttonTemplate: BlockTemplate = {
       fontWeight, 
       textAlign,
       border,
-      background
+      background,
+      width,
+      height
     } = block.settings;
     
     // Use background setting if available, otherwise fallback to backgroundColor
@@ -48,6 +50,8 @@ export const buttonTemplate: BlockTemplate = {
     
     let style = `
       display: inline-block;
+      width: ${width || 'auto'};
+      height: ${height || 'auto'};
       ${bgStyle}
       color: ${color};
       padding: ${padding};
