@@ -11,7 +11,8 @@ import { ColorPickerInput } from './ColorPickerInput';
 import { BackgroundPicker } from './BackgroundPicker';
 import { Badge } from '@/components/ui/badge';
 import { buttonPresets, textPresets } from '@/lib/visual-editor/presets';
-import { BackgroundSetting } from '@/types/visual-editor';
+import { BackgroundSetting, BlockInstance } from '@/types/visual-editor';
+import { cn } from '@/lib/utils';
 
 function findBlockById(blocks: any[], id: string): any {
   for (const block of blocks) {
@@ -25,7 +26,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout, selectedTableCell } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout, selectedTableCell, selectBlock } = useVisualEditorStore();
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -804,6 +805,40 @@ export function SettingsPanel() {
                       <SelectItem value="bottom">Bottom</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Cell Content */}
+                <div className="border-t pt-3 mt-3">
+                  <Label className="text-sm font-medium">Cell Content</Label>
+                  <div className="mt-2 space-y-2">
+                    {tableSettings.cells?.[selectedTableCell.cellKey]?.children?.length > 0 ? (
+                      tableSettings.cells[selectedTableCell.cellKey].children.map((childBlock: BlockInstance, idx: number) => {
+                        const template = getTemplate(childBlock.type);
+                        return (
+                          <div
+                            key={childBlock.id}
+                            className={cn(
+                              "p-2 border rounded cursor-pointer hover:bg-accent/50 transition-colors",
+                              selectedBlockIds.includes(childBlock.id) && "bg-accent border-primary"
+                            )}
+                            onClick={() => selectBlock(childBlock.id)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">{template.icon}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{childBlock.name}</p>
+                                <p className="text-xs text-muted-foreground">{childBlock.type}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        No blocks in this cell. Drop blocks from the library.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

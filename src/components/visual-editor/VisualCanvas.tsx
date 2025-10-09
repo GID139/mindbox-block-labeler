@@ -15,6 +15,7 @@ import { GuideLines } from './GuideLines';
 import { SmartGuides } from './SmartGuides';
 import { importImage } from '@/lib/visual-editor/export-utils';
 import { snapToGrid, snapToObjects, findSnapPoints, SnapGuide } from '@/lib/visual-editor/snapping-utils';
+import { NestedBlockMoveable } from './NestedBlockMoveable';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -143,7 +144,22 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     {block.settings.text || ''}
                   </div>
                 ) : (
-                  <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                  <>
+                    <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                    {/* Render nested blocks if this block can contain children */}
+                    {block.children && block.children.length > 0 && block.canContainChildren && (
+                      <div className="relative w-full h-full">
+                        {block.children.map((child) => (
+                          <NestedBlockMoveable
+                            key={child.id}
+                            block={child}
+                            parentRef={targetRef.current}
+                            isSelected={selectedBlockIds.includes(child.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </TooltipTrigger>
