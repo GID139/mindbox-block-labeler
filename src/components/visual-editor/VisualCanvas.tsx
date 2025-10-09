@@ -12,13 +12,17 @@ import { BlockContextMenu } from './BlockContextMenu';
 import { Ruler } from './Ruler';
 import { Measurements } from './Measurements';
 import { GuideLines } from './GuideLines';
+import { SmartGuides } from './SmartGuides';
 import { importImage } from '@/lib/visual-editor/export-utils';
+import { snapToGrid, snapToObjects, findSnapPoints, SnapGuide } from '@/lib/visual-editor/snapping-utils';
 
 interface VisualBlockProps {
   block: BlockInstance;
+  canvasWidth: number;
+  canvasHeight: number;
 }
 
-function VisualBlock({ block }: VisualBlockProps) {
+function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
   const { 
     visualLayout, 
     updateVisualLayout, 
@@ -36,7 +40,8 @@ function VisualBlock({ block }: VisualBlockProps) {
   const isSelected = selectedBlockIds.includes(block.id);
   const [isEditing, setIsEditing] = useState(false);
   const [previewHTML, setPreviewHTML] = useState('');
-  const [snapGuides, setSnapGuides] = useState<any[]>([]);
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   
   const layout = visualLayout[block.id] || { 
     x: 0, 
@@ -148,48 +153,139 @@ function VisualBlock({ block }: VisualBlockProps) {
         </TooltipProvider>
         
         {isSelected && !isEditing && targetRef.current && (
-          <Moveable
-            target={targetRef.current}
-            draggable
-            resizable
-            throttleResize={0}
-            throttleDrag={0}
-            renderDirections={["nw", "ne", "sw", "se"]}
-            keepRatio={false}
-            edge={false}
-            snappable
-            snapThreshold={5}
-            onDrag={({ translate }) => {
-              if (targetRef.current) {
-                targetRef.current.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
-              }
-            }}
-            onDragEnd={({ lastEvent }) => {
-              if (lastEvent) {
-                updateVisualLayout(block.id, {
-                  x: lastEvent.translate[0],
-                  y: lastEvent.translate[1],
-                });
-              }
-            }}
-            onResize={({ width, height, drag }) => {
-              if (targetRef.current) {
-                targetRef.current.style.transform = `translate(${drag.translate[0]}px, ${drag.translate[1]}px)`;
-                targetRef.current.style.width = `${width}px`;
-                targetRef.current.style.height = `${height}px`;
-              }
-            }}
-            onResizeEnd={({ lastEvent }) => {
-              if (lastEvent) {
-                updateVisualLayout(block.id, {
-                  width: lastEvent.width,
-                  height: lastEvent.height,
-                  x: lastEvent.drag.translate[0],
-                  y: lastEvent.drag.translate[1],
-                });
-              }
-            }}
-          />
+          <>
+            <Moveable
+              target={targetRef.current}
+              draggable
+              resizable
+              throttleResize={0}
+              throttleDrag={0}
+              renderDirections={["nw", "ne", "sw", "se"]}
+              keepRatio={constraints.lockAspectRatio || false}
+              edge={false}
+              onDragStart={() => {
+                setIsDragging(true);
+                setSnapGuides([]);
+              }}
+              onDrag={({ translate }) => {
+                if (targetRef.current) {
+                  let x = translate[0];
+                  let y = translate[1];
+                  const currentWidth = layout.width;
+                  const currentHeight = layout.height;
+
+                  // Apply snapping
+                  if (enableSnapToGrid) {
+                    const snapped = snapToGrid(x, y, gridSize);
+                    x = snapped.x;
+                    y = snapped.y;
+                  }
+
+                  if (enableSnapToObjects) {
+                    const snapPoints = findSnapPoints(blocks, visualLayout, block.id);
+                    const snapResult = snapToObjects(x, y, currentWidth, currentHeight, snapPoints);
+                    if (snapResult.snappedX) x = snapResult.x;
+                    if (snapResult.snappedY) y = snapResult.y;
+                    setSnapGuides(snapResult.guides);
+                  }
+
+                  // Apply canvas boundaries
+                  x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
+                  y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+
+                  targetRef.current.style.transform = `translate(${x}px, ${y}px)`;
+                }
+              }}
+              onDragEnd={({ lastEvent }) => {
+                setIsDragging(false);
+                setSnapGuides([]);
+                if (lastEvent) {
+                  let x = lastEvent.translate[0];
+                  let y = lastEvent.translate[1];
+                  const currentWidth = layout.width;
+                  const currentHeight = layout.height;
+
+                  // Apply snapping
+                  if (enableSnapToGrid) {
+                    const snapped = snapToGrid(x, y, gridSize);
+                    x = snapped.x;
+                    y = snapped.y;
+                  }
+
+                  if (enableSnapToObjects) {
+                    const snapPoints = findSnapPoints(blocks, visualLayout, block.id);
+                    const snapResult = snapToObjects(x, y, currentWidth, currentHeight, snapPoints);
+                    if (snapResult.snappedX) x = snapResult.x;
+                    if (snapResult.snappedY) y = snapResult.y;
+                  }
+
+                  // Apply canvas boundaries
+                  x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
+                  y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+
+                  updateVisualLayout(block.id, { x, y });
+                }
+              }}
+              onResize={({ width, height, drag }) => {
+                if (targetRef.current) {
+                  let newWidth = width;
+                  let newHeight = height;
+                  let x = drag.translate[0];
+                  let y = drag.translate[1];
+
+                  // Apply size constraints
+                  if (constraints.minWidth) newWidth = Math.max(constraints.minWidth, newWidth);
+                  if (constraints.maxWidth) newWidth = Math.min(constraints.maxWidth, newWidth);
+                  if (constraints.minHeight) newHeight = Math.max(constraints.minHeight, newHeight);
+                  if (constraints.maxHeight) newHeight = Math.min(constraints.maxHeight, newHeight);
+
+                  // Apply canvas boundaries
+                  newWidth = Math.min(newWidth, canvasWidth - x);
+                  newHeight = Math.min(newHeight, canvasHeight - y);
+                  x = Math.max(0, Math.min(x, canvasWidth - newWidth));
+                  y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+
+                  targetRef.current.style.transform = `translate(${x}px, ${y}px)`;
+                  targetRef.current.style.width = `${newWidth}px`;
+                  targetRef.current.style.height = `${newHeight}px`;
+                }
+              }}
+              onResizeEnd={({ lastEvent }) => {
+                if (lastEvent) {
+                  let newWidth = lastEvent.width;
+                  let newHeight = lastEvent.height;
+                  let x = lastEvent.drag.translate[0];
+                  let y = lastEvent.drag.translate[1];
+
+                  // Apply size constraints
+                  if (constraints.minWidth) newWidth = Math.max(constraints.minWidth, newWidth);
+                  if (constraints.maxWidth) newWidth = Math.min(constraints.maxWidth, newWidth);
+                  if (constraints.minHeight) newHeight = Math.max(constraints.minHeight, newHeight);
+                  if (constraints.maxHeight) newHeight = Math.min(constraints.maxHeight, newHeight);
+
+                  // Apply canvas boundaries
+                  newWidth = Math.min(newWidth, canvasWidth - x);
+                  newHeight = Math.min(newHeight, canvasHeight - y);
+                  x = Math.max(0, Math.min(x, canvasWidth - newWidth));
+                  y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+
+                  updateVisualLayout(block.id, {
+                    width: newWidth,
+                    height: newHeight,
+                    x,
+                    y,
+                  });
+                }
+              }}
+            />
+            {isDragging && snapGuides.length > 0 && (
+              <SmartGuides 
+                guides={snapGuides} 
+                canvasWidth={canvasWidth} 
+                canvasHeight={canvasHeight} 
+              />
+            )}
+          </>
         )}
       </div>
     </BlockContextMenu>
@@ -313,10 +409,10 @@ export function VisualCanvas() {
     }
   };
 
-  const renderBlocks = (blocks: BlockInstance[]): JSX.Element[] => {
+  const renderBlocks = (blocks: BlockInstance[], canvasWidth: number, canvasHeight: number): JSX.Element[] => {
     return blocks.flatMap(block => [
-      <VisualBlock key={block.id} block={block} />,
-      ...renderBlocks(block.children),
+      <VisualBlock key={block.id} block={block} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />,
+      ...renderBlocks(block.children, canvasWidth, canvasHeight),
     ]);
   };
   
@@ -373,6 +469,9 @@ export function VisualCanvas() {
     }
   };
 
+  const canvasWidth = deviceWidths[deviceMode];
+  const canvasHeight = 800; // min-height от canvas
+
   return (
     <div className="flex justify-center items-start p-8 bg-muted/20 min-h-full">
       <div 
@@ -387,12 +486,12 @@ export function VisualCanvas() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`visual-canvas-content relative bg-white shadow-lg transition-all ${
+        className={`visual-canvas-content relative bg-white shadow-lg transition-all overflow-hidden ${
           isOver || isDraggingOver ? 'ring-4 ring-primary/30' : ''
         } ${drawingTool !== 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
         style={{
-          width: `${deviceWidths[deviceMode]}px`,
-          minHeight: '800px',
+          width: `${canvasWidth}px`,
+          minHeight: `${canvasHeight}px`,
           transform: `scale(${zoom / 100})`,
           transformOrigin: 'top center',
           backgroundImage: showGrid ? `
@@ -400,9 +499,10 @@ export function VisualCanvas() {
             linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
           ` : 'none',
           backgroundSize: `${gridSize}px ${gridSize}px`,
+          backgroundPosition: '0 0',
         }}
       >
-        {renderBlocks(blocks)}
+        {renderBlocks(blocks, canvasWidth, canvasHeight)}
         {isMarqueeSelecting && marqueeStart && marqueeEnd && (
           <MarqueeSelection start={marqueeStart} end={marqueeEnd} zoom={zoom} />
         )}
