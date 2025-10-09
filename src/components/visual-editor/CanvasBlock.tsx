@@ -29,6 +29,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
       parentId,
       index,
     },
+    disabled: block.locked, // Disable dragging if locked
   });
 
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -52,6 +53,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
   // Handle double-click for inline editing
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (block.locked) return; // Prevent editing if locked
     if (block.type === 'TEXT' || block.type === 'BUTTON') {
       setIsEditing(true);
     }
@@ -97,7 +99,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
   return (
     <div
       ref={setDropRef}
-      className={`relative group ${isDragging ? 'opacity-50' : ''}`}
+      className={`relative group ${isDragging ? 'opacity-50' : ''} ${block.hidden ? 'opacity-40' : ''}`}
       onClick={handleClick}
     >
       <div
@@ -106,19 +108,23 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
           isSelected
             ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
             : 'border-border hover:border-primary/50 hover:shadow-md'
-        } ${isOver && block.canContainChildren ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+        } ${isOver && block.canContainChildren ? 'ring-2 ring-primary ring-offset-2' : ''} ${
+          block.locked ? 'bg-muted/30' : ''
+        }`}
       >
-        {/* Drag handle - always visible on hover */}
-        <div 
-          {...listeners} 
-          {...attributes} 
-          className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
-        >
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
-        </div>
+        {/* Drag handle - always visible on hover, disabled if locked */}
+        {!block.locked && (
+          <div 
+            {...listeners} 
+            {...attributes} 
+            className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
 
-        {/* Delete button - visible when selected */}
-        {isSelected && (
+        {/* Delete button - visible when selected, disabled if locked */}
+        {isSelected && !block.locked && (
           <Button
             variant="destructive"
             size="icon"
@@ -132,10 +138,12 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
           </Button>
         )}
 
-        {/* Block label - small indicator */}
+        {/* Block label - small indicator with lock/hide icons */}
         <div className="absolute -top-2 left-2 px-2 py-0.5 bg-background border border-border rounded text-xs font-medium z-10 flex items-center gap-1">
           <span>{template.icon}</span>
           <span className="text-muted-foreground">{block.name}</span>
+          {block.locked && <span className="text-destructive">🔒</span>}
+          {block.hidden && <span className="text-muted-foreground">👁️‍🗨️</span>}
         </div>
 
         {/* WYSIWYG Preview */}

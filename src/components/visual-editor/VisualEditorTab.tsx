@@ -7,7 +7,7 @@ import { Canvas } from './Canvas';
 import { VisualCanvas } from './VisualCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
-import { OutlineView } from './OutlineView';
+import { LayersPanel } from './LayersPanel';
 import { InteractiveTutorial } from './InteractiveTutorial';
 import { ComponentsLibrary } from './ComponentsLibrary';
 import { PresetsLibrary } from './PresetsLibrary';
@@ -23,6 +23,7 @@ export function VisualEditorTab() {
   const { blocks, addBlock, moveBlock, selectedBlockIds, addBlockToTableCell, canvasMode, showOutline } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeBlock, setActiveBlock] = useState<BlockInstance | null>(null);
+  const [rightPanelMode, setRightPanelMode] = useState<'layers' | 'settings'>('layers');
 
   const selectedBlockId = selectedBlockIds[0];
 
@@ -248,29 +249,55 @@ export function VisualEditorTab() {
             {canvasMode === 'structure' ? <Canvas /> : <VisualCanvas />}
           </div>
           
-          {/* Right: Settings Panel or Outline */}
-          <div className="w-80 border-l border-border overflow-y-auto settings-panel-container">
-            {showOutline ? (
-              <div className="p-4">
-                <OutlineView />
-              </div>
-            ) : selectedBlockId ? (
-              <SettingsPanel />
-            ) : (
-              <div className="p-4 text-muted-foreground text-center space-y-4">
-                <div className="text-4xl">👈</div>
-                <p className="text-sm">Select a block to edit its settings</p>
-                <div className="text-xs bg-muted p-3 rounded">
-                  <p className="font-medium mb-1">Quick Tips:</p>
-                  <ul className="space-y-1 text-left">
-                    <li>• Click any block in the canvas</li>
-                    <li>• Use breadcrumbs for nested blocks</li>
-                    <li>• Double-click text to edit inline</li>
-                    <li>• Cmd/Ctrl + D to duplicate</li>
-                  </ul>
+          {/* Right: Layers Panel or Settings Panel */}
+          <div className="w-80 border-l border-border overflow-hidden flex flex-col">
+            {/* Tab Switcher */}
+            <div className="flex border-b">
+              <button
+                className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                  rightPanelMode === 'layers' 
+                    ? 'bg-primary/10 text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setRightPanelMode('layers')}
+              >
+                Layers
+              </button>
+              <button
+                className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                  rightPanelMode === 'settings' 
+                    ? 'bg-primary/10 text-primary border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setRightPanelMode('settings')}
+              >
+                Settings
+              </button>
+            </div>
+
+            {/* Panel Content */}
+            <div className="flex-1 overflow-y-auto">
+              {rightPanelMode === 'layers' ? (
+                <LayersPanel />
+              ) : selectedBlockId ? (
+                <SettingsPanel />
+              ) : (
+                <div className="p-4 text-muted-foreground text-center space-y-4">
+                  <div className="text-4xl">👈</div>
+                  <p className="text-sm">Select a block to edit its settings</p>
+                  <div className="text-xs bg-muted p-3 rounded">
+                    <p className="font-medium mb-1">Quick Tips:</p>
+                    <ul className="space-y-1 text-left">
+                      <li>• Click any block in the canvas</li>
+                      <li>• Use breadcrumbs for nested blocks</li>
+                      <li>• Double-click text to edit inline</li>
+                      <li>• Cmd/Ctrl + D to duplicate</li>
+                      <li>• Cmd/Ctrl + G to group blocks</li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

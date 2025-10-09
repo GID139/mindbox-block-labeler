@@ -53,6 +53,8 @@ export function Toolbar() {
     setDrawingTool,
     selectedBlockIds,
     createComponent,
+    groupBlocks,
+    ungroupBlock,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -266,6 +268,31 @@ export function Toolbar() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <div className="h-6 w-px bg-border" />
+
+        {/* Group/Ungroup */}
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={selectedBlockIds.length < 2}
+          onClick={() => groupBlocks(selectedBlockIds)}
+          title="Group Blocks (Ctrl+G)"
+        >
+          <Component className="h-4 w-4 mr-1" />
+          Group
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={selectedBlockIds.length !== 1 || blocks.find(b => b.id === selectedBlockIds[0])?.type !== 'GROUP'}
+          onClick={() => ungroupBlock(selectedBlockIds[0])}
+          title="Ungroup"
+        >
+          <Component className="h-4 w-4 mr-1" />
+          Ungroup
+        </Button>
 
         {/* Visual Mode Controls */}
         {canvasMode === 'visual' && (

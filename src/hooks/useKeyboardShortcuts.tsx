@@ -11,6 +11,7 @@ export function useKeyboardShortcuts() {
     saveProject,
     setDrawingTool,
     canvasMode,
+    groupBlocks,
   } = useVisualEditorStore();
 
   useEffect(() => {
@@ -68,9 +69,15 @@ export function useKeyboardShortcuts() {
         e.preventDefault();
         saveProject();
       }
+
+      // Group blocks
+      if ((e.metaKey || e.ctrlKey) && e.key === 'g' && selectedBlockIds.length >= 2) {
+        e.preventDefault();
+        groupBlocks(selectedBlockIds);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks]);
 }

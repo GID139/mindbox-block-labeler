@@ -8,6 +8,7 @@ import { spacerTemplate } from './spacer';
 import { rectangleTemplate } from './rectangle';
 import { circleTemplate } from './circle';
 import { lineTemplate } from './line';
+import { groupTemplate } from './group';
 
 export const blockTemplates: BlockTemplate[] = [
   textTemplate,
@@ -20,6 +21,7 @@ export const blockTemplates: BlockTemplate[] = [
   rectangleTemplate,
   circleTemplate,
   lineTemplate,
+  groupTemplate,
 ];
 
 export const getTemplate = (type: BlockType): BlockTemplate => {

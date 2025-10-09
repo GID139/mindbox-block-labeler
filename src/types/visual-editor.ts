@@ -1,4 +1,4 @@
-export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE';
+export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE' | 'GROUP';
 export type BlockCategory = 'BASIC' | 'LAYOUT' | 'CONTENT';
 
 export interface BlockInstance {
@@ -9,6 +9,8 @@ export interface BlockInstance {
   children: BlockInstance[];
   canContainChildren: boolean;
   maxNestingLevel: number;
+  locked?: boolean; // Prevents editing/moving
+  hidden?: boolean; // Hides from canvas but shows in layers
 }
 
 export interface BlockTemplate {

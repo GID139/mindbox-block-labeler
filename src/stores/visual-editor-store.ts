@@ -81,6 +81,12 @@ interface VisualEditorState {
   updateSetting: (blockId: string, settingKey: string, value: any) => void;
   duplicateBlock: (id: string) => void;
   
+  // Group/Lock/Hide actions
+  groupBlocks: (blockIds: string[]) => void;
+  ungroupBlock: (groupId: string) => void;
+  toggleLock: (blockId: string) => void;
+  toggleHide: (blockId: string) => void;
+  
   // Component actions
   createComponent: (name: string, blockId: string) => void;
   deleteComponent: (componentId: string) => void;
@@ -408,6 +414,88 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       if (location) {
         get().addBlock(duplicated, location.parentId || undefined, location.index + 1);
       }
+    },
+    
+    groupBlocks: (blockIds) => {
+      if (blockIds.length < 2) {
+        toast.error('Select at least 2 blocks to group');
+        return;
+      }
+      
+      pushHistory();
+      const blocks = get().blocks;
+      const blocksToGroup: BlockInstance[] = [];
+      
+      // Find all blocks to group
+      blockIds.forEach(id => {
+        const block = findBlockById(blocks, id);
+        if (block) blocksToGroup.push(block);
+      });
+      
+      if (blocksToGroup.length < 2) {
+        toast.error('Could not find blocks to group');
+        return;
+      }
+      
+      // Create group block
+      const existingNames = blockIds.map(id => findBlockById(blocks, id)?.name || '');
+      const groupBlock: BlockInstance = {
+        id: `group-${Date.now()}`,
+        type: 'GROUP',
+        name: `group${Math.floor(Math.random() * 1000)}`,
+        settings: {
+          display: 'block',
+          background: { type: 'transparent' },
+        },
+        children: JSON.parse(JSON.stringify(blocksToGroup)),
+        canContainChildren: true,
+        maxNestingLevel: 5,
+      };
+      
+      // Remove grouped blocks and add group
+      let newBlocks = blocks;
+      blockIds.forEach(id => {
+        newBlocks = removeBlockFromTree(newBlocks, id);
+      });
+      newBlocks = [...newBlocks, groupBlock];
+      
+      set({ blocks: newBlocks, selectedBlockIds: [groupBlock.id] });
+      toast.success('Blocks grouped');
+    },
+    
+    ungroupBlock: (groupId) => {
+      const block = findBlockById(get().blocks, groupId);
+      if (!block || block.type !== 'GROUP') {
+        toast.error('Not a group block');
+        return;
+      }
+      
+      pushHistory();
+      let newBlocks = removeBlockFromTree(get().blocks, groupId);
+      
+      // Add children to root
+      block.children.forEach(child => {
+        newBlocks = [...newBlocks, child];
+      });
+      
+      set({ blocks: newBlocks, selectedBlockIds: [] });
+      toast.success('Group ungrouped');
+    },
+    
+    toggleLock: (blockId) => {
+      const block = findBlockById(get().blocks, blockId);
+      if (!block) return;
+      
+      get().updateBlock(blockId, { locked: !block.locked });
+      toast.success(block.locked ? 'Unlocked' : 'Locked');
+    },
+    
+    toggleHide: (blockId) => {
+      const block = findBlockById(get().blocks, blockId);
+      if (!block) return;
+      
+      get().updateBlock(blockId, { hidden: !block.hidden });
+      toast.success(block.hidden ? 'Shown' : 'Hidden');
     },
     
     setGlobalStyles: (styles) => set({ globalStyles: { ...get().globalStyles, ...styles } }),
