@@ -193,11 +193,24 @@ export function LayersPanelWithDragDrop() {
 
     if (targetData?.type === 'layer-drop') {
       const targetId = targetData.blockId;
-      // Move as child of target (append to end)
-      moveBlock(draggedId, targetId, 999);
+      // Find the target block to get its children count
+      const findBlock = (blocks: BlockInstance[], id: string): BlockInstance | null => {
+        for (const block of blocks) {
+          if (block.id === id) return block;
+          if (block.children.length > 0) {
+            const found = findBlock(block.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const targetBlock = findBlock(blocks, targetId);
+      const insertIndex = targetBlock ? targetBlock.children.length : 0;
+      moveBlock(draggedId, targetId, insertIndex);
     } else if (targetData?.type === 'layer-root') {
-      // Move to root level
-      moveBlock(draggedId, null, 0);
+      // Move to root level at the end
+      moveBlock(draggedId, null, blocks.length);
     }
   };
 

@@ -17,7 +17,7 @@ export const containerTemplate: BlockTemplate = {
     borderRadius: '4px',
     width: '600px',
     height: 'auto',
-    padding: '16px',
+    padding: '10px',
     display: true,
     autoLayout: false,
     flexDirection: 'column',

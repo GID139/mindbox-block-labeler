@@ -87,6 +87,7 @@ interface VisualEditorState {
   removeSelectedBlocks: () => void;
   updateBlock: (id: string, updates: Partial<BlockInstance>) => void;
   moveBlock: (draggedId: string, targetId: string | null, index: number) => void;
+  extractFromParent: (blockId: string) => void;
   selectBlock: (id: string | null) => void;
   toggleBlockSelection: (id: string, isMulti: boolean) => void;
   clearSelection: () => void;
@@ -145,6 +146,7 @@ interface VisualEditorState {
   sendToBack: (blockId: string) => void;
   bringForward: (blockId: string) => void;
   sendBackward: (blockId: string) => void;
+  recalculateZIndexes: () => void;
   
   // Guides
   addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
@@ -332,6 +334,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       set(state => ({
         blocks: addBlockToTree(state.blocks, parentId || null, block, index),
       }));
+      get().recalculateZIndexes();
     },
     
     removeBlock: (id) => {
@@ -340,6 +343,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         blocks: removeBlockFromTree(state.blocks, id),
         selectedBlockIds: state.selectedBlockIds.filter(bid => bid !== id),
       }));
+      get().recalculateZIndexes();
     },
     
     removeSelectedBlocks: () => {
@@ -394,6 +398,44 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       newBlocks = addBlockToTree(newBlocks, targetId, draggedBlock, index);
       
       set({ blocks: newBlocks });
+      get().recalculateZIndexes();
+    },
+    
+    extractFromParent: (blockId) => {
+      pushHistory();
+      const { blocks } = get();
+      const block = findBlockById(blocks, blockId);
+      if (!block) return;
+      
+      // Find parent
+      const findParent = (blocks: BlockInstance[], targetId: string): { parent: BlockInstance | null, index: number } | null => {
+        for (let i = 0; i < blocks.length; i++) {
+          const childIndex = blocks[i].children.findIndex(c => c.id === targetId);
+          if (childIndex !== -1) {
+            return { parent: blocks[i], index: childIndex };
+          }
+          if (blocks[i].children.length > 0) {
+            const result = findParent(blocks[i].children, targetId);
+            if (result) return result;
+          }
+        }
+        return null;
+      };
+      
+      const parentInfo = findParent(blocks, blockId);
+      if (!parentInfo || !parentInfo.parent) {
+        toast.info('Block is already at root level');
+        return;
+      }
+      
+      // Remove from parent
+      let newBlocks = removeBlockFromTree(blocks, blockId);
+      // Add to root level
+      newBlocks = [...newBlocks, block];
+      
+      set({ blocks: newBlocks });
+      get().recalculateZIndexes();
+      toast.success('Block extracted from parent');
     },
     
     selectBlock: (id) => set({ selectedBlockIds: id ? [id] : [] }),
@@ -1254,6 +1296,26 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       get().updateVisualLayout(blockId, { zIndex: currentZ - 1 });
       toast.success('Sent backward');
+    },
+    
+    recalculateZIndexes: () => {
+      const { blocks, visualLayout } = get();
+      const newLayout = { ...visualLayout };
+      
+      const assignZIndex = (blocks: BlockInstance[], baseZIndex: number = 0) => {
+        blocks.forEach((block, index) => {
+          const zIndex = baseZIndex + index;
+          if (newLayout[block.id]) {
+            newLayout[block.id] = { ...newLayout[block.id], zIndex };
+          }
+          if (block.children.length > 0) {
+            assignZIndex(block.children, zIndex * 1000);
+          }
+        });
+      };
+      
+      assignZIndex(blocks);
+      set({ visualLayout: newLayout });
     },
     
     // Guides

@@ -15,7 +15,7 @@ export const buttonTemplate: BlockTemplate = {
     backgroundColor: '#007bff',
     color: '#ffffff',
     borderRadius: '4px',
-    padding: '12px 24px',
+    padding: '10px 20px',
     fontSize: '14px',
     fontWeight: 'normal',
     textAlign: 'center',

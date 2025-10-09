@@ -14,7 +14,7 @@ export const gridContainerTemplate: BlockTemplate = {
     gridTemplateColumns: '1fr 1fr 1fr',
     gridTemplateRows: 'auto',
     gap: '10px',
-    padding: '20px',
+    padding: '10px',
     background: { type: 'transparent' as const },
     border: { style: 'none', width: 0, color: '#000000' },
     width: '100%',

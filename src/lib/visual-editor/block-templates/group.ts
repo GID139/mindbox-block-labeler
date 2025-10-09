@@ -11,7 +11,7 @@ export const groupTemplate: BlockTemplate = {
   defaultSettings: {
     display: 'block',
     background: { type: 'transparent' as const },
-    padding: '0px',
+    padding: '10px',
   },
   availableSettings: ['display', 'background'],
   

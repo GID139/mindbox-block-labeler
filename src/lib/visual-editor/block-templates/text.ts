@@ -20,7 +20,7 @@ export const textTemplate: BlockTemplate = {
     display: true,
     link: '',
     background: { type: 'transparent' as const },
-    padding: '0px',
+    padding: '10px',
   },
   availableSettings: ['display', 'text', 'textStyles', 'link'],
   

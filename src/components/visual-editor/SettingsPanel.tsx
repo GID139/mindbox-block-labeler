@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ColorPickerInput } from './ColorPickerInput';
 import { BackgroundPicker } from './BackgroundPicker';
@@ -63,22 +64,21 @@ export function SettingsPanel() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-sm">Font Size</Label>
-                  <Input
-                    type="text"
-                    value={block.settings.fontSize || '16px'}
-                    onChange={(e) => {
-                      // Validate CSS size value
-                      const value = e.target.value;
-                      if (value === '' || /^\d+(?:px|em|rem|%)?$/.test(value)) {
-                        updateSettings({ fontSize: value.endsWith('px') || value.endsWith('em') || value.endsWith('rem') || value.endsWith('%') ? value : `${value}px` });
-                      }
-                    }}
-                    className="mt-1.5 h-9"
-                    placeholder="16px"
-                  />
-                </div>
+              <div>
+                <Label className="text-sm">Font Size (px)</Label>
+                <Input
+                  type="number"
+                  value={parseInt(block.settings.fontSize) || 16}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 16;
+                    updateSettings({ fontSize: `${value}px` });
+                  }}
+                  className="mt-1.5 h-9"
+                  placeholder="16"
+                  min={8}
+                  max={200}
+                />
+              </div>
 
                 <ColorPickerInput
                   label="Color"
@@ -104,13 +104,13 @@ export function SettingsPanel() {
                   />
                   
                   <div>
-                    <Label className="text-sm">Padding</Label>
+                    <Label className="text-sm">Padding (px)</Label>
                     <Input
                       type="text"
-                      value={block.settings.padding || '0px'}
+                      value={block.settings.padding || '10px'}
                       onChange={(e) => updateSettings({ padding: e.target.value })}
                       className="mt-1.5 h-9"
-                      placeholder="0px"
+                      placeholder="10px"
                     />
                   </div>
 
@@ -279,8 +279,11 @@ export function SettingsPanel() {
                 <Label className="text-sm font-medium">Image URL</Label>
                 <Input
                   type="url"
-                  value={block.settings.src || ''}
-                  onChange={(e) => updateSettings({ src: e.target.value })}
+                  value={block.settings.url || ''}
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    updateSettings({ url, src: url });
+                  }}
                   className="mt-1.5 h-9"
                   placeholder="https://example.com/image.jpg"
                 />
@@ -309,7 +312,7 @@ export function SettingsPanel() {
                 <AccordionContent className="px-3 pb-3 space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-sm">Width</Label>
+                      <Label className="text-sm">Width (px)</Label>
                       <Input
                         type="text"
                         value={block.settings.width || 'auto'}
@@ -320,7 +323,7 @@ export function SettingsPanel() {
                     </div>
 
                     <div>
-                      <Label className="text-sm">Height</Label>
+                      <Label className="text-sm">Height (px)</Label>
                       <Input
                         type="text"
                         value={block.settings.height || 'auto'}
@@ -387,10 +390,10 @@ export function SettingsPanel() {
               </div>
 
               <div>
-                <Label className="text-sm">Gap</Label>
+                <Label className="text-sm">Gap (px)</Label>
                 <Input
                   type="text"
-                  value={block.settings.gap || '0px'}
+                  value={block.settings.gap || '16px'}
                   onChange={(e) => updateSettings({ gap: e.target.value })}
                   className="mt-1.5 h-9"
                   placeholder="16px"
@@ -452,13 +455,13 @@ export function SettingsPanel() {
                   </div>
 
                   <div>
-                    <Label className="text-sm">Padding</Label>
+                    <Label className="text-sm">Padding (px)</Label>
                     <Input
                       type="text"
-                      value={block.settings.padding || '0px'}
+                      value={block.settings.padding || '10px'}
                       onChange={(e) => updateSettings({ padding: e.target.value })}
                       className="mt-1.5 h-9"
-                      placeholder="16px"
+                      placeholder="10px"
                     />
                   </div>
 
@@ -499,7 +502,7 @@ export function SettingsPanel() {
                 </div>
 
                 <div>
-                  <Label className="text-sm">Gap</Label>
+                  <Label className="text-sm">Gap (px)</Label>
                   <Input
                     type="text"
                     value={block.settings.gap || '16px'}
@@ -539,13 +542,13 @@ export function SettingsPanel() {
                   </div>
 
                   <div>
-                    <Label className="text-sm">Padding</Label>
+                    <Label className="text-sm">Padding (px)</Label>
                     <Input
                       type="text"
-                      value={block.settings.padding || '0px'}
+                      value={block.settings.padding || '10px'}
                       onChange={(e) => updateSettings({ padding: e.target.value })}
                       className="mt-1.5 h-9"
-                      placeholder="16px"
+                      placeholder="10px"
                     />
                   </div>
                 </AccordionContent>
@@ -568,7 +571,7 @@ export function SettingsPanel() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-sm">Width</Label>
+                  <Label className="text-sm">Width (px)</Label>
                   <Input
                     type="text"
                     value={block.settings.width || '100px'}
@@ -579,7 +582,7 @@ export function SettingsPanel() {
                 </div>
 
                 <div>
-                  <Label className="text-sm">Height</Label>
+                  <Label className="text-sm">Height (px)</Label>
                   <Input
                     type="text"
                     value={block.settings.height || '100px'}
@@ -636,7 +639,95 @@ export function SettingsPanel() {
           </div>
         );
 
-      default:
+      case 'TABLE':
+        return (
+          <div className="space-y-4">
+            {/* Table Size Controls */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-sm font-medium">Rows</Label>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'rows', -1);
+                      }}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      type="number"
+                      value={block.settings.rows || 2}
+                      onChange={(e) => {
+                        const newRows = parseInt(e.target.value) || 2;
+                        const currentRows = block.settings.rows || 2;
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'rows', newRows - currentRows);
+                      }}
+                      className="h-9 text-center"
+                      min={1}
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'rows', 1);
+                      }}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Columns</Label>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'cols', -1);
+                      }}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      type="number"
+                      value={block.settings.cols || 2}
+                      onChange={(e) => {
+                        const newCols = parseInt(e.target.value) || 2;
+                        const currentCols = block.settings.cols || 2;
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'cols', newCols - currentCols);
+                      }}
+                      className="h-9 text-center"
+                      min={1}
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9"
+                      onClick={() => {
+                        const { updateTableSize } = useVisualEditorStore.getState();
+                        updateTableSize(block.id, 'cols', 1);
+                      }}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
         return (
           <div className="space-y-3 text-sm">
             <p className="text-muted-foreground">

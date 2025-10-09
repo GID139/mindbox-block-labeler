@@ -15,7 +15,7 @@ export const flexContainerTemplate: BlockTemplate = {
     justifyContent: 'flex-start',
     alignItems: 'center',
     gap: '10px',
-    padding: '20px',
+    padding: '10px',
     background: { type: 'transparent' as const },
     border: { style: 'none', width: 0, color: '#000000' },
     width: '100%',

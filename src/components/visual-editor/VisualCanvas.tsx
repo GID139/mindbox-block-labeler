@@ -50,6 +50,9 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
     height: 100, 
     zIndex: 0 
   };
+  
+  // Skip rendering if hidden
+  if (block.hidden) return null;
 
   const constraints = block.constraints || {};
 
@@ -152,7 +155,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
           </Tooltip>
         </TooltipProvider>
         
-        {isSelected && !isEditing && targetRef.current && (
+        {isSelected && !isEditing && !block.locked && targetRef.current && (
           <>
             <Moveable
               target={targetRef.current}
@@ -160,7 +163,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
               resizable
               throttleResize={0}
               throttleDrag={0}
-              renderDirections={["nw", "ne", "sw", "se"]}
+              renderDirections={block.type === 'LINE' ? ["e", "w"] : ["nw", "ne", "sw", "se"]}
               keepRatio={constraints.lockAspectRatio || false}
               edge={false}
               onDragStart={() => {
@@ -286,9 +289,10 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
 
                   switch (block.type) {
                     case 'TEXT':
-                      // Scale font size proportionally
+                      // Scale font size based on width ratio only (more natural for text)
                       const currentFontSize = parseInt(block.settings.fontSize) || 16;
-                      updatedSettings.fontSize = `${Math.round(currentFontSize * Math.min(widthRatio, heightRatio))}px`;
+                      const newFontSize = Math.max(8, Math.min(200, Math.round(currentFontSize * widthRatio)));
+                      updatedSettings.fontSize = `${newFontSize}px`;
                       break;
 
                     case 'BUTTON':
@@ -311,8 +315,8 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                       break;
 
                     case 'LINE':
+                      // LINE only changes width, not height
                       updatedSettings.width = `${newWidth}px`;
-                      updatedSettings.height = `${newHeight}px`;
                       break;
 
                     case 'CONTAINER':
@@ -463,10 +467,10 @@ export function VisualCanvas() {
   };
 
   const renderBlocks = (blocks: BlockInstance[], canvasWidth: number, canvasHeight: number): JSX.Element[] => {
-    return blocks.flatMap(block => [
-      <VisualBlock key={block.id} block={block} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />,
-      ...renderBlocks(block.children, canvasWidth, canvasHeight),
-    ]);
+    // Only render top-level blocks; children are rendered within their parents
+    return blocks.map(block => 
+      <VisualBlock key={block.id} block={block} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+    );
   };
   
   // Handle image drag & drop
