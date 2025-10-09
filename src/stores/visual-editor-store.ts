@@ -3,6 +3,7 @@ import { BlockInstance, ComponentDefinition, ComponentVariant, Guide } from '@/t
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Preset } from '@/lib/visual-editor/presets';
+import { getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 
 export interface GlobalStyles {
   defaultFont: 'Arial' | 'Helvetica' | 'Roboto' | 'Open Sans' | 'Montserrat';
@@ -746,7 +747,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       };
       
       const block = findBlockById(blocks, blockId);
-      const { getDefaultBlockSize } = require('@/lib/visual-editor/block-templates');
       const defaultSize = block ? getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
       const current = get().visualLayout[blockId] || { x: 0, y: 0, width: defaultSize.width, height: defaultSize.height, zIndex: 0 };
       
