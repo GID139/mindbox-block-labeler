@@ -444,7 +444,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       toast.success('Block extracted from parent');
     },
     
-    selectBlock: (id) => set({ selectedBlockIds: id ? [id] : [] }),
+    selectBlock: (id) => set({ selectedBlockIds: id ? [id] : [], selectedTableCell: null }),
     
     toggleBlockSelection: (id, isMulti) => {
       const current = get().selectedBlockIds;

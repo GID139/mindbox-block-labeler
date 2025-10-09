@@ -14,8 +14,15 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
   const targetRef = useRef<HTMLDivElement>(null);
   const { visualLayout, updateVisualLayout, selectBlock, selectedBlockIds } = useVisualEditorStore();
   const [previewHTML, setPreviewHTML] = useState('');
+  const [parentElement, setParentElement] = useState<HTMLElement | null>(null);
 
   const layout = visualLayout[block.id];
+
+  useEffect(() => {
+    if (targetRef.current && !parentElement) {
+      setParentElement(targetRef.current);
+    }
+  }, [targetRef.current, parentElement]);
 
   useEffect(() => {
     const template = getTemplate(block.type);
@@ -55,7 +62,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
         ref={targetRef}
         onClick={(e) => {
           e.stopPropagation();
-          console.log('NestedBlock clicked:', block.id, 'type:', block.type);
+          console.log('NestedBlock clicked:', block.id, 'type:', block.type, 'isSelected:', isSelected, 'selectedBlockIds:', selectedBlockIds);
           selectBlock(block.id);
         }}
         className={`absolute cursor-pointer border-2 overflow-hidden pointer-events-auto transition-all ${
@@ -80,7 +87,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
               <NestedBlockMoveable
                 key={child.id}
                 block={child}
-                parentRef={targetRef.current}
+                parentRef={parentElement}
                 isSelected={selectedBlockIds.includes(child.id)}
               />
             ))}
@@ -88,8 +95,20 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
         )}
       </div>
 
-      {isSelected && targetRef.current && 
-        !block.children?.some(child => selectedBlockIds.includes(child.id)) && (
+      {(() => {
+        const shouldRenderMoveable = (isSelected || selectedBlockIds.includes(block.id)) && 
+          targetRef.current && 
+          !block.children?.some(child => selectedBlockIds.includes(child.id));
+        
+        console.log('Moveable render check for', block.id, ':', {
+          isSelected,
+          inStore: selectedBlockIds.includes(block.id),
+          hasTargetRef: !!targetRef.current,
+          hasSelectedChildren: block.children?.some(child => selectedBlockIds.includes(child.id)),
+          shouldRender: shouldRenderMoveable
+        });
+        
+        return shouldRenderMoveable ? (
         <Moveable
           target={targetRef.current}
           draggable={true}
@@ -107,7 +126,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
             top: 0,
             right: parentRef.offsetWidth,
             bottom: parentRef.offsetHeight,
-            position: 'css'
+            position: 'client'
           } : undefined}
           onDrag={({ target, left, top }) => {
             // Constrain to parent bounds if parentRef exists
@@ -159,7 +178,8 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
             }
           }}
         />
-      )}
+        ) : null;
+      })()}
     </>
   );
 }
