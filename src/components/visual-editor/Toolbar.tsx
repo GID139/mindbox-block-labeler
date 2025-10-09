@@ -70,6 +70,14 @@ export function Toolbar() {
     sendToBack,
     bringForward,
     sendBackward,
+    showRulers,
+    setShowRulers,
+    showMeasurements,
+    setShowMeasurements,
+    snapToGrid,
+    setSnapToGrid,
+    snapToObjects,
+    setSnapToObjects,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -395,9 +403,59 @@ export function Toolbar() {
             
             <div className="h-6 w-px bg-border" />
             
-            <Button variant="ghost" size="icon" onClick={() => setShowGrid(!showGrid)} title="Toggle Grid">
+            <Button 
+              variant={showGrid ? 'default' : 'ghost'} 
+              size="icon" 
+              onClick={() => setShowGrid(!showGrid)} 
+              title="Toggle Grid (G)"
+            >
               <Grid className="h-4 w-4" />
             </Button>
+            
+            <Button 
+              variant={showRulers ? 'default' : 'ghost'} 
+              size="icon" 
+              onClick={() => setShowRulers(!showRulers)} 
+              title="Toggle Rulers (Ctrl+R)"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 3v18h18" />
+                <path d="M7 3v4M11 3v4M15 3v4M19 3v4" />
+                <path d="M3 7h4M3 11h4M3 15h4M3 19h4" />
+              </svg>
+            </Button>
+            
+            <Button 
+              variant={showMeasurements ? 'default' : 'ghost'} 
+              size="icon" 
+              onClick={() => setShowMeasurements(!showMeasurements)} 
+              title="Toggle Measurements"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 3v18M15 3v18" />
+                <path d="M3 9h18M3 15h18" />
+              </svg>
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  Snap
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSnapToGrid(!snapToGrid)}>
+                  {snapToGrid ? '✓ ' : ''}Snap to Grid
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSnapToObjects(!snapToObjects)}>
+                  {snapToObjects ? '✓ ' : ''}Snap to Objects
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <div className="h-6 w-px bg-border" />
             
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={() => setZoom(Math.max(25, zoom - 25))} title="Zoom Out">

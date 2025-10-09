@@ -23,7 +23,7 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, updateBlock, canvasMode } = useVisualEditorStore();
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -686,6 +686,99 @@ export function SettingsPanel() {
                 {child.name}
               </div>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Resize Constraints (Visual Mode Only) */}
+      {canvasMode === 'visual' && (
+        <Card className="p-4">
+          <h3 className="font-medium mb-3">Resize Constraints</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="lockAspectRatio"
+                checked={block.constraints?.lockAspectRatio || false}
+                onChange={(e) =>
+                  updateBlock(block.id, {
+                    constraints: {
+                      ...block.constraints,
+                      lockAspectRatio: e.target.checked,
+                    },
+                  })
+                }
+                className="w-4 h-4"
+              />
+              <Label htmlFor="lockAspectRatio">Lock Aspect Ratio</Label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Min Width</Label>
+                <Input
+                  type="number"
+                  value={block.constraints?.minWidth || ''}
+                  onChange={(e) =>
+                    updateBlock(block.id, {
+                      constraints: {
+                        ...block.constraints,
+                        minWidth: Number(e.target.value) || undefined,
+                      },
+                    })
+                  }
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <Label>Max Width</Label>
+                <Input
+                  type="number"
+                  value={block.constraints?.maxWidth || ''}
+                  onChange={(e) =>
+                    updateBlock(block.id, {
+                      constraints: {
+                        ...block.constraints,
+                        maxWidth: Number(e.target.value) || undefined,
+                      },
+                    })
+                  }
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <Label>Min Height</Label>
+                <Input
+                  type="number"
+                  value={block.constraints?.minHeight || ''}
+                  onChange={(e) =>
+                    updateBlock(block.id, {
+                      constraints: {
+                        ...block.constraints,
+                        minHeight: Number(e.target.value) || undefined,
+                      },
+                    })
+                  }
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <Label>Max Height</Label>
+                <Input
+                  type="number"
+                  value={block.constraints?.maxHeight || ''}
+                  onChange={(e) =>
+                    updateBlock(block.id, {
+                      constraints: {
+                        ...block.constraints,
+                        maxHeight: Number(e.target.value) || undefined,
+                      },
+                    })
+                  }
+                  placeholder="Auto"
+                />
+              </div>
+            </div>
           </div>
         </Card>
       )}

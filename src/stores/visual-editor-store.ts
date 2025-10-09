@@ -69,6 +69,10 @@ interface VisualEditorState {
   zoom: number;
   deviceMode: 'mobile' | 'tablet' | 'desktop';
   showOutline: boolean;
+  showRulers: boolean;
+  showMeasurements: boolean;
+  snapToGrid: boolean;
+  snapToObjects: boolean;
   
   // History
   canUndo: boolean;
@@ -150,6 +154,10 @@ interface VisualEditorState {
   setZoom: (zoom: number) => void;
   setDeviceMode: (mode: 'mobile' | 'tablet' | 'desktop') => void;
   setShowOutline: (show: boolean) => void;
+  setShowRulers: (show: boolean) => void;
+  setShowMeasurements: (show: boolean) => void;
+  setSnapToGrid: (snap: boolean) => void;
+  setSnapToObjects: (snap: boolean) => void;
   
   // Table-specific actions
   addBlockToTableCell: (tableId: string, cellKey: string, block: BlockInstance) => void;
@@ -299,6 +307,10 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     zoom: 100,
     deviceMode: 'desktop',
     showOutline: false,
+    showRulers: false,
+    showMeasurements: true,
+    snapToGrid: true,
+    snapToObjects: true,
     canUndo: false,
     canRedo: false,
     
@@ -693,6 +705,10 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     setZoom: (zoom) => set({ zoom }),
     setDeviceMode: (mode) => set({ deviceMode: mode }),
     setShowOutline: (show) => set({ showOutline: show }),
+    setShowRulers: (show) => set({ showRulers: show }),
+    setShowMeasurements: (show) => set({ showMeasurements: show }),
+    setSnapToGrid: (snap) => set({ snapToGrid: snap }),
+    setSnapToObjects: (snap) => set({ snapToObjects: snap }),
     
     addBlockToTableCell: (tableId, cellKey, block) => {
       const table = findBlockById(get().blocks, tableId);

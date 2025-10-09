@@ -1,6 +1,14 @@
 export type BlockType = 'TEXT' | 'BUTTON' | 'IMAGE' | 'CONTAINER' | 'TABLE' | 'SPACER' | 'RECTANGLE' | 'CIRCLE' | 'LINE' | 'GROUP';
 export type BlockCategory = 'BASIC' | 'LAYOUT' | 'CONTENT';
 
+export interface ResizeConstraints {
+  lockAspectRatio?: boolean;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+}
+
 export interface BlockInstance {
   id: string;
   type: BlockType;
@@ -11,6 +19,7 @@ export interface BlockInstance {
   maxNestingLevel: number;
   locked?: boolean; // Prevents editing/moving
   hidden?: boolean; // Hides from canvas but shows in layers
+  constraints?: ResizeConstraints;
 }
 
 export interface BlockTemplate {

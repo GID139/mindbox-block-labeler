@@ -73,6 +73,13 @@ export function useKeyboardShortcuts() {
         e.preventDefault();
         redo();
       }
+      
+      // Toggle Rulers
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        const { showRulers, setShowRulers } = useVisualEditorStore.getState();
+        setShowRulers(!showRulers);
+      }
 
       // Duplicate
       if ((e.metaKey || e.ctrlKey) && e.key === 'd' && selectedBlockIds.length === 1) {

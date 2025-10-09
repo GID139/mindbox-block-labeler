@@ -9,18 +9,32 @@ import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming'
 import { toast } from 'sonner';
 import { MarqueeSelection } from './MarqueeSelection';
 import { BlockContextMenu } from './BlockContextMenu';
+import { Ruler } from './Ruler';
+import { Measurements } from './Measurements';
 
 interface VisualBlockProps {
   block: BlockInstance;
 }
 
 function VisualBlock({ block }: VisualBlockProps) {
-  const { visualLayout, updateVisualLayout, selectedBlockIds, selectBlock, updateBlock } = useVisualEditorStore();
+  const { 
+    visualLayout, 
+    updateVisualLayout, 
+    selectedBlockIds, 
+    selectBlock, 
+    updateBlock,
+    blocks,
+    snapToGrid: enableSnapToGrid,
+    snapToObjects: enableSnapToObjects,
+    gridSize,
+  } = useVisualEditorStore();
+  
   const targetRef = useRef<HTMLDivElement>(null);
   const editableRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedBlockIds.includes(block.id);
   const [isEditing, setIsEditing] = useState(false);
   const [previewHTML, setPreviewHTML] = useState('');
+  const [snapGuides, setSnapGuides] = useState<any[]>([]);
   
   const layout = visualLayout[block.id] || { 
     x: 0, 
@@ -29,6 +43,8 @@ function VisualBlock({ block }: VisualBlockProps) {
     height: 100, 
     zIndex: 0 
   };
+
+  const constraints = block.constraints || {};
 
   // Мгновенное обновление HTML при изменении настроек
   useEffect(() => {
@@ -179,23 +195,27 @@ function VisualBlock({ block }: VisualBlockProps) {
 }
 
 export function VisualCanvas() {
-  const { 
-    blocks, 
-    showGrid, 
-    gridSize, 
-    zoom, 
-    deviceMode, 
-    drawingTool, 
-    addBlock, 
-    updateVisualLayout,
+  const {
+    blocks,
+    addBlock,
+    deviceMode,
+    showGrid,
+    zoom,
+    drawingTool,
     setDrawingTool,
-    marqueeStart,
-    marqueeEnd,
-    isMarqueeSelecting,
+    visualLayout,
+    selectedBlockIds,
+    clearSelection,
     startMarqueeSelection,
     updateMarqueeSelection,
     endMarqueeSelection,
-    clearSelection,
+    marqueeStart,
+    marqueeEnd,
+    isMarqueeSelecting,
+    showRulers,
+    showMeasurements,
+    gridSize,
+    updateVisualLayout,
   } = useVisualEditorStore();
   
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -327,6 +347,12 @@ export function VisualCanvas() {
           <MarqueeSelection start={marqueeStart} end={marqueeEnd} zoom={zoom} />
         )}
       </div>
+
+      {/* Rulers */}
+      {showRulers && <Ruler />}
+
+      {/* Measurements */}
+      {showMeasurements && <Measurements />}
     </div>
   );
 }
