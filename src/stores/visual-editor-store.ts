@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Preset } from '@/lib/visual-editor/presets';
 import { getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
+import { 
+  updateChildrenAbsoluteCoordinates,
+  findBlockById as findBlockByIdUtil
+} from '@/lib/visual-editor/coordinate-utils';
 
 export interface GlobalStyles {
   defaultFont: 'Arial' | 'Helvetica' | 'Roboto' | 'Open Sans' | 'Montserrat';
@@ -16,11 +20,13 @@ export interface GlobalStyles {
 
 export interface VisualLayout {
   [blockId: string]: {
-    x: number;
-    y: number;
+    x: number;          // Absolute X on canvas
+    y: number;          // Absolute Y on canvas
     width: number;
     height: number;
     zIndex: number;
+    relativeX?: number; // NEW: Relative X to parent (for reference)
+    relativeY?: number; // NEW: Relative Y to parent (for reference)
   };
 }
 
@@ -337,8 +343,33 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     addBlock: (block, parentId, index) => {
       pushHistory();
+      const state = get();
+      const newBlock = { ...block, parentId: parentId || null };
+      
+      // Set initial absolute coordinates
+      if (parentId) {
+        // Child block - calculate absolute position from parent
+        const parentLayout = state.visualLayout[parentId];
+        if (parentLayout) {
+          const relativeX = parseInt(String(newBlock.settings.x)) || 10;
+          const relativeY = parseInt(String(newBlock.settings.y)) || 10;
+          
+          const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
+          
+          state.updateVisualLayout(newBlock.id, {
+            x: parentLayout.x + relativeX,
+            y: parentLayout.y + relativeY,
+            relativeX,
+            relativeY,
+            width: parseInt(String(newBlock.settings.width)) || defaultSize.width,
+            height: parseInt(String(newBlock.settings.height)) || defaultSize.height,
+            zIndex: parentLayout.zIndex + 1,
+          });
+        }
+      }
+      
       set(state => ({
-        blocks: addBlockToTree(state.blocks, parentId || null, block, index),
+        blocks: addBlockToTree(state.blocks, parentId || null, newBlock, index),
       }));
       get().recalculateZIndexes();
     },
@@ -739,28 +770,43 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     })),
     
     updateVisualLayout: (blockId, layout) => {
-      const blocks = get().blocks;
-      const findBlockById = (blocks: BlockInstance[], id: string): BlockInstance | null => {
-        for (const block of blocks) {
-          if (block.id === id) return block;
-          if (block.children.length > 0) {
-            const found = findBlockById(block.children, id);
-            if (found) return found;
-          }
-        }
-        return null;
+      const state = get();
+      const currentLayout = state.visualLayout[blockId];
+      const blocks = state.blocks;
+      
+      // Calculate deltas if position changed
+      const deltaX = layout.x !== undefined && currentLayout 
+        ? layout.x - currentLayout.x 
+        : 0;
+      const deltaY = layout.y !== undefined && currentLayout
+        ? layout.y - currentLayout.y 
+        : 0;
+      
+      const block = findBlockByIdUtil(blocks, blockId);
+      const defaultSize = block ? getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
+      const current = currentLayout || { x: 0, y: 0, width: defaultSize.width, height: defaultSize.height, zIndex: 0 };
+      
+      // Update this block's layout
+      let updatedLayout = {
+        ...state.visualLayout,
+        [blockId]: {
+          ...current,
+          ...layout,
+        },
       };
       
-      const block = findBlockById(blocks, blockId);
-      const defaultSize = block ? getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
-      const current = get().visualLayout[blockId] || { x: 0, y: 0, width: defaultSize.width, height: defaultSize.height, zIndex: 0 };
+      // If position changed, update all children's absolute coordinates
+      if ((deltaX !== 0 || deltaY !== 0) && block) {
+        updatedLayout = updateChildrenAbsoluteCoordinates(
+          blockId,
+          deltaX,
+          deltaY,
+          blocks,
+          updatedLayout
+        );
+      }
       
-      set({
-        visualLayout: {
-          ...get().visualLayout,
-          [blockId]: { ...current, ...layout },
-        },
-      });
+      set({ visualLayout: updatedLayout });
     },
     
     setDrawingTool: (tool) => set({ drawingTool: tool }),

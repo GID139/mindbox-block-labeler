@@ -15,7 +15,7 @@ import { GuideLines } from './GuideLines';
 import { SmartGuides } from './SmartGuides';
 import { importImage } from '@/lib/visual-editor/export-utils';
 import { snapToGrid, snapToObjects, findSnapPoints, SnapGuide } from '@/lib/visual-editor/snapping-utils';
-import { NestedBlockMoveable } from './NestedBlockMoveable';
+import { flattenBlocks } from '@/lib/visual-editor/coordinate-utils';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -145,23 +145,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     {block.settings.text || ''}
                   </div>
                 ) : (
-                  <>
-                    {/* Always render the parent block's content */}
-                    <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
-                    
-                    {/* Render nested blocks on top if they exist */}
-                    {block.children && block.children.length > 0 && block.canContainChildren && (
-                      <div className="absolute inset-0 pointer-events-auto" style={{ zIndex: 10 }}>
-                        {block.children.map((child) => (
-                          <NestedBlockMoveable
-                            key={child.id}
-                            block={child}
-                            parentRef={targetRef.current}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </>
+                  <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
                 )}
               </div>
             </TooltipTrigger>
@@ -173,8 +157,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
           </Tooltip>
         </TooltipProvider>
         
-        {isSelected && !isEditing && !block.locked && targetRef.current && 
-          !block.children?.some(child => selectedBlockIds.includes(child.id)) && (
+        {isSelected && !isEditing && !block.locked && targetRef.current && (
           <>
             <Moveable
               target={targetRef.current}
@@ -485,10 +468,13 @@ export function VisualCanvas() {
   };
 
   const renderBlocks = (blocks: BlockInstance[], canvasWidth: number, canvasHeight: number): JSX.Element[] => {
-    // Only render top-level blocks; children are rendered within their parents
-    return blocks.map(block => 
-      <VisualBlock key={block.id} block={block} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
-    );
+    // Flatten all blocks (including nested) and render them all with absolute positioning
+    const allBlocks = flattenBlocks(blocks);
+    return allBlocks
+      .filter(block => !block.hidden)
+      .map(block => 
+        <VisualBlock key={block.id} block={block} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+      );
   };
   
   // Handle image drag & drop

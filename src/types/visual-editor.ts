@@ -20,6 +20,7 @@ export interface BlockInstance {
   locked?: boolean; // Prevents editing/moving
   hidden?: boolean; // Hides from canvas but shows in layers
   constraints?: ResizeConstraints;
+  parentId?: string | null; // NEW: Track parent relationship for unified coordinate system
 }
 
 export interface BlockTemplate {

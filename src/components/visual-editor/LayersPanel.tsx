@@ -2,6 +2,7 @@ import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { BlockInstance } from '@/types/visual-editor';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { 
   Eye, 
   EyeOff, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
 
 export function LayersPanel() {
   const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection, toggleLock, toggleHide, duplicateBlock, removeBlock } = useVisualEditorStore();
@@ -45,6 +47,11 @@ export function LayersPanel() {
       case 'GROUP': return '📦';
       default: return '📦';
     }
+  };
+
+  const getParentName = (parentId: string): string => {
+    const parent = findBlockById(blocks, parentId);
+    return parent?.name || 'Unknown';
   };
 
   const renderBlock = (block: BlockInstance, level: number = 0) => {
@@ -87,9 +94,16 @@ export function LayersPanel() {
           )}
           {!hasChildren && <div className="w-4" />}
 
-          {/* Icon & Name */}
+          {/* Icon & Name with Parent Indicator */}
           <span className="text-sm mr-1">{getBlockIcon(block.type)}</span>
-          <span className="text-sm flex-1 truncate">{block.name}</span>
+          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+            <span className="text-sm truncate">{block.name}</span>
+            {block.parentId && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
+                ↳ {getParentName(block.parentId)}
+              </Badge>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
