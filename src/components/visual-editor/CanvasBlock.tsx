@@ -7,6 +7,7 @@ import { getTemplate } from '@/lib/visual-editor/block-templates';
 import { useState, useRef, useEffect } from 'react';
 import { TableCellRenderer } from './TableCellRenderer';
 import { DropZoneIndicator } from './DropZoneIndicator';
+import { BlockContextMenu } from './BlockContextMenu';
 
 interface CanvasBlockProps {
   block: BlockInstance;
@@ -97,175 +98,170 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
   const previewHTML = generatePreviewHTML();
 
   return (
-    <div
-      ref={setDropRef}
-      className={`relative group ${isDragging ? 'opacity-50' : ''} ${block.hidden ? 'opacity-40' : ''}`}
-      onClick={handleClick}
-    >
+    <BlockContextMenu block={block}>
       <div
-        ref={setDragRef}
-        className={`relative border rounded transition-all duration-200 ${
-          isSelected
-            ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
-            : 'border-border hover:border-primary/50 hover:shadow-md'
-        } ${isOver && block.canContainChildren ? 'ring-2 ring-primary ring-offset-2' : ''} ${
-          block.locked ? 'bg-muted/30' : ''
-        }`}
+        ref={setDropRef}
+        className={`relative group ${isDragging ? 'opacity-50' : ''} ${block.hidden ? 'opacity-40' : ''}`}
+        onClick={handleClick}
       >
-        {/* Drag handle - always visible on hover, disabled if locked */}
-        {!block.locked && (
-          <div 
-            {...listeners} 
-            {...attributes} 
-            className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
-          >
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </div>
-        )}
+        <div
+          ref={setDragRef}
+          className={`relative border rounded transition-all duration-200 ${
+            isSelected
+              ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
+              : 'border-border hover:border-primary/50 hover:shadow-md'
+          } ${isOver && block.canContainChildren ? 'ring-2 ring-primary ring-offset-2' : ''} ${
+            block.locked ? 'bg-muted/30' : ''
+          }`}
+        >
+          {/* ... keep existing code (drag handle, delete button, label, preview, drop zones) */}
+          {!block.locked && (
+            <div 
+              {...listeners} 
+              {...attributes} 
+              className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
 
-        {/* Delete button - visible when selected, disabled if locked */}
-        {isSelected && !block.locked && (
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md z-10"
-            onClick={(e) => {
-              e.stopPropagation();
-              removeBlock(block.id);
-            }}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
-
-        {/* Block label - small indicator with lock/hide icons */}
-        <div className="absolute -top-2 left-2 px-2 py-0.5 bg-background border border-border rounded text-xs font-medium z-10 flex items-center gap-1">
-          <span>{template.icon}</span>
-          <span className="text-muted-foreground">{block.name}</span>
-          {block.locked && <span className="text-destructive">🔒</span>}
-          {block.hidden && <span className="text-muted-foreground">👁️‍🗨️</span>}
-        </div>
-
-        {/* WYSIWYG Preview */}
-        <div className="p-4 pt-6" onDoubleClick={handleDoubleClick}>
-          {isEditing && (block.type === 'TEXT' || block.type === 'BUTTON') ? (
-            <div
-              ref={editableRef}
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={handleBlur}
-              className="outline-none min-h-[1em]"
-              style={{
-                fontFamily: block.settings.font || 'Arial',
-                fontSize: `${block.settings.fontSize || 16}px`,
-                fontWeight: block.settings.fontWeight || 'normal',
-                color: block.type === 'BUTTON' ? block.settings.textColor : block.settings.color,
-                lineHeight: block.settings.lineHeight || '1.5',
-                textAlign: block.settings.align || 'left',
+          {isSelected && !block.locked && (
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeBlock(block.id);
               }}
             >
-              {block.settings.text}
-            </div>
-          ) : block.type === 'TABLE' ? (
-            // Render TABLE with cells
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <tbody>
-                  {Array.from({ length: (block.settings as TableSettings).rows }, (_, rowIdx) => (
-                    <tr key={rowIdx}>
-                      {Array.from({ length: (block.settings as TableSettings).cols }, (_, colIdx) => {
-                        const cellKey = `${rowIdx},${colIdx}`;
-                        const cells = (block.settings as TableSettings).cells || {};
-                        const cell = cells[cellKey] || { children: [], settings: {} };
-                        
-                        return (
-                          <TableCellRenderer
-                            key={cellKey}
-                            blockId={block.id}
-                            cellKey={cellKey}
-                            children={cell.children || []}
-                            settings={cell.settings}
-                            level={level}
-                          />
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : previewHTML ? (
-            <div 
-              dangerouslySetInnerHTML={{ __html: previewHTML }}
-              className="pointer-events-none select-none"
-            />
-          ) : (
-            // Render children as React components for containers
-            <div className="space-y-2">
-              {block.children && block.children.length > 0 ? (
-                block.children.map((child, childIndex) => (
-                  <CanvasBlock
-                    key={child.id}
-                    block={child}
-                    index={childIndex}
-                    parentId={block.id}
-                    level={level + 1}
-                  />
-                ))
-              ) : (
-                block.canContainChildren && (
-                  <div className="text-center text-muted-foreground text-sm py-4">
-                    Drop blocks here
-                  </div>
-                )
-              )}
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+
+          <div className="absolute -top-2 left-2 px-2 py-0.5 bg-background border border-border rounded text-xs font-medium z-10 flex items-center gap-1">
+            <span>{template.icon}</span>
+            <span className="text-muted-foreground">{block.name}</span>
+            {block.locked && <span className="text-destructive">🔒</span>}
+            {block.hidden && <span className="text-muted-foreground">👁️‍🗨️</span>}
+          </div>
+
+          <div className="p-4 pt-6" onDoubleClick={handleDoubleClick}>
+            {isEditing && (block.type === 'TEXT' || block.type === 'BUTTON') ? (
+              <div
+                ref={editableRef}
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={handleBlur}
+                className="outline-none min-h-[1em]"
+                style={{
+                  fontFamily: block.settings.font || 'Arial',
+                  fontSize: `${block.settings.fontSize || 16}px`,
+                  fontWeight: block.settings.fontWeight || 'normal',
+                  color: block.type === 'BUTTON' ? block.settings.textColor : block.settings.color,
+                  lineHeight: block.settings.lineHeight || '1.5',
+                  textAlign: block.settings.align || 'left',
+                }}
+              >
+                {block.settings.text}
+              </div>
+            ) : block.type === 'TABLE' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {Array.from({ length: (block.settings as TableSettings).rows }, (_, rowIdx) => (
+                      <tr key={rowIdx}>
+                        {Array.from({ length: (block.settings as TableSettings).cols }, (_, colIdx) => {
+                          const cellKey = `${rowIdx},${colIdx}`;
+                          const cells = (block.settings as TableSettings).cells || {};
+                          const cell = cells[cellKey] || { children: [], settings: {} };
+                          
+                          return (
+                            <TableCellRenderer
+                              key={cellKey}
+                              blockId={block.id}
+                              cellKey={cellKey}
+                              children={cell.children || []}
+                              settings={cell.settings}
+                              level={level}
+                            />
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : previewHTML ? (
+              <div 
+                dangerouslySetInnerHTML={{ __html: previewHTML }}
+                className="pointer-events-none select-none"
+              />
+            ) : (
+              <div className="space-y-2">
+                {block.children && block.children.length > 0 ? (
+                  block.children.map((child, childIndex) => (
+                    <CanvasBlock
+                      key={child.id}
+                      block={child}
+                      index={childIndex}
+                      parentId={block.id}
+                      level={level + 1}
+                    />
+                  ))
+                ) : (
+                  block.canContainChildren && (
+                    <div className="text-center text-muted-foreground text-sm py-4">
+                      Drop blocks here
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          {!isEditing && (
+            <>
+              <DropZoneIndicator
+                id={`${block.id}-drop-top`}
+                position="top"
+                blockId={block.id}
+                parentId={parentId}
+                index={index}
+              />
+              <DropZoneIndicator
+                id={`${block.id}-drop-bottom`}
+                position="bottom"
+                blockId={block.id}
+                parentId={parentId}
+                index={index}
+              />
+              <DropZoneIndicator
+                id={`${block.id}-drop-left`}
+                position="left"
+                blockId={block.id}
+                parentId={parentId}
+                index={index}
+              />
+              <DropZoneIndicator
+                id={`${block.id}-drop-right`}
+                position="right"
+                blockId={block.id}
+                parentId={parentId}
+                index={index}
+              />
+            </>
+          )}
+
+          {isOver && block.canContainChildren && (
+            <div className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 pointer-events-none flex items-center justify-center z-30 animate-pulse">
+              <span className="text-sm font-medium text-primary bg-white px-3 py-1.5 rounded-full shadow-lg">
+                📦 Drop inside
+              </span>
             </div>
           )}
         </div>
-
-        {/* Drop Zone Indicators - 4 directions */}
-        {!isEditing && (
-          <>
-            <DropZoneIndicator
-              id={`${block.id}-drop-top`}
-              position="top"
-              blockId={block.id}
-              parentId={parentId}
-              index={index}
-            />
-            <DropZoneIndicator
-              id={`${block.id}-drop-bottom`}
-              position="bottom"
-              blockId={block.id}
-              parentId={parentId}
-              index={index}
-            />
-            <DropZoneIndicator
-              id={`${block.id}-drop-left`}
-              position="left"
-              blockId={block.id}
-              parentId={parentId}
-              index={index}
-            />
-            <DropZoneIndicator
-              id={`${block.id}-drop-right`}
-              position="right"
-              blockId={block.id}
-              parentId={parentId}
-              index={index}
-            />
-          </>
-        )}
-
-        {/* Show drop zone indicator */}
-        {isOver && block.canContainChildren && (
-          <div className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 pointer-events-none flex items-center justify-center z-30 animate-pulse">
-            <span className="text-sm font-medium text-primary bg-white px-3 py-1.5 rounded-full shadow-lg">
-              📦 Drop inside
-            </span>
-          </div>
-        )}
       </div>
-    </div>
+    </BlockContextMenu>
   );
 }

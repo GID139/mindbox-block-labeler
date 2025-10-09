@@ -46,6 +46,9 @@ interface VisualEditorState {
   marqueeEnd: { x: number; y: number } | null;
   isMarqueeSelecting: boolean;
   
+  // Clipboard
+  clipboard: BlockInstance[];
+  
   // Components
   components: ComponentDefinition[];
   selectedComponentId: string | null;
@@ -117,6 +120,29 @@ interface VisualEditorState {
   updateMarqueeSelection: (x: number, y: number) => void;
   endMarqueeSelection: (isAdditive: boolean) => void;
   cancelMarqueeSelection: () => void;
+  
+  // Multi-selection enhancement
+  selectAll: () => void;
+  selectByType: (type: string) => void;
+  invertSelection: () => void;
+  
+  // Clipboard operations
+  copySelectedBlocks: () => void;
+  cutSelectedBlocks: () => void;
+  paste: () => void;
+  
+  // Alignment
+  alignSelectedBlocks: (alignType: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
+  distributeSelectedBlocks: (distributeType: 'horizontal' | 'vertical') => void;
+  
+  // Z-index management
+  bringToFront: (blockId: string) => void;
+  sendToBack: (blockId: string) => void;
+  bringForward: (blockId: string) => void;
+  sendBackward: (blockId: string) => void;
+  
+  // Utility
+  updateBlockSettings: (blockId: string, settings: Partial<BlockInstance>) => void;
   
   // UI controls
   setShowGrid: (show: boolean) => void;
@@ -252,6 +278,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     marqueeStart: null,
     marqueeEnd: null,
     isMarqueeSelecting: false,
+    clipboard: [],
   components: [],
   selectedComponentId: null,
   customPresets: [],
@@ -1086,6 +1113,174 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     cancelMarqueeSelection: () => {
       set({ marqueeStart: null, marqueeEnd: null, isMarqueeSelecting: false });
+    },
+    
+    // Multi-selection enhancement
+    selectAll: () => {
+      const collectAllIds = (blocks: BlockInstance[]): string[] => {
+        return blocks.flatMap(block => [block.id, ...collectAllIds(block.children)]);
+      };
+      
+      const allIds = collectAllIds(get().blocks);
+      set({ selectedBlockIds: allIds });
+      toast.success(`Selected ${allIds.length} blocks`);
+    },
+    
+    selectByType: (type) => {
+      const collectByType = (blocks: BlockInstance[]): string[] => {
+        return blocks.flatMap(block => {
+          const result = block.type === type ? [block.id] : [];
+          return [...result, ...collectByType(block.children)];
+        });
+      };
+      
+      const ids = collectByType(get().blocks);
+      set({ selectedBlockIds: ids });
+      toast.success(`Selected ${ids.length} ${type} blocks`);
+    },
+    
+    invertSelection: () => {
+      const collectAllIds = (blocks: BlockInstance[]): string[] => {
+        return blocks.flatMap(block => [block.id, ...collectAllIds(block.children)]);
+      };
+      
+      const allIds = collectAllIds(get().blocks);
+      const currentSelection = new Set(get().selectedBlockIds);
+      const inverted = allIds.filter(id => !currentSelection.has(id));
+      
+      set({ selectedBlockIds: inverted });
+      toast.success(`Selected ${inverted.length} blocks`);
+    },
+    
+    // Clipboard operations
+    copySelectedBlocks: () => {
+      const { selectedBlockIds, blocks } = get();
+      const selectedBlocks: BlockInstance[] = [];
+      
+      selectedBlockIds.forEach(id => {
+        const block = findBlockById(blocks, id);
+        if (block) {
+          selectedBlocks.push(JSON.parse(JSON.stringify(block)));
+        }
+      });
+      
+      set({ clipboard: selectedBlocks });
+      toast.success(`Copied ${selectedBlocks.length} blocks`);
+    },
+    
+    cutSelectedBlocks: () => {
+      const { selectedBlockIds, blocks } = get();
+      const selectedBlocks: BlockInstance[] = [];
+      
+      selectedBlockIds.forEach(id => {
+        const block = findBlockById(blocks, id);
+        if (block) {
+          selectedBlocks.push(JSON.parse(JSON.stringify(block)));
+        }
+      });
+      
+      set({ clipboard: selectedBlocks });
+      get().removeSelectedBlocks();
+      toast.success(`Cut ${selectedBlocks.length} blocks`);
+    },
+    
+    paste: () => {
+      const { clipboard } = get();
+      
+      if (clipboard.length === 0) {
+        toast.error('Clipboard is empty');
+        return;
+      }
+      
+      pushHistory();
+      const newBlocks = clipboard.map(block => ({
+        ...JSON.parse(JSON.stringify(block)),
+        id: `${block.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: `${block.name}_paste`,
+      }));
+      
+      newBlocks.forEach(block => {
+        get().addBlock(block);
+      });
+      
+      toast.success(`Pasted ${newBlocks.length} blocks`);
+    },
+    
+    // Alignment
+    alignSelectedBlocks: (alignType) => {
+      const { selectedBlockIds, blocks, visualLayout } = get();
+      
+      if (selectedBlockIds.length < 2) {
+        toast.error('Select at least 2 blocks to align');
+        return;
+      }
+      
+      const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
+      
+      // Import alignment utilities
+      const { alignBlocks } = require('@/lib/visual-editor/alignment-utils');
+      const newLayout = alignBlocks(selectedBlocks, visualLayout, alignType);
+      
+      set({ visualLayout: newLayout });
+      toast.success('Blocks aligned');
+    },
+    
+    distributeSelectedBlocks: (distributeType) => {
+      const { selectedBlockIds, blocks, visualLayout } = get();
+      
+      if (selectedBlockIds.length < 3) {
+        toast.error('Select at least 3 blocks to distribute');
+        return;
+      }
+      
+      const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
+      
+      // Import alignment utilities
+      const { distributeBlocks } = require('@/lib/visual-editor/alignment-utils');
+      const newLayout = distributeBlocks(selectedBlocks, visualLayout, distributeType);
+      
+      set({ visualLayout: newLayout });
+      toast.success('Blocks distributed');
+    },
+    
+    // Z-index management
+    bringToFront: (blockId) => {
+      const { visualLayout } = get();
+      const allZIndices = Object.values(visualLayout).map(l => l.zIndex);
+      const maxZ = Math.max(...allZIndices, 0);
+      
+      get().updateVisualLayout(blockId, { zIndex: maxZ + 1 });
+      toast.success('Brought to front');
+    },
+    
+    sendToBack: (blockId) => {
+      const { visualLayout } = get();
+      const allZIndices = Object.values(visualLayout).map(l => l.zIndex);
+      const minZ = Math.min(...allZIndices, 0);
+      
+      get().updateVisualLayout(blockId, { zIndex: minZ - 1 });
+      toast.success('Sent to back');
+    },
+    
+    bringForward: (blockId) => {
+      const { visualLayout } = get();
+      const currentZ = visualLayout[blockId]?.zIndex || 0;
+      
+      get().updateVisualLayout(blockId, { zIndex: currentZ + 1 });
+      toast.success('Brought forward');
+    },
+    
+    sendBackward: (blockId) => {
+      const { visualLayout } = get();
+      const currentZ = visualLayout[blockId]?.zIndex || 0;
+      
+      get().updateVisualLayout(blockId, { zIndex: currentZ - 1 });
+      toast.success('Sent backward');
+    },
+    
+    // Utility
+    updateBlockSettings: (blockId, settings) => {
+      get().updateBlock(blockId, settings);
     },
   };
 });

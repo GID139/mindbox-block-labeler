@@ -8,6 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
 import { MarqueeSelection } from './MarqueeSelection';
+import { BlockContextMenu } from './BlockContextMenu';
 
 interface VisualBlockProps {
   block: BlockInstance;
@@ -68,110 +69,112 @@ function VisualBlock({ block }: VisualBlockProps) {
   };
 
   return (
-    <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              ref={targetRef}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isEditing) {
-                  console.log('Selected block in Visual Mode:', block.id);
-                  selectBlock(block.id);
-                }
-              }}
-              onDoubleClick={handleDoubleClick}
-              className={`absolute cursor-pointer border-2 overflow-hidden ${
-                isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
-              }`}
-              style={{
-                transform: `translate(${layout.x}px, ${layout.y}px)`,
-                width: `${layout.width}px`,
-                height: `${layout.height}px`,
-                zIndex: layout.zIndex,
-                transition: 'border-color 0.2s',
-                pointerEvents: isEditing ? 'none' : 'auto',
-              }}
-            >
-              {isEditing ? (
-                <div
-                  ref={editableRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      editableRef.current?.blur();
-                    }
-                    if (e.key === 'Escape') {
-                      setIsEditing(false);
-                    }
-                  }}
-                  className="w-full h-full p-2 outline-none"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  {block.settings.text || ''}
-                </div>
-              ) : (
-                <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
-              )}
-            </div>
-          </TooltipTrigger>
-          {(block.type === 'TEXT' || block.type === 'BUTTON') && !isEditing && (
-            <TooltipContent>
-              <p>Double-click to edit text</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
-      
-      {isSelected && !isEditing && targetRef.current && (
-        <Moveable
-          target={targetRef.current}
-          draggable
-          resizable
-          throttleResize={0}
-          throttleDrag={0}
-          renderDirections={["nw", "ne", "sw", "se"]}
-          keepRatio={false}
-          edge={false}
-          snappable
-          snapThreshold={5}
-          onDrag={({ translate }) => {
-            if (targetRef.current) {
-              targetRef.current.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
-            }
-          }}
-          onDragEnd={({ lastEvent }) => {
-            if (lastEvent) {
-              updateVisualLayout(block.id, {
-                x: lastEvent.translate[0],
-                y: lastEvent.translate[1],
-              });
-            }
-          }}
-          onResize={({ width, height, drag }) => {
-            if (targetRef.current) {
-              targetRef.current.style.transform = `translate(${drag.translate[0]}px, ${drag.translate[1]}px)`;
-              targetRef.current.style.width = `${width}px`;
-              targetRef.current.style.height = `${height}px`;
-            }
-          }}
-          onResizeEnd={({ lastEvent }) => {
-            if (lastEvent) {
-              updateVisualLayout(block.id, {
-                width: lastEvent.width,
-                height: lastEvent.height,
-                x: lastEvent.drag.translate[0],
-                y: lastEvent.drag.translate[1],
-              });
-            }
-          }}
-        />
-      )}
-    </>
+    <BlockContextMenu block={block}>
+      <div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                ref={targetRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isEditing) {
+                    console.log('Selected block in Visual Mode:', block.id);
+                    selectBlock(block.id);
+                  }
+                }}
+                onDoubleClick={handleDoubleClick}
+                className={`absolute cursor-pointer border-2 overflow-hidden ${
+                  isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
+                }`}
+                style={{
+                  transform: `translate(${layout.x}px, ${layout.y}px)`,
+                  width: `${layout.width}px`,
+                  height: `${layout.height}px`,
+                  zIndex: layout.zIndex,
+                  transition: 'border-color 0.2s',
+                  pointerEvents: isEditing ? 'none' : 'auto',
+                }}
+              >
+                {isEditing ? (
+                  <div
+                    ref={editableRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={handleBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        editableRef.current?.blur();
+                      }
+                      if (e.key === 'Escape') {
+                        setIsEditing(false);
+                      }
+                    }}
+                    className="w-full h-full p-2 outline-none"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    {block.settings.text || ''}
+                  </div>
+                ) : (
+                  <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                )}
+              </div>
+            </TooltipTrigger>
+            {(block.type === 'TEXT' || block.type === 'BUTTON') && !isEditing && (
+              <TooltipContent>
+                <p>Double-click to edit text</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+        
+        {isSelected && !isEditing && targetRef.current && (
+          <Moveable
+            target={targetRef.current}
+            draggable
+            resizable
+            throttleResize={0}
+            throttleDrag={0}
+            renderDirections={["nw", "ne", "sw", "se"]}
+            keepRatio={false}
+            edge={false}
+            snappable
+            snapThreshold={5}
+            onDrag={({ translate }) => {
+              if (targetRef.current) {
+                targetRef.current.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
+              }
+            }}
+            onDragEnd={({ lastEvent }) => {
+              if (lastEvent) {
+                updateVisualLayout(block.id, {
+                  x: lastEvent.translate[0],
+                  y: lastEvent.translate[1],
+                });
+              }
+            }}
+            onResize={({ width, height, drag }) => {
+              if (targetRef.current) {
+                targetRef.current.style.transform = `translate(${drag.translate[0]}px, ${drag.translate[1]}px)`;
+                targetRef.current.style.width = `${width}px`;
+                targetRef.current.style.height = `${height}px`;
+              }
+            }}
+            onResizeEnd={({ lastEvent }) => {
+              if (lastEvent) {
+                updateVisualLayout(block.id, {
+                  width: lastEvent.width,
+                  height: lastEvent.height,
+                  x: lastEvent.drag.translate[0],
+                  y: lastEvent.drag.translate[1],
+                });
+              }
+            }}
+          />
+        )}
+      </div>
+    </BlockContextMenu>
   );
 }
 

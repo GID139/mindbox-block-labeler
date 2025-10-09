@@ -14,6 +14,12 @@ export function useKeyboardShortcuts() {
     groupBlocks,
     cancelMarqueeSelection,
     isMarqueeSelecting,
+    copySelectedBlocks,
+    cutSelectedBlocks,
+    paste,
+    selectAll,
+    toggleLock,
+    toggleHide,
   } = useVisualEditorStore();
 
   useEffect(() => {
@@ -85,9 +91,45 @@ export function useKeyboardShortcuts() {
         e.preventDefault();
         groupBlocks(selectedBlockIds);
       }
+      
+      // Copy
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selectedBlockIds.length > 0) {
+        e.preventDefault();
+        copySelectedBlocks();
+      }
+      
+      // Cut
+      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && selectedBlockIds.length > 0) {
+        e.preventDefault();
+        cutSelectedBlocks();
+      }
+      
+      // Paste
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault();
+        paste();
+      }
+      
+      // Select All
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAll();
+      }
+      
+      // Lock/Unlock
+      if ((e.metaKey || e.ctrlKey) && e.key === 'l' && selectedBlockIds.length === 1) {
+        e.preventDefault();
+        toggleLock(selectedBlockIds[0]);
+      }
+      
+      // Hide/Show
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h' && selectedBlockIds.length === 1) {
+        e.preventDefault();
+        toggleHide(selectedBlockIds[0]);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, canvasMode, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide]);
 }

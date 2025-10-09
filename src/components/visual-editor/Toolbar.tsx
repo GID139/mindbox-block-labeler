@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component } from 'lucide-react';
+import { Save, Eye, Code, Plus, Loader2, Undo, Redo, Grid, ZoomIn, ZoomOut, Monitor, Tablet, Smartphone, List, Copy, MousePointer, Square, Circle, Minus, Component, ChevronDown, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { CanvasModeToggle } from './CanvasModeToggle';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { GlobalStylesDialog } from './GlobalStylesDialog';
+import { AlignmentToolbar } from './AlignmentToolbar';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
 import {
   Dialog,
@@ -55,6 +63,13 @@ export function Toolbar() {
     createComponent,
     groupBlocks,
     ungroupBlock,
+    selectAll,
+    selectByType,
+    invertSelection,
+    bringToFront,
+    sendToBack,
+    bringForward,
+    sendBackward,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -225,6 +240,85 @@ export function Toolbar() {
 
         <div className="h-6 w-px bg-border" />
 
+        {/* Select Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Layers className="h-4 w-4 mr-1" />
+              Select
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => selectAll()}>
+              Select All
+              <span className="ml-auto text-xs text-muted-foreground">⌘A</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => selectByType('TEXT')}>
+              Select All Text
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => selectByType('BUTTON')}>
+              Select All Buttons
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => selectByType('IMAGE')}>
+              Select All Images
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => selectByType('CONTAINER')}>
+              Select All Containers
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => invertSelection()}>
+              Invert Selection
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Arrange Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              disabled={selectedBlockIds.length === 0}
+            >
+              <Layers className="h-4 w-4 mr-1" />
+              Arrange
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem 
+              onClick={() => selectedBlockIds[0] && bringToFront(selectedBlockIds[0])}
+              disabled={selectedBlockIds.length !== 1}
+            >
+              Bring to Front
+              <span className="ml-auto text-xs text-muted-foreground">⌘]</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => selectedBlockIds[0] && bringForward(selectedBlockIds[0])}
+              disabled={selectedBlockIds.length !== 1}
+            >
+              Bring Forward
+              <span className="ml-auto text-xs text-muted-foreground">⌘[</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => selectedBlockIds[0] && sendBackward(selectedBlockIds[0])}
+              disabled={selectedBlockIds.length !== 1}
+            >
+              Send Backward
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => selectedBlockIds[0] && sendToBack(selectedBlockIds[0])}
+              disabled={selectedBlockIds.length !== 1}
+            >
+              Send to Back
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="h-6 w-px bg-border" />
+
         {/* Component Creation */}
         <Dialog open={isComponentDialogOpen} onOpenChange={setIsComponentDialogOpen}>
           <DialogTrigger asChild>
@@ -297,6 +391,10 @@ export function Toolbar() {
         {/* Visual Mode Controls */}
         {canvasMode === 'visual' && (
           <>
+            <AlignmentToolbar />
+            
+            <div className="h-6 w-px bg-border" />
+            
             <Button variant="ghost" size="icon" onClick={() => setShowGrid(!showGrid)} title="Toggle Grid">
               <Grid className="h-4 w-4" />
             </Button>
