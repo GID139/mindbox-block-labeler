@@ -37,17 +37,11 @@ export const textTemplate: BlockTemplate = {
     // Inner span for text styles
     const innerStyle = `font-family: ${font}, sans-serif; font-size: ${fontSize}; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineHeight}; text-align: ${textAlign}; display: inline-block; width: 100%;`;
     
-    let content = text || 'Enter text...';
+    const content = text || 'Enter text...';
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      content += block.children.map(child => {
-        const childTemplate = getTemplate(child.type);
-        return childTemplate.generateHTML(child);
-      }).join('');
-    }
+    // Children will be injected by code-generator
     
-    const innerHTML = link 
+    const innerHTML = link
       ? `<a href="${link}" style="${innerStyle}">${content}</a>`
       : `<span style="${innerStyle}">${content}</span>`;
     
@@ -86,13 +80,7 @@ export const textTemplate: BlockTemplate = {
       });
     }
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        params.push(...childTemplate.generateJSON(child));
-      });
-    }
+    // Children will be handled by code-generator
     
     return params;
   },

@@ -6,7 +6,12 @@ import { Preset } from '@/lib/visual-editor/presets';
 import { getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { 
   updateChildrenAbsoluteCoordinates,
-  findBlockById as findBlockByIdUtil
+  findBlockById as findBlockByIdUtil,
+  getChildren,
+  getAllDescendants,
+  isAncestor,
+  getRootBlocks,
+  getBlockPath
 } from '@/lib/visual-editor/coordinate-utils';
 
 export interface GlobalStyles {
@@ -213,72 +218,8 @@ interface VisualEditorState {
   reset: () => void;
 }
 
-const findBlockById = (blocks: BlockInstance[], id: string): BlockInstance | null => {
-  for (const block of blocks) {
-    if (block.id === id) return block;
-    if (block.children.length > 0) {
-      const found = findBlockById(block.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-};
-
-const updateBlockInTree = (blocks: BlockInstance[], id: string, updates: Partial<BlockInstance>): BlockInstance[] => {
-  return blocks.map(block => {
-    if (block.id === id) {
-      return { ...block, ...updates };
-    }
-    if (block.children.length > 0) {
-      return {
-        ...block,
-        children: updateBlockInTree(block.children, id, updates),
-      };
-    }
-    return block;
-  });
-};
-
-const removeBlockFromTree = (blocks: BlockInstance[], id: string): BlockInstance[] => {
-  return blocks.filter(block => {
-    if (block.id === id) return false;
-    if (block.children.length > 0) {
-      block.children = removeBlockFromTree(block.children, id);
-    }
-    return true;
-  });
-};
-
-const addBlockToTree = (blocks: BlockInstance[], parentId: string | null, newBlock: BlockInstance, index?: number): BlockInstance[] => {
-  if (parentId === null) {
-    // Add to root
-    if (index !== undefined) {
-      const copy = [...blocks];
-      copy.splice(index, 0, newBlock);
-      return copy;
-    }
-    return [...blocks, newBlock];
-  }
-  
-  return blocks.map(block => {
-    if (block.id === parentId) {
-      const children = [...block.children];
-      if (index !== undefined) {
-        children.splice(index, 0, newBlock);
-      } else {
-        children.push(newBlock);
-      }
-      return { ...block, children };
-    }
-    if (block.children.length > 0) {
-      return {
-        ...block,
-        children: addBlockToTree(block.children, parentId, newBlock, index),
-      };
-    }
-    return block;
-  });
-};
+// Use findBlockByIdUtil from coordinate-utils instead
+const findBlockById = findBlockByIdUtil;
 
 export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
   let history: HistoryState = {
@@ -344,11 +285,26 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     addBlock: (block, parentId, index) => {
       pushHistory();
       const state = get();
+      
+      // Validate nesting level
+      if (parentId) {
+        const parent = findBlockById(state.blocks, parentId);
+        if (!parent?.canContainChildren) {
+          toast.error('Cannot add child to this block type');
+          return;
+        }
+        
+        const path = getBlockPath(state.blocks, parentId);
+        if (path.length >= block.maxNestingLevel) {
+          toast.error(`Maximum nesting level reached (${block.maxNestingLevel})`);
+          return;
+        }
+      }
+      
       const newBlock = { ...block, parentId: parentId || null };
       
       // Set initial absolute coordinates
       if (parentId) {
-        // Child block - calculate absolute position from parent
         const parentLayout = state.visualLayout[parentId];
         if (parentLayout) {
           const relativeX = parseInt(String(newBlock.settings.x)) || 10;
@@ -368,110 +324,110 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         }
       }
       
+      // Simply push to flat array
       set(state => ({
-        blocks: addBlockToTree(state.blocks, parentId || null, newBlock, index),
+        blocks: [...state.blocks, newBlock],
       }));
+      
       get().recalculateZIndexes();
     },
     
     removeBlock: (id) => {
       pushHistory();
-      set(state => ({
-        blocks: removeBlockFromTree(state.blocks, id),
-        selectedBlockIds: state.selectedBlockIds.filter(bid => bid !== id),
-      }));
+      const state = get();
+      
+      // Get all descendants to remove
+      const toRemove = [id, ...getAllDescendants(state.blocks, id).map(b => b.id)];
+      
+      // Remove from blocks array
+      const newBlocks = state.blocks.filter(block => !toRemove.includes(block.id));
+      
+      // Remove from visualLayout
+      const newLayout = { ...state.visualLayout };
+      toRemove.forEach(blockId => delete newLayout[blockId]);
+      
+      set({
+        blocks: newBlocks,
+        visualLayout: newLayout,
+        selectedBlockIds: state.selectedBlockIds.filter(bid => !toRemove.includes(bid)),
+      });
+      
       get().recalculateZIndexes();
     },
     
     removeSelectedBlocks: () => {
       pushHistory();
-      let blocks = get().blocks;
-      get().selectedBlockIds.forEach(id => {
-        blocks = removeBlockFromTree(blocks, id);
+      const state = get();
+      const toRemove = new Set<string>();
+      
+      state.selectedBlockIds.forEach(id => {
+        toRemove.add(id);
+        getAllDescendants(state.blocks, id).forEach(b => toRemove.add(b.id));
       });
-      set({ blocks, selectedBlockIds: [] });
+      
+      const newBlocks = state.blocks.filter(block => !toRemove.has(block.id));
+      set({ blocks: newBlocks, selectedBlockIds: [] });
     },
     
     updateBlock: (id, updates) => {
       pushHistory();
       set(state => ({
-        blocks: updateBlockInTree(state.blocks, id, updates),
+        blocks: state.blocks.map(block => 
+          block.id === id ? { ...block, ...updates } : block
+        ),
       }));
     },
     
     moveBlock: (draggedId, targetId, index) => {
       pushHistory();
-      const { blocks } = get();
-      const draggedBlock = findBlockById(blocks, draggedId);
-      if (!draggedBlock) return;
+      const state = get();
       
-      // Validate: Cannot move block into itself
-      if (draggedId === targetId) {
-        toast.error('Cannot move block into itself');
+      // Prevent moving into self or descendants
+      if (targetId && isAncestor(state.blocks, targetId, draggedId)) {
+        toast.error('Cannot move block into its own child');
         return;
       }
       
-      // Validate: Cannot move block into its descendant
-      const isDescendant = (possibleDescendantId: string | null): boolean => {
-        if (!possibleDescendantId) return false;
-        
-        const checkChildren = (children: BlockInstance[]): boolean => {
-          return children.some(child => 
-            child.id === possibleDescendantId || checkChildren(child.children)
-          );
-        };
-        
-        return checkChildren(draggedBlock.children);
-      };
+      // Update parentId
+      set(state => ({
+        blocks: state.blocks.map(block => 
+          block.id === draggedId 
+            ? { ...block, parentId: targetId || null }
+            : block
+        ),
+      }));
       
-      if (isDescendant(targetId)) {
-        toast.error('Cannot move block into its descendant');
-        return;
+      // Recalculate absolute coordinates if parent changed
+      if (targetId) {
+        const parentLayout = state.visualLayout[targetId];
+        if (parentLayout) {
+          const currentLayout = state.visualLayout[draggedId];
+          if (currentLayout) {
+            state.updateVisualLayout(draggedId, {
+              x: parentLayout.x + (currentLayout.relativeX || 10),
+              y: parentLayout.y + (currentLayout.relativeY || 10),
+            });
+          }
+        }
       }
-      
-      // Remove from old position
-      let newBlocks = removeBlockFromTree(blocks, draggedId);
-      // Add to new position
-      newBlocks = addBlockToTree(newBlocks, targetId, draggedBlock, index);
-      
-      set({ blocks: newBlocks });
-      get().recalculateZIndexes();
     },
     
     extractFromParent: (blockId) => {
       pushHistory();
-      const { blocks } = get();
-      const block = findBlockById(blocks, blockId);
-      if (!block) return;
-      
-      // Find parent
-      const findParent = (blocks: BlockInstance[], targetId: string): { parent: BlockInstance | null, index: number } | null => {
-        for (let i = 0; i < blocks.length; i++) {
-          const childIndex = blocks[i].children.findIndex(c => c.id === targetId);
-          if (childIndex !== -1) {
-            return { parent: blocks[i], index: childIndex };
-          }
-          if (blocks[i].children.length > 0) {
-            const result = findParent(blocks[i].children, targetId);
-            if (result) return result;
-          }
-        }
-        return null;
-      };
-      
-      const parentInfo = findParent(blocks, blockId);
-      if (!parentInfo || !parentInfo.parent) {
+      const state = get();
+      const block = findBlockById(state.blocks, blockId);
+      if (!block || !block.parentId) {
         toast.info('Block is already at root level');
         return;
       }
       
-      // Remove from parent
-      let newBlocks = removeBlockFromTree(blocks, blockId);
-      // Add to root level
-      newBlocks = [...newBlocks, block];
+      // Simply remove parentId
+      set(state => ({
+        blocks: state.blocks.map(b => 
+          b.id === blockId ? { ...b, parentId: null } : b
+        ),
+      }));
       
-      set({ blocks: newBlocks });
-      get().recalculateZIndexes();
       toast.success('Block extracted from parent');
     },
     
@@ -518,35 +474,39 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     },
     
     duplicateBlock: (id) => {
-      pushHistory();
-      const blocks = get().blocks;
-      const block = findBlockById(blocks, id);
+      const state = get();
+      const block = findBlockById(state.blocks, id);
       if (!block) return;
-
-      const duplicated: BlockInstance = {
-        ...JSON.parse(JSON.stringify(block)),
-        id: crypto.randomUUID(),
+      
+      const newBlock = {
+        ...block,
+        id: `${block.type.toLowerCase()}-${Date.now()}`,
         name: `${block.name}_copy`,
       };
-
-      // Find parent and index
-      const findParentAndIndex = (blocks: BlockInstance[], targetId: string, parentId: string | null = null): { parentId: string | null; index: number } | null => {
-        for (let i = 0; i < blocks.length; i++) {
-          if (blocks[i].id === targetId) {
-            return { parentId, index: i };
+      
+      // Add to same parent
+      get().addBlock(newBlock, block.parentId || undefined);
+      
+      // Duplicate all children recursively
+      const children = getChildren(state.blocks, id);
+      const duplicateChildren = (parentId: string, children: BlockInstance[]) => {
+        children.forEach(child => {
+          const duplicatedChild = {
+            ...child,
+            id: `${child.type.toLowerCase()}-${Date.now()}-${Math.random()}`,
+            parentId: parentId,
+          };
+          get().addBlock(duplicatedChild, parentId);
+          
+          // Recursively duplicate this child's children
+          const grandchildren = getChildren(state.blocks, child.id);
+          if (grandchildren.length > 0) {
+            duplicateChildren(duplicatedChild.id, grandchildren);
           }
-          if (blocks[i].children.length > 0) {
-            const result = findParentAndIndex(blocks[i].children, targetId, blocks[i].id);
-            if (result) return result;
-          }
-        }
-        return null;
+        });
       };
-
-      const location = findParentAndIndex(blocks, id);
-      if (location) {
-        get().addBlock(duplicated, location.parentId || undefined, location.index + 1);
-      }
+      
+      duplicateChildren(newBlock.id, children);
     },
     
     groupBlocks: (blockIds) => {
@@ -556,22 +516,9 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       }
       
       pushHistory();
-      const blocks = get().blocks;
-      const blocksToGroup: BlockInstance[] = [];
-      
-      // Find all blocks to group
-      blockIds.forEach(id => {
-        const block = findBlockById(blocks, id);
-        if (block) blocksToGroup.push(block);
-      });
-      
-      if (blocksToGroup.length < 2) {
-        toast.error('Could not find blocks to group');
-        return;
-      }
+      const state = get();
       
       // Create group block
-      const existingNames = blockIds.map(id => findBlockById(blocks, id)?.name || '');
       const groupBlock: BlockInstance = {
         id: `group-${Date.now()}`,
         type: 'GROUP',
@@ -580,38 +527,47 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
           display: 'block',
           background: { type: 'transparent' },
         },
-        children: JSON.parse(JSON.stringify(blocksToGroup)),
         canContainChildren: true,
         maxNestingLevel: 5,
       };
       
-      // Remove grouped blocks and add group
-      let newBlocks = blocks;
-      blockIds.forEach(id => {
-        newBlocks = removeBlockFromTree(newBlocks, id);
-      });
-      newBlocks = [...newBlocks, groupBlock];
+      // Add group first
+      get().addBlock(groupBlock);
       
-      set({ blocks: newBlocks, selectedBlockIds: [groupBlock.id] });
+      // Update parentId of all selected blocks to point to group
+      set(state => ({
+        blocks: state.blocks.map(block => 
+          blockIds.includes(block.id) 
+            ? { ...block, parentId: groupBlock.id }
+            : block
+        ),
+        selectedBlockIds: [groupBlock.id],
+      }));
+      
       toast.success('Blocks grouped');
     },
     
     ungroupBlock: (groupId) => {
-      const block = findBlockById(get().blocks, groupId);
+      const state = get();
+      const block = findBlockById(state.blocks, groupId);
       if (!block || block.type !== 'GROUP') {
         toast.error('Not a group block');
         return;
       }
       
       pushHistory();
-      let newBlocks = removeBlockFromTree(get().blocks, groupId);
       
-      // Add children to root
-      block.children.forEach(child => {
-        newBlocks = [...newBlocks, child];
-      });
+      // Get all children
+      const children = getChildren(state.blocks, groupId);
       
-      set({ blocks: newBlocks, selectedBlockIds: [] });
+      // Remove group and set children's parentId to null
+      set(state => ({
+        blocks: state.blocks
+          .filter(b => b.id !== groupId)
+          .map(b => children.some(c => c.id === b.id) ? { ...b, parentId: null } : b),
+        selectedBlockIds: [],
+      }));
+      
       toast.success('Group ungrouped');
     },
     
@@ -1190,25 +1146,23 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const maxY = Math.max(marqueeStart.y, marqueeEnd.y);
       
       // Find blocks that intersect with marquee
-      const collectBlockIds = (blocks: BlockInstance[]): string[] => {
-        return blocks.flatMap(block => {
-          const layout = visualLayout[block.id];
-          if (!layout) return [];
-          
-          // AABB collision detection
-          const blockLeft = layout.x;
-          const blockRight = layout.x + layout.width;
-          const blockTop = layout.y;
-          const blockBottom = layout.y + layout.height;
-          
-          const intersects = !(blockRight < minX || blockLeft > maxX || blockBottom < minY || blockTop > maxY);
-          
-          const result = intersects ? [block.id] : [];
-          return [...result, ...collectBlockIds(block.children)];
-        });
-      };
-      
-      const intersectingIds = collectBlockIds(blocks);
+      const intersectingIds: string[] = [];
+      blocks.forEach(block => {
+        const layout = visualLayout[block.id];
+        if (!layout) return;
+        
+        // AABB collision detection
+        const blockLeft = layout.x;
+        const blockRight = layout.x + layout.width;
+        const blockTop = layout.y;
+        const blockBottom = layout.y + layout.height;
+        
+        const intersects = !(blockRight < minX || blockLeft > maxX || blockBottom < minY || blockTop > maxY);
+        
+        if (intersects) {
+          intersectingIds.push(block.id);
+        }
+      });
       
       // Update selection
       if (isAdditive) {
@@ -1230,34 +1184,19 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     // Multi-selection enhancement
     selectAll: () => {
-      const collectAllIds = (blocks: BlockInstance[]): string[] => {
-        return blocks.flatMap(block => [block.id, ...collectAllIds(block.children)]);
-      };
-      
-      const allIds = collectAllIds(get().blocks);
+      const allIds = get().blocks.map(block => block.id);
       set({ selectedBlockIds: allIds });
       toast.success(`Selected ${allIds.length} blocks`);
     },
     
     selectByType: (type) => {
-      const collectByType = (blocks: BlockInstance[]): string[] => {
-        return blocks.flatMap(block => {
-          const result = block.type === type ? [block.id] : [];
-          return [...result, ...collectByType(block.children)];
-        });
-      };
-      
-      const ids = collectByType(get().blocks);
+      const ids = get().blocks.filter(block => block.type === type).map(block => block.id);
       set({ selectedBlockIds: ids });
       toast.success(`Selected ${ids.length} ${type} blocks`);
     },
     
     invertSelection: () => {
-      const collectAllIds = (blocks: BlockInstance[]): string[] => {
-        return blocks.flatMap(block => [block.id, ...collectAllIds(block.children)]);
-      };
-      
-      const allIds = collectAllIds(get().blocks);
+      const allIds = get().blocks.map(block => block.id);
       const currentSelection = new Set(get().selectedBlockIds);
       const inverted = allIds.filter(id => !currentSelection.has(id));
       
@@ -1395,24 +1334,22 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const { blocks, visualLayout } = get();
       const newLayout = { ...visualLayout };
       
-      // Рекурсивная функция для присвоения z-index с учетом глубины вложенности
-      // Более вложенные элементы получают больший z-index
-      const assignZIndex = (blocks: BlockInstance[], depth: number = 0) => {
-        blocks.forEach((block, index) => {
-          // z-index = глубина_вложенности * 1000 + позиция_в_массиве
-          // Это гарантирует, что дочерние элементы всегда выше родительских
-          const zIndex = depth * 1000 + index;
-          if (newLayout[block.id]) {
-            newLayout[block.id] = { ...newLayout[block.id], zIndex };
-          }
-          // Рекурсивно обрабатываем дочерние элементы с увеличенной глубиной
-          if (block.children.length > 0) {
-            assignZIndex(block.children, depth + 1);
-          }
-        });
+      // Calculate depth for each block
+      const getDepth = (blockId: string): number => {
+        const block = findBlockById(blocks, blockId);
+        if (!block || !block.parentId) return 0;
+        return 1 + getDepth(block.parentId);
       };
       
-      assignZIndex(blocks, 0);
+      // Assign z-index based on depth
+      blocks.forEach((block, index) => {
+        const depth = getDepth(block.id);
+        const zIndex = depth * 1000 + index;
+        if (newLayout[block.id]) {
+          newLayout[block.id] = { ...newLayout[block.id], zIndex };
+        }
+      });
+      
       set({ visualLayout: newLayout });
     },
     

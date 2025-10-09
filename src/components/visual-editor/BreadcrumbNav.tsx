@@ -1,7 +1,7 @@
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { BlockInstance } from '@/types/visual-editor';
 import { Button } from '@/components/ui/button';
 import { Home, ChevronRight } from 'lucide-react';
+import { getBlockPath } from '@/lib/visual-editor/coordinate-utils';
 
 export function BreadcrumbNav() {
   const { blocks, selectedBlockIds, selectBlock } = useVisualEditorStore();
@@ -10,20 +10,7 @@ export function BreadcrumbNav() {
 
   if (!selectedBlockId) return null;
 
-  const getPath = (
-    blockId: string,
-    tree: BlockInstance[],
-    path: BlockInstance[] = []
-  ): BlockInstance[] => {
-    for (const block of tree) {
-      if (block.id === blockId) return [...path, block];
-      const found = getPath(blockId, block.children, [...path, block]);
-      if (found.length > 0) return found;
-    }
-    return [];
-  };
-
-  const path = getPath(selectedBlockId, blocks);
+  const path = getBlockPath(blocks, selectedBlockId);
 
   if (path.length === 0) return null;
 

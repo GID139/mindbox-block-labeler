@@ -19,7 +19,6 @@ const createTextBlock = (text: string, existingNames: string[]): BlockInstance =
     color: '#000000',
     fontWeight: 'normal',
   },
-  children: [],
   canContainChildren: false,
   maxNestingLevel: 0,
 });
@@ -34,7 +33,6 @@ const createImageBlock = (url: string, existingNames: string[]): BlockInstance =
     width: '150',
     height: '150',
   },
-  children: [],
   canContainChildren: false,
   maxNestingLevel: 0,
 });
@@ -50,7 +48,6 @@ const createButtonBlock = (text: string, existingNames: string[]): BlockInstance
     textColor: '#FFFFFF',
     borderRadius: '4',
   },
-  children: [],
   canContainChildren: false,
   maxNestingLevel: 0,
 });

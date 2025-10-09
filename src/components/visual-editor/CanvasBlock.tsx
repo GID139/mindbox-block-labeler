@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { TableCellRenderer } from './TableCellRenderer';
 import { DropZoneIndicator } from './DropZoneIndicator';
 import { BlockContextMenu } from './BlockContextMenu';
+import { getChildren } from '@/lib/visual-editor/coordinate-utils';
 
 interface CanvasBlockProps {
   block: BlockInstance;
@@ -17,7 +18,7 @@ interface CanvasBlockProps {
 }
 
 export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockProps) {
-  const { selectedBlockIds, selectBlock, removeBlock, updateSetting } = useVisualEditorStore();
+  const { selectedBlockIds, selectBlock, removeBlock, updateSetting, blocks } = useVisualEditorStore();
   const isSelected = selectedBlockIds.includes(block.id);
   const [isEditing, setIsEditing] = useState(false);
   const editableRef = useRef<HTMLDivElement>(null);
@@ -38,7 +39,7 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
     data: {
       type: 'canvas-drop',
       parentId: block.canContainChildren ? block.id : parentId,
-      index: block.canContainChildren ? block.children.length : index + 1,
+      index: block.canContainChildren ? getChildren(blocks, block.id).length : index + 1,
     },
     disabled: !block.canContainChildren || level >= block.maxNestingLevel,
   });
@@ -89,7 +90,8 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
       return null;
     }
     // For blocks with children, render them separately
-    if (block.children && block.children.length > 0 && block.type !== 'TEXT' && block.type !== 'BUTTON') {
+    const children = getChildren(blocks, block.id);
+    if (children.length > 0 && block.type !== 'TEXT' && block.type !== 'BUTTON') {
       return null; // Will render children as React components
     }
     return template.generateHTML(block);
@@ -199,23 +201,26 @@ export function CanvasBlock({ block, index, parentId, level = 0 }: CanvasBlockPr
               />
             ) : (
               <div className="space-y-2">
-                {block.children && block.children.length > 0 ? (
-                  block.children.map((child, childIndex) => (
-                    <CanvasBlock
-                      key={child.id}
-                      block={child}
-                      index={childIndex}
-                      parentId={block.id}
-                      level={level + 1}
-                    />
-                  ))
-                ) : (
-                  block.canContainChildren && (
-                    <div className="text-center text-muted-foreground text-sm py-4">
-                      Drop blocks here
-                    </div>
-                  )
-                )}
+                {(() => {
+                  const children = getChildren(blocks, block.id);
+                  return children.length > 0 ? (
+                    children.map((child, childIndex) => (
+                      <CanvasBlock
+                        key={child.id}
+                        block={child}
+                        index={childIndex}
+                        parentId={block.id}
+                        level={level + 1}
+                      />
+                    ))
+                  ) : (
+                    block.canContainChildren && (
+                      <div className="text-center text-muted-foreground text-sm py-4">
+                        Drop blocks here
+                      </div>
+                    )
+                  );
+                })()}
               </div>
             )}
           </div>

@@ -54,7 +54,6 @@ export function VisualEditorTab() {
           type: template.type,
           name: generateBlockName(template.type, existingNames),
           settings: { ...template.defaultSettings },
-          children: [],
           canContainChildren: template.canContainChildren,
           maxNestingLevel: template.maxNestingLevel,
         };
@@ -85,7 +84,6 @@ export function VisualEditorTab() {
           type: template.type,
           name: generateBlockName(template.type, existingNames),
           settings: { ...template.defaultSettings },
-          children: [],
           canContainChildren: template.canContainChildren,
           maxNestingLevel: template.maxNestingLevel,
         };

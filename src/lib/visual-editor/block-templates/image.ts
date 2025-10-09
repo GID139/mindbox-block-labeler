@@ -27,15 +27,9 @@ export const imageTemplate: BlockTemplate = {
     
     const imgTag = `<img src="${url}" alt="${alt}" width="${width}" height="${height}" style="display: block; max-width: 100%;" />`;
     
-    let content = imgTag;
+    const content = imgTag;
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      content += block.children.map(child => {
-        const childTemplate = getTemplate(child.type);
-        return childTemplate.generateHTML(child);
-      }).join('');
-    }
+    // Children will be injected by code-generator
     
     // Build styles for outer div
     const styles: string[] = [`text-align: ${align}`];
@@ -77,13 +71,7 @@ export const imageTemplate: BlockTemplate = {
       }
     );
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        params.push(...childTemplate.generateJSON(child));
-      });
-    }
+    // Children will be handled by code-generator
     
     return params;
   },

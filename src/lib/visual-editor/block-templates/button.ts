@@ -64,15 +64,9 @@ export const buttonTemplate: BlockTemplate = {
       cursor: pointer;
     `.replace(/\s+/g, ' ').trim();
     
-    let content = text || 'Click me';
+    const content = text || 'Click me';
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      content += block.children.map(child => {
-        const childTemplate = getTemplate(child.type);
-        return childTemplate.generateHTML(child);
-      }).join('');
-    }
+    // Children will be injected by code-generator
     
     return `<a href="${href}" style="${style}">${content}</a>`;
   },
@@ -108,13 +102,7 @@ export const buttonTemplate: BlockTemplate = {
       }
     );
     
-    // Process children recursively
-    if (block.children && block.children.length > 0) {
-      block.children.forEach(child => {
-        const childTemplate = getTemplate(child.type);
-        params.push(...childTemplate.generateJSON(child));
-      });
-    }
+    // Children will be handled by code-generator
     
     return params;
   },

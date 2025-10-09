@@ -14,17 +14,7 @@ import { buttonPresets, textPresets } from '@/lib/visual-editor/presets';
 import { BackgroundSetting, BlockInstance } from '@/types/visual-editor';
 import { cn } from '@/lib/utils';
 import React from 'react';
-
-function findBlockById(blocks: any[], id: string): any {
-  for (const block of blocks) {
-    if (block.id === id) return block;
-    if (block.children?.length > 0) {
-      const found = findBlockById(block.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
+import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
 
 export function SettingsPanel() {
   const { 
@@ -82,7 +72,6 @@ export function SettingsPanel() {
       type,
       name: `${type} ${Date.now()}`,
       settings: { ...template.defaultSettings },
-      children: [],
       canContainChildren: false,
       maxNestingLevel: 0,
     };
@@ -1059,14 +1048,17 @@ export function SettingsPanel() {
         )}
 
         {/* Children Info */}
-        {currentBlock.children && currentBlock.children.length > 0 && (
-          <Card className="p-3">
-            <Label className="text-xs text-muted-foreground">Children</Label>
-            <p className="text-sm mt-1">
-              {currentBlock.children.length} child block{currentBlock.children.length !== 1 ? 's' : ''}
-            </p>
-          </Card>
-        )}
+        {(() => {
+          const childrenCount = blocks.filter(b => b.parentId === currentBlock.id).length;
+          return childrenCount > 0 && (
+            <Card className="p-3">
+              <Label className="text-xs text-muted-foreground">Children</Label>
+              <p className="text-sm mt-1">
+                {childrenCount} child block{childrenCount !== 1 ? 's' : ''}
+              </p>
+            </Card>
+          );
+        })()}
       </div>
     </div>
   );

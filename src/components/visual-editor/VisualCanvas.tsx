@@ -61,7 +61,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
   useEffect(() => {
     const template = getTemplate(block.type);
     setPreviewHTML(template.generateHTML(block));
-  }, [block.settings, block.type, block.children]);
+  }, [block.settings, block.type]);
 
   // Автофокус и выделение текста при входе в режим редактирования
   useEffect(() => {
@@ -444,7 +444,6 @@ export function VisualCanvas() {
         type: drawingTool.toUpperCase() as BlockType,
         name: newBlockName,
         settings: { ...template.defaultSettings },
-        children: [],
         canContainChildren: template.canContainChildren,
         maxNestingLevel: template.maxNestingLevel,
       };
@@ -510,7 +509,6 @@ export function VisualCanvas() {
               width: '300px',
               height: 'auto',
             },
-            children: [],
             canContainChildren: false,
             maxNestingLevel: 0,
           };
