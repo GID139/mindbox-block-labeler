@@ -1289,14 +1289,14 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const { blocks, visualLayout } = get();
       
       if (blocks.length === 0) {
-        set({ zoom: 100 });
+        set({ zoom: 1 });
         return;
       }
       
       // Calculate bounding box of all blocks
       const positions = Object.values(visualLayout);
       if (positions.length === 0) {
-        set({ zoom: 100 });
+        set({ zoom: 1 });
         return;
       }
       
@@ -1308,15 +1308,15 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const contentWidth = maxX - minX;
       const contentHeight = maxY - minY;
       
-      // Assume canvas size (you may want to make this dynamic)
+      // Assume canvas size
       const canvasWidth = 1200;
-      const canvasHeight = 800;
+      const canvasHeight = 1600;
       
-      const zoomX = (canvasWidth / contentWidth) * 100;
-      const zoomY = (canvasHeight / contentHeight) * 100;
+      const zoomX = canvasWidth / contentWidth;
+      const zoomY = canvasHeight / contentHeight;
       
-      const newZoom = Math.min(zoomX, zoomY, 200); // Max 200%
-      set({ zoom: Math.max(10, newZoom) }); // Min 10%
+      const newZoom = Math.min(zoomX, zoomY, 2); // Max 200%
+      set({ zoom: Math.max(0.1, newZoom) }); // Min 10%
       toast.success('Zoomed to fit');
     },
     
@@ -1346,18 +1346,18 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const contentHeight = maxY - minY;
       
       const canvasWidth = 1200;
-      const canvasHeight = 800;
+      const canvasHeight = 1600;
       
-      const zoomX = (canvasWidth / contentWidth) * 100;
-      const zoomY = (canvasHeight / contentHeight) * 100;
+      const zoomX = canvasWidth / contentWidth;
+      const zoomY = canvasHeight / contentHeight;
       
-      const newZoom = Math.min(zoomX, zoomY, 200);
-      set({ zoom: Math.max(10, newZoom) });
+      const newZoom = Math.min(zoomX, zoomY, 2);
+      set({ zoom: Math.max(0.1, newZoom) });
       toast.success('Zoomed to selection');
     },
     
     resetZoom: () => {
-      set({ zoom: 100 });
+      set({ zoom: 1 });
       toast.success('Zoom reset');
     },
     

@@ -330,7 +330,7 @@ export function VisualCanvas() {
   const deviceWidths = {
     mobile: 375,
     tablet: 768,
-    desktop: 600,
+    desktop: 1200,
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -339,8 +339,8 @@ export function VisualCanvas() {
     
     if (drawingTool === 'select') {
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / (zoom / 100);
-      const y = (e.clientY - rect.top) / (zoom / 100);
+      const x = (e.clientX - rect.left) / zoom;
+      const y = (e.clientY - rect.top) / zoom;
       
       // Clear selection if not holding Shift
       if (!e.shiftKey) {
@@ -355,8 +355,8 @@ export function VisualCanvas() {
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isMarqueeSelecting && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / (zoom / 100);
-      const y = (e.clientY - rect.top) / (zoom / 100);
+      const x = (e.clientX - rect.left) / zoom;
+      const y = (e.clientY - rect.top) / zoom;
       updateMarqueeSelection(x, y);
     }
   };
@@ -373,8 +373,8 @@ export function VisualCanvas() {
     
     if (drawingTool !== 'select') {
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / (zoom / 100);
-      const y = (e.clientY - rect.top) / (zoom / 100);
+      const x = (e.clientX - rect.left) / zoom;
+      const y = (e.clientY - rect.top) / zoom;
       
       const existingNames = getAllBlockNames(blocks);
       const newBlockName = generateBlockName(drawingTool.toUpperCase() as BlockType, existingNames);
@@ -436,8 +436,8 @@ export function VisualCanvas() {
         const dataUrl = await importImage(file);
         const rect = canvasRef.current?.getBoundingClientRect();
         if (rect) {
-          const x = (e.clientX - rect.left) / (zoom / 100);
-          const y = (e.clientY - rect.top) / (zoom / 100);
+          const x = (e.clientX - rect.left) / zoom;
+          const y = (e.clientY - rect.top) / zoom;
           
           const newBlock: BlockInstance = {
             id: `image-${Date.now()}`,
@@ -492,7 +492,7 @@ export function VisualCanvas() {
         style={{
           width: `${canvasWidth}px`,
           minHeight: `${canvasHeight}px`,
-          transform: `scale(${zoom / 100})`,
+          transform: `scale(${zoom})`,
           transformOrigin: 'top center',
           backgroundImage: showGrid ? `
             linear-gradient(to right, #e5e7eb 1px, transparent 1px),
