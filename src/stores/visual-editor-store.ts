@@ -183,6 +183,7 @@ interface VisualEditorState {
   updateCellSetting: (tableId: string, cellKey: string, settingKey: string, value: any) => void;
   selectTableCell: (tableId: string, cellKey: string) => void;
   clearTableCellSelection: () => void;
+  removeBlockFromTableCell: (tableId: string, cellKey: string, blockId: string) => void;
   
   // Preview
   togglePreviewMode: () => void;
@@ -883,6 +884,24 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     clearTableCellSelection: () => {
       set({ selectedTableCell: null });
+    },
+    
+    removeBlockFromTableCell: (tableId, cellKey, blockId) => {
+      const table = findBlockById(get().blocks, tableId);
+      if (!table || table.type !== 'TABLE') return;
+      
+      const cells = { ...table.settings.cells };
+      const cell = cells[cellKey];
+      if (!cell) return;
+      
+      cells[cellKey] = {
+        ...cell,
+        children: cell.children.filter((c: BlockInstance) => c.id !== blockId),
+      };
+      
+      get().updateBlock(tableId, {
+        settings: { ...table.settings, cells },
+      });
     },
     
     togglePreviewMode: () => {

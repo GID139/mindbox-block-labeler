@@ -15,7 +15,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
   const { visualLayout, updateVisualLayout, selectBlock } = useVisualEditorStore();
   const [previewHTML, setPreviewHTML] = useState('');
 
-  const layout = visualLayout[block.id] || { x: 0, y: 0, width: 200, height: 100, zIndex: 0 };
+  const layout = visualLayout[block.id];
 
   useEffect(() => {
     const template = getTemplate(block.type);
@@ -23,17 +23,26 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
   }, [block.settings, block.type, block.children]);
 
   useEffect(() => {
-    if (targetRef.current && !visualLayout[block.id]) {
-      // Initialize layout for nested blocks with default position
+    if (targetRef.current && parentRef && !visualLayout[block.id]) {
+      // Initialize layout for nested blocks with default position and size
+      const defaultSize = getTemplate(block.type).defaultSettings;
+      const { width, height } = {
+        width: parseInt(String(defaultSize.width || 200)) || 200,
+        height: parseInt(String(defaultSize.height || 100)) || 100,
+      };
+      
       updateVisualLayout(block.id, {
-        x: 0,
-        y: 0,
-        width: layout.width,
-        height: layout.height,
+        x: 10,
+        y: 10,
+        width,
+        height,
         zIndex: 0,
       });
     }
-  }, []);
+  }, [parentRef, visualLayout[block.id]]);
+
+  // Don't render if layout not initialized
+  if (!layout) return null;
 
   return (
     <>
@@ -43,7 +52,7 @@ export function NestedBlockMoveable({ block, parentRef, isSelected }: NestedBloc
           e.stopPropagation();
           selectBlock(block.id);
         }}
-        className={`absolute cursor-pointer border-2 overflow-hidden ${
+        className={`absolute cursor-pointer border-2 overflow-hidden pointer-events-auto ${
           isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
         }`}
         style={{

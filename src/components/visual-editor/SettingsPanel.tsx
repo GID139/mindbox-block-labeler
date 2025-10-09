@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { buttonPresets, textPresets } from '@/lib/visual-editor/presets';
 import { BackgroundSetting, BlockInstance } from '@/types/visual-editor';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 function findBlockById(blocks: any[], id: string): any {
   for (const block of blocks) {
@@ -26,7 +27,22 @@ function findBlockById(blocks: any[], id: string): any {
 }
 
 export function SettingsPanel() {
-  const { blocks, selectedBlockIds, updateBlock, visualLayout, updateVisualLayout, selectedTableCell, selectBlock } = useVisualEditorStore();
+  const { 
+    blocks, 
+    selectedBlockIds, 
+    updateBlock, 
+    visualLayout, 
+    updateVisualLayout, 
+    selectedTableCell, 
+    selectBlock, 
+    selectTableCell,
+    clearTableCellSelection,
+    addBlockToTableCell,
+    removeBlockFromTableCell,
+    updateCellSetting,
+  } = useVisualEditorStore();
+  
+  const [settingsContext, setSettingsContext] = React.useState<Array<{ id: string; name: string; type: string }>>([]);
   
   const selectedBlockId = selectedBlockIds[0];
   
@@ -35,9 +51,46 @@ export function SettingsPanel() {
   const block = findBlockById(blocks, selectedBlockId);
   if (!block) return null;
 
+  // Initialize context stack if empty
+  React.useEffect(() => {
+    if (settingsContext.length === 0) {
+      setSettingsContext([{ id: block.id, name: block.name, type: block.type }]);
+    }
+  }, [block.id]);
+
+  // Get the current block to display settings for (either main block or nested block)
+  const currentContextId = settingsContext[settingsContext.length - 1]?.id || block.id;
+  const currentBlock = findBlockById(blocks, currentContextId) || block;
+
+  const handleBackNavigation = () => {
+    if (settingsContext.length > 1) {
+      const newContext = settingsContext.slice(0, -1);
+      setSettingsContext(newContext);
+      selectBlock(newContext[newContext.length - 1].id);
+    }
+  };
+
+  const handleNestedBlockClick = (nestedBlock: BlockInstance) => {
+    setSettingsContext([...settingsContext, { id: nestedBlock.id, name: nestedBlock.name, type: nestedBlock.type }]);
+    selectBlock(nestedBlock.id);
+  };
+
+  const createNewBlock = (type: 'TEXT' | 'BUTTON' | 'IMAGE'): BlockInstance => {
+    const template = getTemplate(type);
+    return {
+      id: `${type.toLowerCase()}-${Date.now()}`,
+      type,
+      name: `${type} ${Date.now()}`,
+      settings: { ...template.defaultSettings },
+      children: [],
+      canContainChildren: false,
+      maxNestingLevel: 0,
+    };
+  };
+
   const updateSettings = (newSettings: any) => {
-    updateBlock(block.id, { 
-      settings: { ...block.settings, ...newSettings } 
+    updateBlock(currentBlock.id, { 
+      settings: { ...currentBlock.settings, ...newSettings } 
     });
   };
 
@@ -45,10 +98,13 @@ export function SettingsPanel() {
     updateSettings(preset);
   };
 
-  const layout = visualLayout[block.id];
+  const layout = visualLayout[currentBlock.id];
 
   const renderSettings = () => {
-    switch (block.type) {
+    // Alias for settings access - use currentBlock for context-aware settings
+    const settingsSource = currentBlock;
+    
+    switch (currentBlock.type) {
       case 'TEXT':
         return (
           <div className="space-y-4">
@@ -641,8 +697,8 @@ export function SettingsPanel() {
         );
 
       case 'TABLE':
-        const { selectedTableCell, selectTableCell, clearTableCellSelection, updateCellSetting } = useVisualEditorStore.getState();
-        const tableSettings = block.settings as any;
+        const tableBlock = currentBlock; // Use currentBlock for TABLE case
+        const tableSettings = tableBlock.settings as any;
         const rows = tableSettings.rows || 2;
         const cols = tableSettings.cols || 2;
         
@@ -660,7 +716,7 @@ export function SettingsPanel() {
                       className="h-9 w-9"
                       onClick={() => {
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'rows', -1);
+                        updateTableSize(tableBlock.id, 'rows', -1);
                       }}
                     >
                       -
@@ -671,7 +727,7 @@ export function SettingsPanel() {
                       onChange={(e) => {
                         const newRows = parseInt(e.target.value) || 2;
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'rows', newRows - rows);
+                        updateTableSize(tableBlock.id, 'rows', newRows - rows);
                       }}
                       className="h-9 text-center"
                       min={1}
@@ -682,7 +738,7 @@ export function SettingsPanel() {
                       className="h-9 w-9"
                       onClick={() => {
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'rows', 1);
+                        updateTableSize(tableBlock.id, 'rows', 1);
                       }}
                     >
                       +
@@ -699,7 +755,7 @@ export function SettingsPanel() {
                       className="h-9 w-9"
                       onClick={() => {
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'cols', -1);
+                        updateTableSize(tableBlock.id, 'cols', -1);
                       }}
                     >
                       -
@@ -710,7 +766,7 @@ export function SettingsPanel() {
                       onChange={(e) => {
                         const newCols = parseInt(e.target.value) || 2;
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'cols', newCols - cols);
+                        updateTableSize(tableBlock.id, 'cols', newCols - cols);
                       }}
                       className="h-9 text-center"
                       min={1}
@@ -721,7 +777,7 @@ export function SettingsPanel() {
                       className="h-9 w-9"
                       onClick={() => {
                         const { updateTableSize } = useVisualEditorStore.getState();
-                        updateTableSize(block.id, 'cols', 1);
+                        updateTableSize(tableBlock.id, 'cols', 1);
                       }}
                     >
                       +
@@ -740,14 +796,14 @@ export function SettingsPanel() {
                     <div key={rowIdx} className="flex gap-1">
                       {Array.from({ length: cols }, (_, colIdx) => {
                         const cellKey = `${rowIdx},${colIdx}`;
-                        const isSelected = selectedTableCell?.tableId === block.id && selectedTableCell?.cellKey === cellKey;
+                        const isSelected = selectedTableCell?.tableId === tableBlock.id && selectedTableCell?.cellKey === cellKey;
                         return (
                           <Button
                             key={cellKey}
                             variant={isSelected ? 'default' : 'outline'}
                             size="sm"
                             className="flex-1 h-10 text-xs"
-                            onClick={() => selectTableCell(block.id, cellKey)}
+                            onClick={() => selectTableCell(tableBlock.id, cellKey)}
                           >
                             {String.fromCharCode(65 + rowIdx)}{colIdx + 1}
                           </Button>
@@ -760,7 +816,7 @@ export function SettingsPanel() {
             </div>
 
             {/* Selected Cell Settings */}
-            {selectedTableCell?.tableId === block.id && (
+            {selectedTableCell?.tableId === tableBlock.id && (
               <div className="space-y-3 border rounded-md p-3 bg-accent/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">Cell {selectedTableCell.cellKey.split(',').map((v, i) => i === 0 ? String.fromCharCode(65 + parseInt(v)) : parseInt(v) + 1).join('')} Settings</Label>
@@ -776,7 +832,7 @@ export function SettingsPanel() {
                 <ColorPickerInput
                   label="Background Color"
                   value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.background || 'transparent'}
-                  onChange={(value) => updateCellSetting(block.id, selectedTableCell.cellKey, 'background', value)}
+                  onChange={(value) => updateCellSetting(tableBlock.id, selectedTableCell.cellKey, 'background', value)}
                 />
 
                 <div>
@@ -784,7 +840,7 @@ export function SettingsPanel() {
                   <Input
                     type="text"
                     value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.padding || '8px'}
-                    onChange={(e) => updateCellSetting(block.id, selectedTableCell.cellKey, 'padding', e.target.value)}
+                    onChange={(e) => updateCellSetting(tableBlock.id, selectedTableCell.cellKey, 'padding', e.target.value)}
                     className="mt-1.5 h-9"
                     placeholder="8px"
                   />
@@ -794,7 +850,7 @@ export function SettingsPanel() {
                   <Label className="text-sm">Vertical Align</Label>
                   <Select
                     value={tableSettings.cells?.[selectedTableCell.cellKey]?.settings?.verticalAlign || 'top'}
-                    onValueChange={(value) => updateCellSetting(block.id, selectedTableCell.cellKey, 'verticalAlign', value)}
+                    onValueChange={(value) => updateCellSetting(tableBlock.id, selectedTableCell.cellKey, 'verticalAlign', value)}
                   >
                     <SelectTrigger className="mt-1.5 h-9">
                       <SelectValue />
@@ -807,21 +863,59 @@ export function SettingsPanel() {
                   </Select>
                 </div>
 
-                {/* Cell Content */}
+                {/* Cell Content Management */}
                 <div className="border-t pt-3 mt-3">
-                  <Label className="text-sm font-medium">Cell Content</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">Cell Content</Label>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const newBlock = createNewBlock('TEXT');
+                          addBlockToTableCell(tableBlock.id, selectedTableCell.cellKey, newBlock);
+                        }}
+                      >
+                        + Text
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const newBlock = createNewBlock('BUTTON');
+                          addBlockToTableCell(tableBlock.id, selectedTableCell.cellKey, newBlock);
+                        }}
+                      >
+                        + Button
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const newBlock = createNewBlock('IMAGE');
+                          addBlockToTableCell(tableBlock.id, selectedTableCell.cellKey, newBlock);
+                        }}
+                      >
+                        + Image
+                      </Button>
+                    </div>
+                  </div>
                   <div className="mt-2 space-y-2">
                     {tableSettings.cells?.[selectedTableCell.cellKey]?.children?.length > 0 ? (
-                      tableSettings.cells[selectedTableCell.cellKey].children.map((childBlock: BlockInstance, idx: number) => {
+                      tableSettings.cells[selectedTableCell.cellKey].children.map((childBlock: BlockInstance) => {
                         const template = getTemplate(childBlock.type);
+                        const isChildSelected = selectedBlockIds.includes(childBlock.id);
                         return (
                           <div
                             key={childBlock.id}
                             className={cn(
                               "p-2 border rounded cursor-pointer hover:bg-accent/50 transition-colors",
-                              selectedBlockIds.includes(childBlock.id) && "bg-accent border-primary"
+                              isChildSelected && "bg-accent border-primary"
                             )}
-                            onClick={() => selectBlock(childBlock.id)}
+                            onClick={() => handleNestedBlockClick(childBlock)}
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-base">{template.icon}</span>
@@ -829,13 +923,24 @@ export function SettingsPanel() {
                                 <p className="text-sm font-medium truncate">{childBlock.name}</p>
                                 <p className="text-xs text-muted-foreground">{childBlock.type}</p>
                               </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeBlockFromTableCell(tableBlock.id, selectedTableCell.cellKey, childBlock.id);
+                                }}
+                              >
+                                🗑️
+                              </Button>
                             </div>
                           </div>
                         );
                       })
                     ) : (
                       <p className="text-xs text-muted-foreground text-center py-2">
-                        No blocks in this cell. Drop blocks from the library.
+                        No blocks in this cell. Click buttons above to add content.
                       </p>
                     )}
                   </div>
@@ -850,16 +955,54 @@ export function SettingsPanel() {
   return (
     <div className="w-80 border-l bg-background overflow-y-auto">
       <div className="p-4 space-y-4">
+        {/* Breadcrumb Navigation */}
+        {settingsContext.length > 1 && (
+          <Card className="p-2 bg-muted/20">
+            <div className="flex items-center gap-1 text-xs">
+              {settingsContext.map((ctx, idx) => (
+                <React.Fragment key={ctx.id}>
+                  {idx > 0 && <span className="text-muted-foreground">/</span>}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-6 px-2 text-xs",
+                      idx === settingsContext.length - 1 && "font-semibold"
+                    )}
+                    onClick={() => {
+                      const newContext = settingsContext.slice(0, idx + 1);
+                      setSettingsContext(newContext);
+                      selectBlock(ctx.id);
+                    }}
+                  >
+                    {ctx.name}
+                  </Button>
+                </React.Fragment>
+              ))}
+              {settingsContext.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 ml-auto"
+                  onClick={handleBackNavigation}
+                >
+                  ← Back
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+        
         {/* Block Header */}
         <Card className="p-3 space-y-2 bg-muted/30">
           <div>
             <Label className="text-xs text-muted-foreground">Block Name</Label>
-            <p className="text-sm font-medium mt-0.5">{block.name}</p>
+            <p className="text-sm font-medium mt-0.5">{currentBlock.name}</p>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Type</Label>
             <Badge variant="secondary" className="mt-0.5">
-              {block.type}
+              {currentBlock.type}
             </Badge>
           </div>
         </Card>
@@ -880,7 +1023,7 @@ export function SettingsPanel() {
                 <Input
                   type="number"
                   value={Math.round(layout.x)}
-                  onChange={(e) => updateVisualLayout(block.id, { x: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => updateVisualLayout(currentBlock.id, { x: parseInt(e.target.value) || 0 })}
                   className="mt-1 h-8 text-xs"
                 />
               </div>
@@ -889,7 +1032,7 @@ export function SettingsPanel() {
                 <Input
                   type="number"
                   value={Math.round(layout.y)}
-                  onChange={(e) => updateVisualLayout(block.id, { y: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => updateVisualLayout(currentBlock.id, { y: parseInt(e.target.value) || 0 })}
                   className="mt-1 h-8 text-xs"
                 />
               </div>
@@ -898,7 +1041,7 @@ export function SettingsPanel() {
                 <Input
                   type="number"
                   value={Math.round(layout.width)}
-                  onChange={(e) => updateVisualLayout(block.id, { width: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => updateVisualLayout(currentBlock.id, { width: parseInt(e.target.value) || 0 })}
                   className="mt-1 h-8 text-xs"
                 />
               </div>
@@ -907,7 +1050,7 @@ export function SettingsPanel() {
                 <Input
                   type="number"
                   value={Math.round(layout.height)}
-                  onChange={(e) => updateVisualLayout(block.id, { height: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => updateVisualLayout(currentBlock.id, { height: parseInt(e.target.value) || 0 })}
                   className="mt-1 h-8 text-xs"
                 />
               </div>
@@ -916,11 +1059,11 @@ export function SettingsPanel() {
         )}
 
         {/* Children Info */}
-        {block.children && block.children.length > 0 && (
+        {currentBlock.children && currentBlock.children.length > 0 && (
           <Card className="p-3">
             <Label className="text-xs text-muted-foreground">Children</Label>
             <p className="text-sm mt-1">
-              {block.children.length} child block{block.children.length !== 1 ? 's' : ''}
+              {currentBlock.children.length} child block{currentBlock.children.length !== 1 ? 's' : ''}
             </p>
           </Card>
         )}
