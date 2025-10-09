@@ -10,6 +10,7 @@ import { QuickTips } from './QuickTips';
 import { OutlineView } from './OutlineView';
 import { InteractiveTutorial } from './InteractiveTutorial';
 import { ComponentsLibrary } from './ComponentsLibrary';
+import { PresetsLibrary } from './PresetsLibrary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
@@ -221,16 +222,23 @@ export function VisualEditorTab() {
         <div className="flex flex-1 gap-4 overflow-hidden">
           {/* Left Panel - Block Library & Components */}
           <div className="w-64 border-r border-border overflow-y-auto block-library">
-            <Tabs defaultValue="blocks" className="w-full">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="blocks">Blocks</TabsTrigger>
-                <TabsTrigger value="components">Components</TabsTrigger>
+            <Tabs defaultValue="blocks" className="flex-1 flex flex-col">
+              <TabsList className="w-full justify-start rounded-none border-b h-auto p-0">
+                <TabsTrigger value="blocks" className="flex-1 rounded-none">Blocks</TabsTrigger>
+                <TabsTrigger value="components" className="flex-1 rounded-none">Components</TabsTrigger>
+                <TabsTrigger value="presets" className="flex-1 rounded-none">Presets</TabsTrigger>
               </TabsList>
-              <TabsContent value="blocks" className="mt-0">
+              
+              <TabsContent value="blocks" className="flex-1 mt-0 overflow-hidden">
                 <BlockLibrary />
               </TabsContent>
-              <TabsContent value="components" className="mt-0">
+              
+              <TabsContent value="components" className="flex-1 mt-0 overflow-hidden">
                 <ComponentsLibrary />
+              </TabsContent>
+              
+              <TabsContent value="presets" className="flex-1 mt-0 overflow-hidden">
+                <PresetsLibrary />
               </TabsContent>
             </Tabs>
           </div>

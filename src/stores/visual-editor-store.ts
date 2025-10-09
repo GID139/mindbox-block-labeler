@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { BlockInstance, ComponentDefinition, ComponentVariant } from '@/types/visual-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Preset } from '@/lib/visual-editor/presets';
 
 export interface GlobalStyles {
   defaultFont: 'Arial' | 'Helvetica' | 'Roboto' | 'Open Sans' | 'Montserrat';
@@ -44,6 +45,9 @@ interface VisualEditorState {
   components: ComponentDefinition[];
   selectedComponentId: string | null;
   
+  // Presets
+  customPresets: Preset[];
+  
   // Global styles
   globalStyles: GlobalStyles;
   
@@ -85,6 +89,10 @@ interface VisualEditorState {
   deleteVariant: (componentId: string, variantId: string) => void;
   instantiateComponent: (componentId: string, variantId?: string, position?: { x: number; y: number }) => void;
   setSelectedComponent: (componentId: string | null) => void;
+  
+  // Preset actions
+  addCustomPreset: (preset: Preset) => void;
+  deleteCustomPreset: (presetId: string) => void;
   
   // Global styles
   setGlobalStyles: (styles: Partial<GlobalStyles>) => void;
@@ -224,8 +232,9 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     canvasMode: 'structure',
     visualLayout: {},
     drawingTool: 'select',
-    components: [],
-    selectedComponentId: null,
+  components: [],
+  selectedComponentId: null,
+  customPresets: [],
     globalStyles: {
       defaultFont: 'Arial',
       defaultFontSize: 14,
@@ -530,6 +539,14 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     setSelectedComponent: (componentId) => {
       set({ selectedComponentId: componentId });
     },
+    
+    addCustomPreset: (preset) => set((state) => ({
+      customPresets: [...state.customPresets, preset],
+    })),
+
+    deleteCustomPreset: (presetId) => set((state) => ({
+      customPresets: state.customPresets.filter((p) => p.id !== presetId),
+    })),
     
     updateVisualLayout: (blockId, layout) => {
       const current = get().visualLayout[blockId] || { x: 0, y: 0, width: 600, height: 100, zIndex: 0 };
