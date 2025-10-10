@@ -21,8 +21,7 @@ export function Measurements({ selectedBlockIds, visualLayout }: MeasurementsPro
             <div
               className="absolute pointer-events-none z-[9997]"
               style={{
-                left: `${layout.x}px`,
-                top: `${topMeasurementY}px`,
+                transform: `translate(${layout.x}px, ${topMeasurementY}px)`,
                 width: `${layout.width}px`,
                 height: '20px',
               }}
