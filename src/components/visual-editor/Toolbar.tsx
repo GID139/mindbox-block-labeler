@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone, FolderPlus, FolderMinus } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { ViewDropdown } from './ViewDropdown';
@@ -33,6 +33,9 @@ export function Toolbar() {
     deviceMode,
     setDeviceMode,
     blocks,
+    selectedBlockIds,
+    groupBlocks,
+    ungroupBlock,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -157,6 +160,33 @@ export function Toolbar() {
           title="Redo (Ctrl+Y)"
         >
           <Redo className="h-4 w-4" />
+        </Button>
+
+        <div className="h-6 w-px bg-border" />
+
+        {/* Group/Ungroup Controls */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => groupBlocks(selectedBlockIds)}
+          disabled={selectedBlockIds.length < 2}
+          title="Group (Ctrl+G)"
+        >
+          <FolderPlus className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const block = blocks.find(b => selectedBlockIds.includes(b.id));
+            if (block?.type === 'GROUP') {
+              ungroupBlock(block.id);
+            }
+          }}
+          disabled={selectedBlockIds.length !== 1 || blocks.find(b => selectedBlockIds.includes(b.id))?.type !== 'GROUP'}
+          title="Ungroup (Ctrl+Shift+G)"
+        >
+          <FolderMinus className="h-4 w-4" />
         </Button>
 
         <div className="h-6 w-px bg-border" />

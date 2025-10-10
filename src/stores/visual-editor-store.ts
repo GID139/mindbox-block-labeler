@@ -523,7 +523,21 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       pushHistory();
       const state = get();
       
-      // Create group block
+      // Calculate bounding box
+      const layouts = blockIds.map(id => state.visualLayout[id]).filter(Boolean);
+      if (layouts.length === 0) return;
+      
+      const minX = Math.min(...layouts.map(l => l.x));
+      const minY = Math.min(...layouts.map(l => l.y));
+      const maxX = Math.max(...layouts.map(l => l.x + l.width));
+      const maxY = Math.max(...layouts.map(l => l.y + l.height));
+      const minZIndex = Math.min(...layouts.map(l => l.zIndex || 0));
+      
+      // Get common parent
+      const firstBlock = findBlockById(state.blocks, blockIds[0]);
+      const commonParentId = firstBlock?.parentId || null;
+      
+      // Create GROUP block
       const groupBlock: BlockInstance = {
         id: `group-${Date.now()}`,
         type: 'GROUP',
@@ -531,21 +545,45 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         settings: {
           display: 'block',
           background: { type: 'transparent' },
+          clipChildren: false,
+          collapsed: false,
         },
         canContainChildren: true,
-        maxNestingLevel: 5,
+        maxNestingLevel: 10,
+        parentId: commonParentId,
       };
       
-      // Add group first
-      get().addBlock(groupBlock);
-      
-      // Update parentId of all selected blocks to point to group
+      // Add group with correct layout
       set(state => ({
-        blocks: state.blocks.map(block => 
-          blockIds.includes(block.id) 
-            ? { ...block, parentId: groupBlock.id }
-            : block
-        ),
+        blocks: [...state.blocks, groupBlock],
+      }));
+      
+      state.updateVisualLayout(groupBlock.id, {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+        zIndex: minZIndex,
+        relativeX: commonParentId ? minX - (state.visualLayout[commonParentId]?.x || 0) : undefined,
+        relativeY: commonParentId ? minY - (state.visualLayout[commonParentId]?.y || 0) : undefined,
+      });
+      
+      // Update children: set parentId and convert to relative coords
+      set(state => ({
+        blocks: state.blocks.map(block => {
+          if (blockIds.includes(block.id)) {
+            const layout = state.visualLayout[block.id];
+            if (layout) {
+              state.updateVisualLayout(block.id, {
+                relativeX: layout.x - minX,
+                relativeY: layout.y - minY,
+                zIndex: (layout.zIndex || 0) - minZIndex,
+              });
+            }
+            return { ...block, parentId: groupBlock.id };
+          }
+          return block;
+        }),
         selectedBlockIds: [groupBlock.id],
       }));
       
@@ -554,24 +592,45 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     ungroupBlock: (groupId) => {
       const state = get();
-      const block = findBlockById(state.blocks, groupId);
-      if (!block || block.type !== 'GROUP') {
+      const group = findBlockById(state.blocks, groupId);
+      if (!group || group.type !== 'GROUP') {
         toast.error('Not a group block');
         return;
       }
       
       pushHistory();
       
-      // Get all children
+      const groupLayout = state.visualLayout[groupId];
       const children = getChildren(state.blocks, groupId);
       
-      // Remove group and set children's parentId to null
+      // Convert children back to absolute coords
+      children.forEach(child => {
+        const childLayout = state.visualLayout[child.id];
+        if (childLayout && groupLayout) {
+          state.updateVisualLayout(child.id, {
+            x: groupLayout.x + (childLayout.relativeX || 0),
+            y: groupLayout.y + (childLayout.relativeY || 0),
+            relativeX: undefined,
+            relativeY: undefined,
+            zIndex: (childLayout.zIndex || 0) + (groupLayout.zIndex || 0),
+          });
+        }
+      });
+      
+      // Remove group and restore parent hierarchy
       set(state => ({
         blocks: state.blocks
           .filter(b => b.id !== groupId)
-          .map(b => children.some(c => c.id === b.id) ? { ...b, parentId: null } : b),
-        selectedBlockIds: [],
+          .map(b => children.some(c => c.id === b.id) 
+            ? { ...b, parentId: group.parentId || null } 
+            : b
+          ),
+        selectedBlockIds: children.map(c => c.id),
       }));
+      
+      // Delete group layout
+      const { [groupId]: _, ...restLayout } = state.visualLayout;
+      set({ visualLayout: restLayout });
       
       toast.success('Group ungrouped');
     },

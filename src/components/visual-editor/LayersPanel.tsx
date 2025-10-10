@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { findBlockById, getChildren, getRootBlocks } from '@/lib/visual-editor/coordinate-utils';
 
 export function LayersPanel() {
-  const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection, toggleLock, toggleHide, duplicateBlock, removeBlock } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection, toggleLock, toggleHide, duplicateBlock, removeBlock, updateBlock } = useVisualEditorStore();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const toggleExpand = (blockId: string) => {
@@ -54,9 +54,22 @@ export function LayersPanel() {
     return parent?.name || 'Unknown';
   };
 
+  const toggleCollapse = (blockId: string) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (block) {
+      updateBlock(blockId, {
+        settings: {
+          ...block.settings,
+          collapsed: !block.settings?.collapsed,
+        },
+      });
+    }
+  };
+
   const renderBlock = (block: BlockInstance, level: number = 0) => {
     const isSelected = selectedBlockIds.includes(block.id);
     const isExpanded = expandedGroups.has(block.id);
+    const isCollapsed = block.settings?.collapsed;
     const children = getChildren(blocks, block.id);
     const hasChildren = children.length > 0;
 
@@ -163,7 +176,7 @@ export function LayersPanel() {
         </div>
 
         {/* Children */}
-        {hasChildren && isExpanded && (
+        {hasChildren && isExpanded && !isCollapsed && (
           <div>
             {children.map(child => renderBlock(child, level + 1))}
           </div>

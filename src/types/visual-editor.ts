@@ -13,7 +13,10 @@ export interface BlockInstance {
   id: string;
   type: BlockType;
   name: string; // e.g., 'button1', 'text1'
-  settings: Record<string, any>;
+  settings: Record<string, any> & {
+    clipChildren?: boolean;  // false for GROUP, true for CONTAINER
+    collapsed?: boolean;     // for LayersPanel only
+  };
   canContainChildren: boolean;
   maxNestingLevel: number;
   locked?: boolean; // Prevents editing/moving

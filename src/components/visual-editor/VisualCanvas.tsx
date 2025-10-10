@@ -110,7 +110,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   }
                 }}
                 onDoubleClick={handleDoubleClick}
-                className={`absolute cursor-pointer border-2 overflow-hidden ${
+                className={`absolute cursor-pointer border-2 ${
                   isSelected ? 'border-primary shadow-lg' : 'border-transparent hover:border-primary/50'
                 }`}
                 style={{
@@ -121,6 +121,7 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   transition: 'border-color 0.2s',
                   pointerEvents: isEditing ? 'none' : 'auto',
                   position: 'relative',
+                  overflow: block.settings?.clipChildren === false ? 'visible' : 'hidden',
                 }}
               >
                 {isEditing ? (
@@ -145,6 +146,19 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   </div>
                 ) : (
                   <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
+                )}
+                
+                {/* Visual indicator for GROUP blocks */}
+                {isSelected && block.type === 'GROUP' && block.settings?.clipChildren === false && (
+                  <div 
+                    className="absolute inset-0 border-2 border-dashed border-primary pointer-events-none"
+                    style={{
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                    }}
+                  />
                 )}
               </div>
             </TooltipTrigger>

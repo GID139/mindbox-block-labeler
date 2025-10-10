@@ -11,6 +11,7 @@ export function useKeyboardShortcuts() {
     saveProject,
     setDrawingTool,
     groupBlocks,
+    ungroupBlock,
     cancelMarqueeSelection,
     isMarqueeSelecting,
     copySelectedBlocks,
@@ -19,6 +20,7 @@ export function useKeyboardShortcuts() {
     selectAll,
     toggleLock,
     toggleHide,
+    blocks,
   } = useVisualEditorStore();
 
   useEffect(() => {
@@ -93,9 +95,18 @@ export function useKeyboardShortcuts() {
       }
 
       // Group blocks
-      if ((e.metaKey || e.ctrlKey) && e.key === 'g' && selectedBlockIds.length >= 2) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey && selectedBlockIds.length >= 2) {
         e.preventDefault();
         groupBlocks(selectedBlockIds);
+      }
+      
+      // Ungroup block
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'g' && selectedBlockIds.length === 1) {
+        e.preventDefault();
+        const block = blocks.find(b => selectedBlockIds.includes(b.id));
+        if (block?.type === 'GROUP') {
+          ungroupBlock(block.id);
+        }
       }
       
       // Copy
@@ -137,5 +148,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, groupBlocks, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, groupBlocks, ungroupBlock, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide, blocks]);
 }

@@ -7,13 +7,15 @@ export const groupTemplate: BlockTemplate = {
   category: 'LAYOUT',
   icon: '📦',
   canContainChildren: true,
-  maxNestingLevel: 5,
+  maxNestingLevel: 10,
   defaultSettings: {
     display: 'block',
     background: { type: 'transparent' as const },
     padding: '10px',
+    clipChildren: false,
+    collapsed: false,
   },
-  availableSettings: ['display', 'background'],
+  availableSettings: ['display', 'background', 'clipChildren'],
   
   generateHTML: (block) => {
     let html = '<div';
