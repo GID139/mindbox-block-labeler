@@ -17,12 +17,18 @@ const KonvaImageBlock = ({
   block, 
   layout, 
   isSelected, 
-  commonProps 
+  commonProps,
+  outerWidth,
+  outerHeight,
+  padding
 }: { 
   block: BlockInstance; 
   layout: any; 
   isSelected: boolean; 
   commonProps: any;
+  outerWidth: number;
+  outerHeight: number;
+  padding: { top: number; right: number; bottom: number; left: number };
 }) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,6 +66,14 @@ const KonvaImageBlock = ({
     return (
       <Group {...commonProps}>
         <Rect
+          width={outerWidth}
+          height={outerHeight}
+          fill="transparent"
+          listening={true}
+        />
+        <Rect
+          x={padding.left}
+          y={padding.top}
           width={layout.width}
           height={layout.height}
           fill="#f3f4f6"
@@ -68,6 +82,8 @@ const KonvaImageBlock = ({
           dash={[5, 5]}
         />
         <Text
+          x={padding.left}
+          y={padding.top}
           text={error ? 'Failed to load' : 'Enter image URL'}
           fontSize={14}
           fill="#6b7280"
@@ -85,11 +101,21 @@ const KonvaImageBlock = ({
     return (
       <Group {...commonProps}>
         <Rect
+          width={outerWidth}
+          height={outerHeight}
+          fill="transparent"
+          listening={true}
+        />
+        <Rect
+          x={padding.left}
+          y={padding.top}
           width={layout.width}
           height={layout.height}
           fill="#f3f4f6"
         />
         <Text
+          x={padding.left}
+          y={padding.top}
           text="Loading..."
           fontSize={14}
           fill="#6b7280"
@@ -104,21 +130,31 @@ const KonvaImageBlock = ({
 
   // Image loaded successfully
   return (
-    <KonvaImage
-      {...commonProps}
-      image={image}
-      width={layout.width}
-      height={layout.height}
-      cornerRadius={parseInt(block.settings.borderRadius) || 0}
-      stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
-      strokeWidth={parseInt(block.settings.strokeWidth) || (isSelected ? 2 : 0)}
-      shadowColor={block.settings.shadowColor}
-      shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
-      shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
-      shadowBlur={parseInt(block.settings.shadowBlur) || 0}
-      shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
-      opacity={parseFloat(block.settings.opacity) || 1}
-    />
+    <Group {...commonProps}>
+      <Rect
+        width={outerWidth}
+        height={outerHeight}
+        fill="transparent"
+        listening={true}
+      />
+      <KonvaImage
+        x={padding.left}
+        y={padding.top}
+        image={image}
+        width={layout.width}
+        height={layout.height}
+        cornerRadius={parseInt(block.settings.borderRadius) || 0}
+        stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
+        strokeWidth={parseInt(block.settings.strokeWidth) || (isSelected ? 2 : 0)}
+        shadowColor={block.settings.shadowColor}
+        shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+        shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+        shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+        shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+        opacity={parseFloat(block.settings.opacity) || 1}
+        listening={false}
+      />
+    </Group>
   );
 };
 
@@ -211,7 +247,7 @@ const KonvaBlock = ({
             width={outerWidth}
             height={outerHeight}
             fill="transparent"
-            listening={false}
+            listening={true}
           />
           <Text
             x={padding.left}
@@ -249,9 +285,19 @@ const KonvaBlock = ({
     case 'BUTTON':
       return (
         <Group {...commonProps}>
+          {/* Outer boundary for events (invisible) */}
           <Rect
             width={outerWidth}
             height={outerHeight}
+            fill="transparent"
+            listening={true}
+          />
+          {/* Inner colored rect with padding offset */}
+          <Rect
+            x={padding.left}
+            y={padding.top}
+            width={contentWidth}
+            height={contentHeight}
             fill={block.settings.fill || '#3b82f6'}
             cornerRadius={parseInt(block.settings.borderRadius) || 8}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
@@ -262,7 +308,7 @@ const KonvaBlock = ({
             shadowBlur={parseInt(block.settings.shadowBlur) || 0}
             shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
             opacity={parseFloat(block.settings.opacity) || 1}
-            listening={true}
+            listening={false}
           />
           <Text
             x={padding.left}
@@ -282,34 +328,19 @@ const KonvaBlock = ({
 
     case 'IMAGE':
       return (
-        <Group {...commonProps}>
-          <Rect
-            width={outerWidth}
-            height={outerHeight}
-            fill="transparent"
-            listening={false}
-          />
-          <KonvaImageBlock
-            block={block}
-            layout={{
-              ...layout,
-              width: contentWidth,
-              height: contentHeight,
-            }}
-            isSelected={isSelected}
-            commonProps={{
-              x: padding.left,
-              y: padding.top,
-              draggable: false,
-              onClick: undefined,
-              onTap: undefined,
-              onDragMove: undefined,
-              onDragEnd: undefined,
-              onDblClick: undefined,
-              onDblTap: undefined,
-            }}
-          />
-        </Group>
+        <KonvaImageBlock
+          block={block}
+          layout={{
+            ...layout,
+            width: contentWidth,
+            height: contentHeight,
+          }}
+          isSelected={isSelected}
+          commonProps={commonProps}
+          outerWidth={outerWidth}
+          outerHeight={outerHeight}
+          padding={padding}
+        />
       );
 
     case 'CONTAINER':
@@ -709,7 +740,12 @@ export function KonvaCanvas({
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     
-    // Determine minimum sizes by block type
+    // Get padding
+    const padding = block.settings.padding || { top: 0, right: 0, bottom: 0, left: 0 };
+    const paddingWidth = padding.left + padding.right;
+    const paddingHeight = padding.top + padding.bottom;
+    
+    // Determine minimum sizes by block type (минимальный CONTENT size)
     let minWidth = 20;
     let minHeight = 20;
     
@@ -740,16 +776,20 @@ export function KonvaCanvas({
       minHeight = block.constraints.minHeight || minHeight;
     }
 
-    // Apply constraints
-    const newWidth = Math.max(minWidth, node.width() * scaleX);
-    const newHeight = Math.max(minHeight, node.height() * scaleY);
+    // Calculate NEW OUTER sizes from transform
+    const newOuterWidth = node.width() * scaleX;
+    const newOuterHeight = node.height() * scaleY;
+    
+    // Calculate NEW CONTENT sizes (subtract padding)
+    const newContentWidth = Math.max(minWidth, newOuterWidth - paddingWidth);
+    const newContentHeight = Math.max(minHeight, newOuterHeight - paddingHeight);
 
-    // Update layout with new dimensions
+    // Update layout with CONTENT dimensions
     updateVisualLayout(blockId, {
       x: node.x(),
       y: node.y(),
-      width: newWidth,
-      height: newHeight,
+      width: newContentWidth,
+      height: newContentHeight,
     });
 
     // Reset scale to 1

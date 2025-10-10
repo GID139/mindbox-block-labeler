@@ -97,56 +97,64 @@ export function SettingsPanel() {
     // This ensures the Width/Height inputs update when resizing with mouse
   }, [layout?.width, layout?.height]);
 
-  const renderSizeSettings = () => (
-    <Card className="p-4 space-y-3">
-      <div className="flex items-center justify-between mb-2">
-        <Label className="text-sm font-medium">Size</Label>
-        <Badge variant="secondary" className="text-xs">px</Badge>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-sm flex items-center justify-between">
-            <span>Width</span>
-            <span className="text-xs text-muted-foreground font-mono">
-              {Math.round(layout?.width || 0)}
-            </span>
-          </Label>
-          <Input
-            type="number"
-            value={Math.round(layout?.width || 0)}
-            onChange={(e) => {
-              const newWidth = parseInt(e.target.value) || 0;
-              updateVisualLayout(currentBlock.id, { width: newWidth });
-            }}
-            className="mt-1.5 h-9"
-            min={currentBlock.constraints?.minWidth || 20}
-            max={currentBlock.constraints?.maxWidth || 2000}
-          />
+  const renderSizeSettings = () => {
+    const padding = currentBlock.settings.padding || { top: 0, right: 0, bottom: 0, left: 0 };
+    const visualWidth = Math.round((layout?.width || 0) + padding.left + padding.right);
+    const visualHeight = Math.round((layout?.height || 0) + padding.top + padding.bottom);
+    
+    return (
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-sm font-medium">Size</Label>
+          <Badge variant="secondary" className="text-xs">px</Badge>
         </div>
         
-        <div>
-          <Label className="text-sm flex items-center justify-between">
-            <span>Height</span>
-            <span className="text-xs text-muted-foreground font-mono">
-              {Math.round(layout?.height || 0)}
-            </span>
-          </Label>
-          <Input
-            type="number"
-            value={Math.round(layout?.height || 0)}
-            onChange={(e) => {
-              const newHeight = parseInt(e.target.value) || 0;
-              updateVisualLayout(currentBlock.id, { height: newHeight });
-            }}
-            className="mt-1.5 h-9"
-            min={currentBlock.constraints?.minHeight || 20}
-            max={currentBlock.constraints?.maxHeight || 2000}
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-sm flex items-center justify-between">
+              <span>Width</span>
+              <span className="text-xs text-muted-foreground font-mono">
+                {visualWidth}
+              </span>
+            </Label>
+            <Input
+              type="number"
+              value={visualWidth}
+              onChange={(e) => {
+                const newVisualWidth = parseInt(e.target.value) || 0;
+                const newContentWidth = newVisualWidth - padding.left - padding.right;
+                updateVisualLayout(currentBlock.id, { width: Math.max(20, newContentWidth) });
+              }}
+              className="mt-1.5 h-9"
+              min={(currentBlock.constraints?.minWidth || 20) + padding.left + padding.right}
+              max={(currentBlock.constraints?.maxWidth || 2000) + padding.left + padding.right}
+            />
+          </div>
+          
+          <div>
+            <Label className="text-sm flex items-center justify-between">
+              <span>Height</span>
+              <span className="text-xs text-muted-foreground font-mono">
+                {visualHeight}
+              </span>
+            </Label>
+            <Input
+              type="number"
+              value={visualHeight}
+              onChange={(e) => {
+                const newVisualHeight = parseInt(e.target.value) || 0;
+                const newContentHeight = newVisualHeight - padding.top - padding.bottom;
+                updateVisualLayout(currentBlock.id, { height: Math.max(20, newContentHeight) });
+              }}
+              className="mt-1.5 h-9"
+              min={(currentBlock.constraints?.minHeight || 20) + padding.top + padding.bottom}
+              max={(currentBlock.constraints?.maxHeight || 2000) + padding.top + padding.bottom}
+            />
+          </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   const renderUniversalSettings = () => (
     <Accordion type="multiple" className="border rounded-md mb-4">
@@ -559,18 +567,16 @@ export function SettingsPanel() {
                     max={50}
                   />
                 </div>
-                <div>
-                  <Label className="text-sm">Padding (px)</Label>
-                  <Input
-                    type="text"
-                    value={currentBlock.settings.padding || '10px'}
-                    onChange={(e) => updateSettings({ padding: e.target.value })}
-                    className="mt-1.5 h-9"
-                    placeholder="10px"
-                  />
-                </div>
               </div>
             </div>
+
+            <SpacingSettings
+              margin={currentBlock.settings.margin}
+              padding={currentBlock.settings.padding}
+              onMarginChange={(margin) => updateSettings({ margin })}
+              onPaddingChange={(padding) => updateSettings({ padding })}
+              showPadding={true}
+            />
 
             <KonvaStyleSettings
               settings={currentBlock.settings}
