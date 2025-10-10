@@ -1177,7 +1177,7 @@ export function KonvaCanvas({
             block={block}
             position={{
               x: (layout.x + layout.width / 2) * zoom * stageScale + stagePos.x,
-              y: layout.y * zoom * stageScale + stagePos.y,
+              y: (layout.y + layout.height) * zoom * stageScale + stagePos.y + 10,
             }}
             stageScale={zoom * stageScale}
           />
