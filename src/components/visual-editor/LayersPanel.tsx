@@ -1,6 +1,5 @@
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { BlockInstance } from '@/types/visual-editor';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -73,8 +72,6 @@ export function LayersPanel() {
 
   const renderBlock = (block: BlockInstance, index: number) => {
     const isSelected = selectedBlockIds.includes(block.id);
-    const layout = visualLayout[block.id];
-    const zIndex = layout?.zIndex ?? 0;
     const isTopmost = index === 0;
     const isBottommost = index === sortedBlocks.length - 1;
 
