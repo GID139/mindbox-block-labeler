@@ -707,25 +707,65 @@ export function KonvaCanvas({
             />
           </Layer>
 
-          {/* Layer 2: Blocks */}
-          <Layer>
-            {rootBlocks.map(block => (
-              <Group key={block.id}>
-                <KonvaBlock
-                  block={block}
-                  isSelected={selectedBlockIds.includes(block.id)}
-                  onSelect={(e) => handleBlockSelect(block.id, e)}
-                  onDragMove={handleDragMove(block.id)}
-                  onDragEnd={handleDragEnd(block.id)}
-                  onDoubleClick={() => handleDoubleClick(block.id)}
-                  allBlocks={blocks}
-                />
-              </Group>
-            ))}
+          {/* Layer 2: Content Blocks (TEXT, RECTANGLE, CIRCLE, IMAGE, LINE) */}
+          <Layer name="content">
+            {rootBlocks
+              .filter(b => ['TEXT', 'RECTANGLE', 'CIRCLE', 'IMAGE', 'LINE'].includes(b.type))
+              .map(block => (
+                <Group key={block.id}>
+                  <KonvaBlock
+                    block={block}
+                    isSelected={selectedBlockIds.includes(block.id)}
+                    onSelect={(e) => handleBlockSelect(block.id, e)}
+                    onDragMove={handleDragMove(block.id)}
+                    onDragEnd={handleDragEnd(block.id)}
+                    onDoubleClick={() => handleDoubleClick(block.id)}
+                    allBlocks={blocks}
+                  />
+                </Group>
+              ))}
           </Layer>
 
-          {/* Layer 3: UI (transformer, guides, marquee) */}
-          <Layer listening={false}>
+          {/* Layer 3: UI Elements (BUTTON, GROUP, CONTAINER) */}
+          <Layer name="ui">
+            {rootBlocks
+              .filter(b => ['BUTTON', 'GROUP', 'CONTAINER', 'FLEX_CONTAINER', 'GRID_CONTAINER'].includes(b.type))
+              .map(block => (
+                <Group key={block.id}>
+                  <KonvaBlock
+                    block={block}
+                    isSelected={selectedBlockIds.includes(block.id)}
+                    onSelect={(e) => handleBlockSelect(block.id, e)}
+                    onDragMove={handleDragMove(block.id)}
+                    onDragEnd={handleDragEnd(block.id)}
+                    onDoubleClick={() => handleDoubleClick(block.id)}
+                    allBlocks={blocks}
+                  />
+                </Group>
+              ))}
+          </Layer>
+
+          {/* Layer 4: Tables (complex elements) */}
+          <Layer name="tables">
+            {rootBlocks
+              .filter(b => b.type === 'TABLE')
+              .map(block => (
+                <Group key={block.id}>
+                  <KonvaBlock
+                    block={block}
+                    isSelected={selectedBlockIds.includes(block.id)}
+                    onSelect={(e) => handleBlockSelect(block.id, e)}
+                    onDragMove={handleDragMove(block.id)}
+                    onDragEnd={handleDragEnd(block.id)}
+                    onDoubleClick={() => handleDoubleClick(block.id)}
+                    allBlocks={blocks}
+                  />
+                </Group>
+              ))}
+          </Layer>
+
+          {/* Layer 5: Overlay (guides, marquee) */}
+          <Layer name="overlay" listening={false}>
             {/* Snap guide lines */}
             {snapGuides.map((guide, i) => (
               <Line
@@ -757,8 +797,8 @@ export function KonvaCanvas({
             )}
           </Layer>
 
-          {/* Layer 4: Transformer (needs to be on top) */}
-          <Layer>
+          {/* Layer 6: Transformer (needs to be on top) */}
+          <Layer name="transformer">
             <Transformer
               ref={transformerRef}
               onTransformEnd={handleTransformEnd}
