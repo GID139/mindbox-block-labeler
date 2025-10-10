@@ -1143,14 +1143,15 @@ export function KonvaCanvas({
       {editingTextBlock && (() => {
         const block = blocks.find(b => b.id === editingTextBlock);
         const layout = visualLayout[editingTextBlock];
-        if (!block || !layout) return null;
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!block || !layout || !containerRect) return null;
 
         return (
           <KonvaTextEditor
             blockId={editingTextBlock}
             initialText={block.settings.text || ''}
-            x={layout.x * zoom * stageScale + stagePos.x}
-            y={layout.y * zoom * stageScale + stagePos.y}
+            x={containerRect.left + layout.x * zoom * stageScale + stagePos.x}
+            y={containerRect.top + layout.y * zoom * stageScale + stagePos.y}
             width={layout.width * zoom * stageScale}
             height={layout.height * zoom * stageScale}
             fontSize={(parseInt(block.settings.fontSize) || 16) * zoom * stageScale}
@@ -1170,14 +1171,15 @@ export function KonvaCanvas({
       {selectedBlockIds.length === 1 && !editingTextBlock && (() => {
         const block = blocks.find(b => b.id === selectedBlockIds[0]);
         const layout = visualLayout[selectedBlockIds[0]];
-        if (!block || !layout) return null;
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!block || !layout || !containerRect) return null;
 
         return (
           <QuickActionsBar
             block={block}
             position={{
-              x: (layout.x + layout.width / 2) * zoom * stageScale + stagePos.x,
-              y: (layout.y + layout.height) * zoom * stageScale + stagePos.y + 10,
+              x: containerRect.left + (layout.x + layout.width / 2) * zoom * stageScale + stagePos.x,
+              y: containerRect.top + (layout.y + layout.height) * zoom * stageScale + stagePos.y + 10,
             }}
             stageScale={zoom * stageScale}
           />
