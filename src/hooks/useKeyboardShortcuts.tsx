@@ -25,9 +25,17 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent Space from scrolling page
+      if (e.code === 'Space') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
       // Check if canvas is focused
       const activeElement = document.activeElement;
-      const isCanvasFocused = activeElement?.closest('[data-canvas-container]');
+      const isCanvasFocused = activeElement?.closest('[data-canvas-container]') || 
+                             activeElement?.tagName === 'CANVAS' ||
+                             activeElement?.closest('canvas');
       
       if (!isCanvasFocused) return; // Ignore shortcuts if canvas not focused
       

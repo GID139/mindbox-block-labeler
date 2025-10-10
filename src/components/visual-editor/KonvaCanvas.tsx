@@ -165,6 +165,7 @@ const KonvaBlock = ({
             cornerRadius={parseInt(block.settings.borderRadius) || 8}
             stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
             strokeWidth={isSelected ? 2 : 0}
+            listening={true}
           />
           <Text
             text={block.settings.text || 'Button'}
@@ -175,6 +176,7 @@ const KonvaBlock = ({
             height={layout.height}
             align="center"
             verticalAlign="middle"
+            listening={false}
           />
         </Group>
       );
