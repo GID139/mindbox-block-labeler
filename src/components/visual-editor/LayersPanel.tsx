@@ -14,7 +14,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
+// Removed unused import
 
 export function LayersPanel() {
   const { 

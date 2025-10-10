@@ -168,8 +168,6 @@ interface VisualEditorState {
   sendBackward: (blockId: string) => void;
   moveUp: (blockId: string) => void;
   moveDown: (blockId: string) => void;
-  moveBlockToGroup: (blockId: string, targetGroupId: string | null) => void;
-  recalculateZIndexes: () => void;
   
   // Guides
   addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
@@ -1252,7 +1250,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     },
     
     bringForward: (blockId) => {
-      pushHistory('Bring Forward');
       const state = get();
       const layout = state.visualLayout[blockId];
       if (!layout) return;
@@ -1276,15 +1273,20 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         .find(([id, l]) => (l.zIndex ?? 0) === nextZ)?.[0];
       
       if (nextBlockId) {
-        state.updateVisualLayout(blockId, { zIndex: nextZ });
-        state.updateVisualLayout(nextBlockId, { zIndex: currentZ });
+        // Update both blocks at once
+        set({
+          visualLayout: {
+            ...state.visualLayout,
+            [blockId]: { ...state.visualLayout[blockId], zIndex: nextZ },
+            [nextBlockId]: { ...state.visualLayout[nextBlockId], zIndex: currentZ },
+          }
+        });
+        pushHistory('Bring Forward');
+        toast.success('Brought forward');
       }
-      
-      toast.success('Brought forward');
     },
     
     sendBackward: (blockId) => {
-      pushHistory('Send Backward');
       const state = get();
       const layout = state.visualLayout[blockId];
       if (!layout) return;
@@ -1308,20 +1310,24 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         .find(([id, l]) => (l.zIndex ?? 0) === prevZ)?.[0];
       
       if (prevBlockId) {
-        state.updateVisualLayout(blockId, { zIndex: prevZ });
-        state.updateVisualLayout(prevBlockId, { zIndex: currentZ });
+        // Update both blocks at once
+        set({
+          visualLayout: {
+            ...state.visualLayout,
+            [blockId]: { ...state.visualLayout[blockId], zIndex: prevZ },
+            [prevBlockId]: { ...state.visualLayout[prevBlockId], zIndex: currentZ },
+          }
+        });
+        pushHistory('Send Backward');
+        toast.success('Sent backward');
       }
-      
-      toast.success('Sent backward');
     },
 
     moveUp: (blockId) => {
-      pushHistory('Move Up');
       get().bringForward(blockId);
     },
 
     moveDown: (blockId) => {
-      pushHistory('Move Down');
       get().sendBackward(blockId);
     },
 
@@ -1442,14 +1448,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     updateBlockSettings: (blockId, settings) => {
       get().updateBlock(blockId, settings);
-    },
-    
-    moveBlockToGroup: (blockId, targetGroupId) => {
-      toast.info('Grouping feature removed - use layers instead');
-    },
-    
-    recalculateZIndexes: () => {
-      // No longer needed
     },
   };
 });

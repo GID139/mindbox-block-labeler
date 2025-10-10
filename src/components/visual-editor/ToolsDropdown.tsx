@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Wrench, AlignLeft, AlignCenterHorizontal, AlignRight, AlignVerticalJustifyStart, AlignCenterVertical, AlignVerticalJustifyEnd, StretchHorizontal, StretchVertical, Group, Ungroup, BringToFront, SendToBack } from 'lucide-react';
+import { Wrench, AlignLeft, AlignCenterHorizontal, AlignRight, AlignVerticalJustifyStart, AlignCenterVertical, AlignVerticalJustifyEnd, StretchHorizontal, StretchVertical, BringToFront, SendToBack } from 'lucide-react';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 
 export function ToolsDropdown() {
@@ -17,26 +17,9 @@ export function ToolsDropdown() {
     distributeSelectedBlocks,
     bringToFront,
     sendToBack,
-    blocks,
   } = useVisualEditorStore();
   
   const disabled = selectedBlockIds.length < 2;
-  const canGroup = selectedBlockIds.length >= 2;
-  
-  // Check if selected block is a GROUP type for ungroup
-  const findBlockById = (blocks: any[], id: string): any => {
-    for (const block of blocks) {
-      if (block.id === id) return block;
-      if (block.children) {
-        const found = findBlockById(block.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  
-  const selectedBlock = selectedBlockIds.length === 1 ? findBlockById(blocks, selectedBlockIds[0]) : null;
-  const canUngroup = selectedBlock?.type === 'GROUP';
   const hasSelection = selectedBlockIds.length > 0;
 
   return (
