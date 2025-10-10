@@ -22,6 +22,9 @@ export const imageTemplate: BlockTemplate = {
     shadowBlur: 0,
     shadowOpacity: 0,
     opacity: 1,
+    // Spacing
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
   },
   availableSettings: ['display', 'url', 'size', 'link'],
   

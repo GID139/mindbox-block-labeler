@@ -17,6 +17,7 @@ import React from 'react';
 import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
 import { Switch } from '@/components/ui/switch';
 import { KonvaStyleSettings } from './SettingsKonva';
+import { SpacingSettings } from './SpacingSettings';
 
 export function SettingsPanel() {
   const { 
@@ -90,6 +91,62 @@ export function SettingsPanel() {
   };
 
   const layout = visualLayout[currentBlock.id];
+
+  // Force re-render when layout dimensions change (for size sync)
+  React.useEffect(() => {
+    // This ensures the Width/Height inputs update when resizing with mouse
+  }, [layout?.width, layout?.height]);
+
+  const renderSizeSettings = () => (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between mb-2">
+        <Label className="text-sm font-medium">Size</Label>
+        <Badge variant="secondary" className="text-xs">px</Badge>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-sm flex items-center justify-between">
+            <span>Width</span>
+            <span className="text-xs text-muted-foreground font-mono">
+              {Math.round(layout?.width || 0)}
+            </span>
+          </Label>
+          <Input
+            type="number"
+            value={Math.round(layout?.width || 0)}
+            onChange={(e) => {
+              const newWidth = parseInt(e.target.value) || 0;
+              updateVisualLayout(currentBlock.id, { width: newWidth });
+            }}
+            className="mt-1.5 h-9"
+            min={currentBlock.constraints?.minWidth || 20}
+            max={currentBlock.constraints?.maxWidth || 2000}
+          />
+        </div>
+        
+        <div>
+          <Label className="text-sm flex items-center justify-between">
+            <span>Height</span>
+            <span className="text-xs text-muted-foreground font-mono">
+              {Math.round(layout?.height || 0)}
+            </span>
+          </Label>
+          <Input
+            type="number"
+            value={Math.round(layout?.height || 0)}
+            onChange={(e) => {
+              const newHeight = parseInt(e.target.value) || 0;
+              updateVisualLayout(currentBlock.id, { height: newHeight });
+            }}
+            className="mt-1.5 h-9"
+            min={currentBlock.constraints?.minHeight || 20}
+            max={currentBlock.constraints?.maxHeight || 2000}
+          />
+        </div>
+      </div>
+    </Card>
+  );
 
   const renderUniversalSettings = () => (
     <Accordion type="multiple" className="border rounded-md mb-4">
@@ -336,6 +393,20 @@ export function SettingsPanel() {
               </div>
             </div>
 
+            <SpacingSettings
+              margin={currentBlock.settings.margin}
+              onMarginChange={(margin) => updateSettings({ margin })}
+              showPadding={false}
+            />
+
+            <SpacingSettings
+              margin={currentBlock.settings.margin}
+              padding={currentBlock.settings.padding}
+              onMarginChange={(margin) => updateSettings({ margin })}
+              onPaddingChange={(padding) => updateSettings({ padding })}
+              showPadding={true}
+            />
+
             <KonvaStyleSettings
               settings={currentBlock.settings}
               onUpdate={updateSettings}
@@ -396,6 +467,14 @@ export function SettingsPanel() {
               </div>
             </div>
 
+            <SpacingSettings
+              margin={currentBlock.settings.margin}
+              padding={currentBlock.settings.padding}
+              onMarginChange={(margin) => updateSettings({ margin })}
+              onPaddingChange={(padding) => updateSettings({ padding })}
+              showPadding={true}
+            />
+
             <KonvaStyleSettings
               settings={currentBlock.settings}
               onUpdate={updateSettings}
@@ -441,6 +520,14 @@ export function SettingsPanel() {
                 />
               </div>
             </div>
+
+            <SpacingSettings
+              margin={currentBlock.settings.margin}
+              padding={currentBlock.settings.padding}
+              onMarginChange={(margin) => updateSettings({ margin })}
+              onPaddingChange={(padding) => updateSettings({ padding })}
+              showPadding={true}
+            />
 
             <KonvaStyleSettings
               settings={currentBlock.settings}
@@ -1052,6 +1139,8 @@ export function SettingsPanel() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          
+          {['BUTTON', 'IMAGE', 'CONTAINER'].includes(currentBlock.type) && renderSizeSettings()}
           
           {renderSettings()}
         </Card>

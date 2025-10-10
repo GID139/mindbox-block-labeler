@@ -21,7 +21,9 @@ export const containerTemplate: BlockTemplate = {
     shadowBlur: 0,
     shadowOpacity: 0,
     opacity: 1,
-    padding: '10px',
+    // Spacing
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    padding: { top: 10, right: 10, bottom: 10, left: 10 },
   },
   availableSettings: ['display', 'background', 'border', 'borderRadius', 'size', 'padding', 'autoLayout'],
   

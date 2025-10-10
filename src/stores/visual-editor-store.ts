@@ -612,25 +612,30 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         blocks: [...state.blocks, groupBlock],
       }));
       
+      // Set absolute coordinates for the group itself
       state.updateVisualLayout(groupBlock.id, {
         x: minX,
         y: minY,
         width: maxX - minX,
         height: maxY - minY,
         zIndex: minZIndex,
-        relativeX: commonParentId ? minX - (state.visualLayout[commonParentId]?.x || 0) : undefined,
-        relativeY: commonParentId ? minY - (state.visualLayout[commonParentId]?.y || 0) : undefined,
       });
       
-      // Update children: set parentId and convert to relative coords
+      // Update children: set parentId and update BOTH relative AND absolute coords
       set(state => ({
         blocks: state.blocks.map(block => {
           if (blockIds.includes(block.id)) {
             const layout = state.visualLayout[block.id];
             if (layout) {
+              const relX = layout.x - minX;
+              const relY = layout.y - minY;
+              
+              // Update both absolute (for rendering) and relative (for group logic) coordinates
               state.updateVisualLayout(block.id, {
-                relativeX: layout.x - minX,
-                relativeY: layout.y - minY,
+                x: layout.x,        // Keep absolute coordinates
+                y: layout.y,        // Keep absolute coordinates
+                relativeX: relX,    // Set relative to group
+                relativeY: relY,    // Set relative to group
                 zIndex: (layout.zIndex || 0) - minZIndex,
               });
             }

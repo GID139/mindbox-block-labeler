@@ -24,7 +24,9 @@ export const buttonTemplate: BlockTemplate = {
     shadowBlur: 0,
     shadowOpacity: 0,
     opacity: 1,
-    padding: '8px 16px',
+    // Spacing
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    padding: { top: 8, right: 16, bottom: 8, left: 16 },
   },
   availableSettings: ['display', 'text', 'link', 'background', 'textStyles', 'size', 'borderRadius', 'padding'],
   

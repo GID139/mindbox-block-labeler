@@ -147,11 +147,11 @@ const KonvaBlock = ({
   
   if (!layout) return null;
 
-  const commonProps = {
-    id: `block-${block.id}`,
-    x: layout.x,
-    y: layout.y,
-    draggable: !block.locked,
+    const commonProps = {
+      id: `block-${block.id}`,
+      x: adjustedX,
+      y: adjustedY,
+      draggable: !block.locked,
     onClick: (e: Konva.KonvaEventObject<MouseEvent>) => onSelect(e),
     onTap: (e: Konva.KonvaEventObject<MouseEvent>) => onSelect(e),
     onDragMove: onDragMove,
@@ -208,7 +208,7 @@ const KonvaBlock = ({
           shadowBlur={parseInt(block.settings.shadowBlur) || 0}
           shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
           opacity={parseFloat(block.settings.opacity) || 1}
-          width={layout.width}
+          width={contentWidth > 0 ? contentWidth : layout.width}
         />
       );
 
@@ -226,8 +226,10 @@ const KonvaBlock = ({
       return (
         <Group {...commonProps}>
           <Rect
-            width={layout.width}
-            height={layout.height}
+            x={padding.left}
+            y={padding.top}
+            width={contentWidth > 0 ? contentWidth : layout.width}
+            height={contentHeight > 0 ? contentHeight : layout.height}
             fill={block.settings.fill || '#3b82f6'}
             cornerRadius={parseInt(block.settings.borderRadius) || 8}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
@@ -241,12 +243,14 @@ const KonvaBlock = ({
             listening={true}
           />
           <Text
+            x={padding.left}
+            y={padding.top}
             text={block.settings.text || 'Button'}
             fontSize={16}
             fontFamily="Arial"
             fill={block.settings.textColor || '#ffffff'}
-            width={layout.width}
-            height={layout.height}
+            width={contentWidth > 0 ? contentWidth : layout.width}
+            height={contentHeight > 0 ? contentHeight : layout.height}
             align="center"
             verticalAlign="middle"
             listening={false}
@@ -258,9 +262,17 @@ const KonvaBlock = ({
       return (
         <KonvaImageBlock
           block={block}
-          layout={layout}
+          layout={{
+            ...layout,
+            width: contentWidth > 0 ? contentWidth : layout.width,
+            height: contentHeight > 0 ? contentHeight : layout.height,
+          }}
           isSelected={isSelected}
-          commonProps={commonProps}
+          commonProps={{
+            ...commonProps,
+            x: commonProps.x + padding.left,
+            y: commonProps.y + padding.top,
+          }}
         />
       );
 
@@ -269,8 +281,10 @@ const KonvaBlock = ({
       return (
         <Group {...commonProps}>
           <Rect
-            width={layout.width}
-            height={layout.height}
+            x={padding.left}
+            y={padding.top}
+            width={contentWidth > 0 ? contentWidth : layout.width}
+            height={contentHeight > 0 ? contentHeight : layout.height}
             fill={block.settings.fill || 'transparent'}
             cornerRadius={parseInt(block.settings.borderRadius) || 0}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb')}
