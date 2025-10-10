@@ -1,6 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
 import { BlockInstance } from '@/types/visual-editor';
-import { CanvasBlock } from './CanvasBlock';
 import { cn } from '@/lib/utils';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 
@@ -12,7 +11,7 @@ interface TableCellRendererProps {
   level: number;
 }
 
-export function TableCellRenderer({ blockId, cellKey, children, settings, level }: TableCellRendererProps) {
+export function TableCellRenderer({ blockId, cellKey, children, settings }: TableCellRendererProps) {
   const { selectTableCell, selectedTableCell } = useVisualEditorStore();
   const { setNodeRef, isOver } = useDroppable({
     id: `${blockId}-cell-${cellKey}`,
@@ -53,14 +52,10 @@ export function TableCellRenderer({ blockId, cellKey, children, settings, level 
           </div>
         ) : (
           <div className="space-y-2">
-            {children.map((child, index) => (
-              <CanvasBlock
-                key={child.id}
-                block={child}
-                index={index}
-                parentId={blockId}
-                level={level + 1}
-              />
+            {children.map((child) => (
+              <div key={child.id} className="p-2 bg-muted rounded">
+                {child.name}
+              </div>
             ))}
           </div>
         )}

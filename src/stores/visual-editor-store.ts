@@ -1444,6 +1444,12 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       get().updateBlock(blockId, settings);
     },
     
-    // Table-specific actions
+    moveBlockToGroup: (blockId, targetGroupId) => {
+      toast.info('Grouping feature removed - use layers instead');
+    },
+    
+    recalculateZIndexes: () => {
+      // No longer needed
+    },
   };
 });

@@ -46,11 +46,6 @@ export function LayersPanel() {
     }
   };
 
-  const getParentName = (parentId: string): string => {
-    const parent = findBlockById(blocks, parentId);
-    return parent?.name || 'Unknown';
-  };
-
   // Sort blocks by z-index (higher z-index = on top = first in list)
   const sortedBlocks = [...blocks].sort((a, b) => {
     const layoutA = visualLayout[a.id];
@@ -100,11 +95,6 @@ export function LayersPanel() {
           <span className="text-sm mr-1">{getBlockIcon(block.type)}</span>
           <div className="flex-1 flex items-center gap-1.5 min-w-0">
             <span className="text-sm truncate">{block.name}</span>
-            {block.parentId && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
-                ↳ {getParentName(block.parentId)}
-              </Badge>
-            )}
           </div>
 
           {/* Actions */}

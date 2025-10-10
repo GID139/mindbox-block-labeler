@@ -15,8 +15,6 @@ export function ToolsDropdown() {
     selectedBlockIds, 
     alignSelectedBlocks, 
     distributeSelectedBlocks,
-    groupBlocks,
-    ungroupBlock,
     bringToFront,
     sendToBack,
     blocks,
@@ -85,17 +83,6 @@ export function ToolsDropdown() {
         <DropdownMenuItem disabled={selectedBlockIds.length < 3} onClick={() => distributeSelectedBlocks('vertical')}>
           <StretchVertical className="h-4 w-4 mr-2" />
           Distribute Vertically
-        </DropdownMenuItem>
-        
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Grouping</DropdownMenuLabel>
-        <DropdownMenuItem disabled={!canGroup} onClick={() => groupBlocks(selectedBlockIds)}>
-          <Group className="h-4 w-4 mr-2" />
-          Group
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled={!canUngroup} onClick={() => selectedBlock && ungroupBlock(selectedBlock.id)}>
-          <Ungroup className="h-4 w-4 mr-2" />
-          Ungroup
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

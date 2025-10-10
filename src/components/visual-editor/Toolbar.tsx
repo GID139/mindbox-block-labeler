@@ -21,9 +21,9 @@ import {
 
 export function Toolbar({ stageRef }: { stageRef?: React.RefObject<any> }) {
   const {
-    currentProjectId,
-    projectName,
-    setProjectName,
+    blocks,
+    selectedBlockIds,
+    selectBlock,
     saveProject,
     loadProject,
     createNewProject,
@@ -38,10 +38,9 @@ export function Toolbar({ stageRef }: { stageRef?: React.RefObject<any> }) {
     canRedo,
     deviceMode,
     setDeviceMode,
-    blocks,
-    selectedBlockIds,
-    groupBlocks,
-    ungroupBlock,
+    currentProjectId,
+    projectName,
+    setProjectName,
   } = useVisualEditorStore();
 
   const [projects, setProjects] = useState<any[]>([]);
@@ -146,8 +145,6 @@ export function Toolbar({ stageRef }: { stageRef?: React.RefObject<any> }) {
           </Button>
         )}
 
-        <div className="h-6 w-px bg-border" />
-
         {/* History Controls */}
         <Button
           variant="ghost"
@@ -166,33 +163,6 @@ export function Toolbar({ stageRef }: { stageRef?: React.RefObject<any> }) {
           title="Redo (Ctrl+Y)"
         >
           <Redo className="h-4 w-4" />
-        </Button>
-
-        <div className="h-6 w-px bg-border" />
-
-        {/* Group/Ungroup Controls */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => groupBlocks(selectedBlockIds)}
-          disabled={selectedBlockIds.length < 2}
-          title="Group (Ctrl+G)"
-        >
-          <FolderPlus className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const block = blocks.find(b => selectedBlockIds.includes(b.id));
-            if (block?.type === 'GROUP') {
-              ungroupBlock(block.id);
-            }
-          }}
-          disabled={selectedBlockIds.length !== 1 || blocks.find(b => selectedBlockIds.includes(b.id))?.type !== 'GROUP'}
-          title="Ungroup (Ctrl+Shift+G)"
-        >
-          <FolderMinus className="h-4 w-4" />
         </Button>
 
         <div className="h-6 w-px bg-border" />

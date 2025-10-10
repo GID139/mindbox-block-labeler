@@ -18,7 +18,6 @@ export function KonvaContextMenu({ x, y, blockId, onClose }: KonvaContextMenuPro
     toggleHide,
     bringToFront,
     sendToBack,
-    groupBlocks,
     selectedBlockIds,
     blocks,
   } = useVisualEditorStore();
@@ -117,18 +116,6 @@ export function KonvaContextMenu({ x, y, blockId, onClose }: KonvaContextMenuPro
         Send to Back
       </div>
 
-      {selectedBlockIds.length >= 2 && (
-        <>
-          <div className="h-px bg-border my-1" />
-          <div
-            className="py-1.5 px-3 hover:bg-accent cursor-pointer rounded-sm flex items-center gap-2 text-sm"
-            onClick={(e) => handleMenuClick(e, () => groupBlocks(selectedBlockIds))}
-          >
-            <Group className="w-4 h-4" />
-            Group Selection
-          </div>
-        </>
-      )}
     </div>
   );
 }

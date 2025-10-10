@@ -1197,18 +1197,6 @@ export function SettingsPanel() {
           </Card>
         )}
 
-        {/* Children Info */}
-        {(() => {
-          const childrenCount = blocks.filter(b => b.parentId === currentBlock.id).length;
-          return childrenCount > 0 && (
-            <Card className="p-3">
-              <Label className="text-xs text-muted-foreground">Children</Label>
-              <p className="text-sm mt-1">
-                {childrenCount} child block{childrenCount !== 1 ? 's' : ''}
-              </p>
-            </Card>
-          );
-        })()}
       </div>
     </div>
   );

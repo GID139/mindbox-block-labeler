@@ -6,7 +6,7 @@ import { BlockInstance } from '@/types/visual-editor';
 import Konva from 'konva';
 import { getTemplate, getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { toast } from 'sonner';
-import { getChildren } from '@/lib/visual-editor/coordinate-utils';
+
 import { findSnapPoints, snapToObjects } from '@/lib/visual-editor/snapping-utils';
 import { KonvaContextMenu } from './KonvaContextMenu';
 import { KonvaTextEditor } from './KonvaTextEditor';
@@ -228,9 +228,6 @@ const KonvaBlock = ({
     visible: !block.hidden,
   };
 
-  // Get children for groups/containers
-  const children = getChildren(allBlocks, block.id);
-  const hasChildren = children.length > 0;
 
   switch (block.type) {
     case 'RECTANGLE':
@@ -361,17 +358,14 @@ const KonvaBlock = ({
       );
 
     case 'CONTAINER':
-      // Containers render their children
       return (
         <Group {...commonProps}>
-          {/* Outer transparent rect for events */}
           <Rect
             width={outerWidth}
             height={outerHeight}
             fill="transparent"
             listening={true}
           />
-          {/* Inner colored rect with padding offset */}
           <Rect
             x={padding.left}
             y={padding.top}
@@ -389,36 +383,12 @@ const KonvaBlock = ({
             opacity={parseFloat(block.settings.opacity) || 1}
             listening={false}
           />
-          <Group
-            x={padding.left}
-            y={padding.top}
-            clipX={0}
-            clipY={0}
-            clipWidth={contentWidth}
-            clipHeight={contentHeight}
-          >
-            {/* Render children */}
-            {children.map(child => (
-              <KonvaBlock
-                key={child.id}
-                block={child}
-                isSelected={false}
-                onSelect={onSelect}
-                onDragMove={onDragMove}
-                onDragEnd={onDragEnd}
-                onDoubleClick={onDoubleClick}
-                allBlocks={allBlocks}
-              />
-            ))}
-          </Group>
         </Group>
       );
 
     case 'GROUP':
-      // Groups render their children without background
       return (
         <Group {...commonProps}>
-          {/* Transparent rect for selection */}
           <Rect
             width={outerWidth}
             height={outerHeight}
@@ -428,19 +398,6 @@ const KonvaBlock = ({
             dash={isSelected ? [5, 5] : undefined}
             listening={true}
           />
-          {/* Render children */}
-          {children.map(child => (
-            <KonvaBlock
-              key={child.id}
-              block={child}
-              isSelected={false}
-              onSelect={onSelect}
-              onDragMove={onDragMove}
-              onDragEnd={onDragEnd}
-              onDoubleClick={onDoubleClick}
-              allBlocks={allBlocks}
-            />
-          ))}
         </Group>
       );
 
@@ -1005,9 +962,8 @@ export function KonvaCanvas({
     }
   };
 
-  // Filter root blocks only (blocks without parent)
+  // Sort all blocks by zIndex
   const rootBlocks = blocks
-    .filter(b => !b.parentId)
     .sort((a, b) => {
       const zIndexA = visualLayout[a.id]?.zIndex ?? 0;
       const zIndexB = visualLayout[b.id]?.zIndex ?? 0;

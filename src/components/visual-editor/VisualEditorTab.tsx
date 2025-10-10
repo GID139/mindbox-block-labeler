@@ -21,10 +21,9 @@ import Konva from 'konva';
 import { Ruler } from './Ruler';
 
 export function VisualEditorTab() {
-  const { 
-    blocks, 
-    addBlock, 
-    moveBlock, 
+  const {
+    blocks,
+    addBlock,
     selectedBlockIds, 
     addBlockToTableCell,
     showRulers,
@@ -85,124 +84,45 @@ export function VisualEditorTab() {
     
     if (!over) return;
 
-    // Case 1: Drag from Library → Canvas
-    if (active.data.current?.type === 'library-block') {
-      const templateName = active.data.current.templateName;
-      const template = getTemplateByName(templateName);
-      
-      if (template) {
-        const existingNames = getAllBlockNames(blocks);
-        const newBlock: BlockInstance = {
-          id: `block-${Date.now()}`,
-          type: template.type,
-          name: generateBlockName(template.type, existingNames),
-          settings: { ...template.defaultSettings },
-          canContainChildren: template.canContainChildren,
-          maxNestingLevel: template.maxNestingLevel,
-        };
+      {/* Case 1: Drag from Library → Canvas */}
+      if (active.data.current?.type === 'library-block') {
+        const templateName = active.data.current.templateName;
+        const template = getTemplateByName(templateName);
+        
+        if (template) {
+          const existingNames = getAllBlockNames(blocks);
+          const newBlock: BlockInstance = {
+            id: `block-${Date.now()}`,
+            type: template.type,
+            name: generateBlockName(template.type, existingNames),
+            settings: { ...template.defaultSettings },
+            canContainChildren: template.canContainChildren,
+            maxNestingLevel: template.maxNestingLevel,
+          };
 
-        // Check if dropping into table cell
-        if (over.data.current?.type === 'table-cell') {
-          const { blockId, cellKey } = over.data.current;
-          addBlockToTableCell(blockId, cellKey, newBlock);
-          toast.success(`Added ${template.name} to table cell`);
-          return;
-        }
-
-        // Handle drop zones (between blocks)
-        if (over.data.current?.type === 'drop-zone') {
-          const { parentId, index, position } = over.data.current;
-          let targetIndex = index;
-          
-          // Adjust index based on position
-          if (position === 'bottom' || position === 'right') {
-            targetIndex = index + 1;
+          // Check if dropping into table cell
+          if (over.data.current?.type === 'table-cell') {
+            const { blockId, cellKey } = over.data.current;
+            addBlockToTableCell(blockId, cellKey, newBlock);
+            toast.success(`Added ${template.name} to table cell`);
+            return;
           }
-          
-          addBlock(newBlock, parentId || undefined, targetIndex);
-          toast.success(`Added ${template.name}`);
-          return;
-        }
 
-        // Handle drop on container block
-        if (over.data.current?.type === 'canvas-drop') {
-          const { parentId, index } = over.data.current;
-          addBlock(newBlock, parentId || undefined, index);
-          toast.success(`Added ${template.name}`);
-          return;
-        }
-
-        // Handle canvas root drop
-        if (over.data.current?.type === 'canvas-root') {
-          const { index } = over.data.current;
-          addBlock(newBlock, undefined, index);
-          toast.success(`Added ${template.name}`);
-          return;
-        }
-
-        // Handle visual canvas drop
-        if (over.id === 'visual-canvas-root') {
+          // Default: add to canvas
           addBlock(newBlock);
           toast.success(`Added ${template.name}`);
+        }
+      }
+      
+      // Case 2: Reorder within Canvas  
+      if (active.data.current?.type === 'canvas-block') {
+        // Check if dropping into table cell
+        if (over.data.current?.type === 'table-cell') {
+          toast.error('Moving existing blocks to table cells is not yet supported.');
           return;
         }
-
-        // Default: add to end of canvas
-        addBlock(newBlock);
-        toast.success(`Added ${template.name}`);
       }
-    }
-    
-    // Case 2: Reorder within Canvas
-    if (active.data.current?.type === 'canvas-block') {
-      // Check if dropping into table cell
-      if (over.data.current?.type === 'table-cell') {
-        const { blockId, cellKey } = over.data.current;
-        const draggedBlock = activeBlock;
-        
-        if (draggedBlock) {
-          // First remove from old position, then add to table cell
-          // This is handled by moveBlock indirectly, but for table cells we use addBlockToTableCell
-          // For now, just show a toast - full implementation would need more complex logic
-          toast.error('Moving existing blocks to table cells is not yet supported. Please create new blocks in cells.');
-        }
-        return;
-      }
-
-      // Handle drop zones
-      if (over.data.current?.type === 'drop-zone') {
-        const { parentId, index, position } = over.data.current;
-        let targetIndex = index;
-        
-        if (position === 'bottom' || position === 'right') {
-          targetIndex = index + 1;
-        }
-        
-        moveBlock(active.id as string, parentId, targetIndex);
-        return;
-      }
-
-      // Handle drop on container block
-      if (over.data.current?.type === 'canvas-drop') {
-        const { parentId, index } = over.data.current;
-        moveBlock(active.id as string, parentId, index);
-        return;
-      }
-
-      // Handle canvas root
-      if (over.data.current?.type === 'canvas-root') {
-        const { index } = over.data.current;
-        moveBlock(active.id as string, null, index);
-        return;
-      }
-
-      const targetParentId = over.data.current?.parentId || null;
-      const targetIndex = over.data.current?.index || 0;
-      
-      // moveBlock already has validation inside
-      moveBlock(active.id as string, targetParentId, targetIndex);
-    }
-  };
+    };
 
   return (
     <DndContext

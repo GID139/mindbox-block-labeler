@@ -10,8 +10,6 @@ export function useKeyboardShortcuts() {
     duplicateBlock,
     saveProject,
     setDrawingTool,
-    groupBlocks,
-    ungroupBlock,
     cancelMarqueeSelection,
     isMarqueeSelecting,
     copySelectedBlocks,
@@ -108,21 +106,6 @@ export function useKeyboardShortcuts() {
         saveProject();
       }
 
-      // Group blocks
-      if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey && selectedBlockIds.length >= 2) {
-        e.preventDefault();
-        groupBlocks(selectedBlockIds);
-      }
-      
-      // Ungroup block
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'g' && selectedBlockIds.length === 1) {
-        e.preventDefault();
-        const block = blocks.find(b => selectedBlockIds.includes(b.id));
-        if (block?.type === 'GROUP') {
-          ungroupBlock(block.id);
-        }
-      }
-      
       // Copy
       if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selectedBlockIds.length > 0) {
         e.preventDefault();
@@ -206,5 +189,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, groupBlocks, ungroupBlock, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide, blocks]);
+  }, [selectedBlockIds, removeSelectedBlocks, undo, redo, duplicateBlock, saveProject, setDrawingTool, cancelMarqueeSelection, isMarqueeSelecting, copySelectedBlocks, cutSelectedBlocks, paste, selectAll, toggleLock, toggleHide, blocks]);
 }

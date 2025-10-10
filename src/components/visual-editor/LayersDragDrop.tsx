@@ -7,28 +7,21 @@ import {
   EyeOff, 
   Lock, 
   Unlock, 
-  ChevronDown, 
-  ChevronRight,
   Layers,
   Trash2,
   Copy,
   GripVertical
 } from 'lucide-react';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DndContext, closestCenter, DragEndEvent, DragStartEvent, useDraggable, useDroppable } from '@dnd-kit/core';
-import { getChildren, getRootBlocks, findBlockById } from '@/lib/visual-editor/coordinate-utils';
+import { useState } from 'react';
 
-function DraggableLayerItem({ block, level, isSelected, onSelect }: {
+function DraggableLayerItem({ block, isSelected, onSelect }: {
   block: BlockInstance;
-  level: number;
   isSelected: boolean;
   onSelect: (id: string, isMulti: boolean) => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const { toggleLock, toggleHide, duplicateBlock, removeBlock, blocks } = useVisualEditorStore();
-  const children = getChildren(blocks, block.id);
-  const hasChildren = children.length > 0;
+  const { toggleLock, toggleHide, duplicateBlock, removeBlock } = useVisualEditorStore();
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -66,7 +59,6 @@ function DraggableLayerItem({ block, level, isSelected, onSelect }: {
           isDragging && "opacity-50",
           isOver && "bg-accent"
         )}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={(e) => {
           if (e.shiftKey || e.ctrlKey || e.metaKey) {
             onSelect(block.id, true);
@@ -79,24 +71,6 @@ function DraggableLayerItem({ block, level, isSelected, onSelect }: {
         <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing">
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
-
-        {/* Expand/Collapse */}
-        {hasChildren && (
-          <button
-            className="w-4 h-4 flex items-center justify-center hover:bg-accent rounded"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-          </button>
-        )}
-        {!hasChildren && <div className="w-4" />}
 
         {/* Icon & Name */}
         <span className="text-sm mr-1">{getBlockIcon(block.type)}</span>
@@ -157,27 +131,12 @@ function DraggableLayerItem({ block, level, isSelected, onSelect }: {
           </button>
         </div>
       </div>
-
-      {/* Children */}
-      {hasChildren && isExpanded && (
-        <div>
-          {children.map(child => (
-            <DraggableLayerItem
-              key={child.id}
-              block={child}
-              level={level + 1}
-              isSelected={false}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
 export function LayersPanelWithDragDrop() {
-  const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection, moveBlock } = useVisualEditorStore();
+  const { blocks, selectedBlockIds, selectBlock, toggleBlockSelection } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -190,20 +149,8 @@ export function LayersPanelWithDragDrop() {
 
     if (!over || active.id === over.id) return;
 
-    const draggedId = active.id as string;
-    const targetData = over.data.current;
-
-    if (targetData?.type === 'layer-drop') {
-      const targetId = targetData.blockId;
-      // Get children count of target block
-      const targetChildren = getChildren(blocks, targetId);
-      const insertIndex = targetChildren.length;
-      moveBlock(draggedId, targetId, insertIndex);
-    } else if (targetData?.type === 'layer-root') {
-      // Move to root level at the end
-      const rootBlocks = getRootBlocks(blocks);
-      moveBlock(draggedId, null, rootBlocks.length);
-    }
+    // For now, just a simple reordering - can be enhanced later
+    // In a flat structure, drag and drop mainly affects visual ordering
   };
 
   const { setNodeRef: setRootRef } = useDroppable({
@@ -230,21 +177,20 @@ export function LayersPanelWithDragDrop() {
                 No blocks yet. Add blocks from the library.
               </div>
             ) : (
-            getRootBlocks(blocks).map(block => (
-              <DraggableLayerItem
-                key={block.id}
-                block={block}
-                level={0}
-                isSelected={selectedBlockIds.includes(block.id)}
-                onSelect={(id, isMulti) => {
-                  if (isMulti) {
-                    toggleBlockSelection(id, true);
-                  } else {
-                    selectBlock(id);
-                  }
-                }}
-              />
-            ))
+              blocks.map(block => (
+                <DraggableLayerItem
+                  key={block.id}
+                  block={block}
+                  isSelected={selectedBlockIds.includes(block.id)}
+                  onSelect={(id, isMulti) => {
+                    if (isMulti) {
+                      toggleBlockSelection(id, true);
+                    } else {
+                      selectBlock(id);
+                    }
+                  }}
+                />
+              ))
             )}
           </div>
         </ScrollArea>

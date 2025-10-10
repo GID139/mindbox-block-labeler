@@ -45,7 +45,6 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
     sendBackward,
     duplicateBlock,
     clipboard,
-    extractFromParent,
   } = useVisualEditorStore();
 
   const isMultipleSelected = selectedBlockIds.length > 1;
@@ -82,12 +81,6 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
   const handleHide = () => {
     if (block) {
       updateBlockSettings(block.id, { hidden: !block.hidden });
-    }
-  };
-
-  const handleExtract = () => {
-    if (block) {
-      extractFromParent(block.id);
     }
   };
 
@@ -146,14 +139,6 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
             </ContextMenuItem>
           </ContextMenuSubContent>
         </ContextMenuSub>
-        
-        <ContextMenuSeparator />
-        
-        <ContextMenuItem onClick={handleExtract}>
-          <ArrowUp className="mr-2 h-4 w-4" />
-          Extract from Parent
-          <ContextMenuShortcut>⌘E</ContextMenuShortcut>
-        </ContextMenuItem>
         
         <ContextMenuSeparator />
         
