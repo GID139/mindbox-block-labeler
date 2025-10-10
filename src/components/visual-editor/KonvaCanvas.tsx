@@ -155,9 +155,11 @@ const KonvaBlock = ({
   const adjustedX = layout.x + margin.left;
   const adjustedY = layout.y + margin.top;
 
-  // Apply padding to content dimensions
-  const contentWidth = layout.width - padding.left - padding.right;
-  const contentHeight = layout.height - padding.top - padding.bottom;
+  // NEW LOGIC: padding increases outer size, content stays same
+  const contentWidth = layout.width;
+  const contentHeight = layout.height;
+  const outerWidth = layout.width + padding.left + padding.right;
+  const outerHeight = layout.height + padding.top + padding.bottom;
 
   const commonProps = {
       id: `block-${block.id}`,
@@ -182,8 +184,8 @@ const KonvaBlock = ({
       return (
         <Rect
           {...commonProps}
-          width={layout.width}
-          height={layout.height}
+          width={outerWidth}
+          height={outerHeight}
           fill={block.settings.background?.color || '#3b82f6'}
           cornerRadius={parseInt(block.settings.borderRadius) || 0}
           stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
@@ -195,7 +197,7 @@ const KonvaBlock = ({
       return (
         <Circle
           {...commonProps}
-          radius={layout.width / 2}
+          radius={outerWidth / 2}
           fill={block.settings.background?.color || '#3b82f6'}
           stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
           strokeWidth={isSelected ? 2 : 0}
@@ -204,24 +206,34 @@ const KonvaBlock = ({
 
     case 'TEXT':
       return (
-        <Text
-          {...commonProps}
-          text={block.settings.text || 'Double-click to edit'}
-          fontSize={parseInt(block.settings.fontSize) || 16}
-          fontFamily={block.settings.fontFamily || 'Arial'}
-          fontStyle={block.settings.fontWeight || 'normal'}
-          align={block.settings.textAlign || 'left'}
-          fill={block.settings.fill || '#000000'}
-          stroke={block.settings.stroke}
-          strokeWidth={parseInt(block.settings.strokeWidth) || 0}
-          shadowColor={block.settings.shadowColor}
-          shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
-          shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
-          shadowBlur={parseInt(block.settings.shadowBlur) || 0}
-          shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
-          opacity={parseFloat(block.settings.opacity) || 1}
-          width={contentWidth > 0 ? contentWidth : layout.width}
-        />
+        <Group {...commonProps}>
+          <Rect
+            width={outerWidth}
+            height={outerHeight}
+            fill="transparent"
+            listening={false}
+          />
+          <Text
+            x={padding.left}
+            y={padding.top}
+            text={block.settings.text || 'Double-click to edit'}
+            fontSize={parseInt(block.settings.fontSize) || 16}
+            fontFamily={block.settings.fontFamily || 'Arial'}
+            fontStyle={block.settings.fontWeight || 'normal'}
+            align={block.settings.textAlign || 'left'}
+            fill={block.settings.fill || '#000000'}
+            stroke={block.settings.stroke}
+            strokeWidth={parseInt(block.settings.strokeWidth) || 0}
+            shadowColor={block.settings.shadowColor}
+            shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+            shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+            shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+            shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+            opacity={parseFloat(block.settings.opacity) || 1}
+            width={contentWidth}
+            listening={false}
+          />
+        </Group>
       );
 
     case 'LINE':
@@ -238,10 +250,8 @@ const KonvaBlock = ({
       return (
         <Group {...commonProps}>
           <Rect
-            x={padding.left}
-            y={padding.top}
-            width={contentWidth > 0 ? contentWidth : layout.width}
-            height={contentHeight > 0 ? contentHeight : layout.height}
+            width={outerWidth}
+            height={outerHeight}
             fill={block.settings.fill || '#3b82f6'}
             cornerRadius={parseInt(block.settings.borderRadius) || 8}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
@@ -261,8 +271,8 @@ const KonvaBlock = ({
             fontSize={16}
             fontFamily="Arial"
             fill={block.settings.textColor || '#ffffff'}
-            width={contentWidth > 0 ? contentWidth : layout.width}
-            height={contentHeight > 0 ? contentHeight : layout.height}
+            width={contentWidth}
+            height={contentHeight}
             align="center"
             verticalAlign="middle"
             listening={false}
@@ -272,20 +282,34 @@ const KonvaBlock = ({
 
     case 'IMAGE':
       return (
-        <KonvaImageBlock
-          block={block}
-          layout={{
-            ...layout,
-            width: contentWidth > 0 ? contentWidth : layout.width,
-            height: contentHeight > 0 ? contentHeight : layout.height,
-          }}
-          isSelected={isSelected}
-          commonProps={{
-            ...commonProps,
-            x: commonProps.x + padding.left,
-            y: commonProps.y + padding.top,
-          }}
-        />
+        <Group {...commonProps}>
+          <Rect
+            width={outerWidth}
+            height={outerHeight}
+            fill="transparent"
+            listening={false}
+          />
+          <KonvaImageBlock
+            block={block}
+            layout={{
+              ...layout,
+              width: contentWidth,
+              height: contentHeight,
+            }}
+            isSelected={isSelected}
+            commonProps={{
+              x: padding.left,
+              y: padding.top,
+              draggable: false,
+              onClick: undefined,
+              onTap: undefined,
+              onDragMove: undefined,
+              onDragEnd: undefined,
+              onDblClick: undefined,
+              onDblTap: undefined,
+            }}
+          />
+        </Group>
       );
 
     case 'CONTAINER':
@@ -293,10 +317,8 @@ const KonvaBlock = ({
       return (
         <Group {...commonProps}>
           <Rect
-            x={padding.left}
-            y={padding.top}
-            width={contentWidth > 0 ? contentWidth : layout.width}
-            height={contentHeight > 0 ? contentHeight : layout.height}
+            width={outerWidth}
+            height={outerHeight}
             fill={block.settings.fill || 'transparent'}
             cornerRadius={parseInt(block.settings.borderRadius) || 0}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb')}
@@ -309,19 +331,28 @@ const KonvaBlock = ({
             opacity={parseFloat(block.settings.opacity) || 1}
             listening={true}
           />
-          {/* Render children */}
-          {children.map(child => (
-            <KonvaBlock
-              key={child.id}
-              block={child}
-              isSelected={false}
-              onSelect={onSelect}
-              onDragMove={onDragMove}
-              onDragEnd={onDragEnd}
-              onDoubleClick={onDoubleClick}
-              allBlocks={allBlocks}
-            />
-          ))}
+          <Group
+            x={padding.left}
+            y={padding.top}
+            clipX={0}
+            clipY={0}
+            clipWidth={contentWidth}
+            clipHeight={contentHeight}
+          >
+            {/* Render children */}
+            {children.map(child => (
+              <KonvaBlock
+                key={child.id}
+                block={child}
+                isSelected={false}
+                onSelect={onSelect}
+                onDragMove={onDragMove}
+                onDragEnd={onDragEnd}
+                onDoubleClick={onDoubleClick}
+                allBlocks={allBlocks}
+              />
+            ))}
+          </Group>
         </Group>
       );
 
