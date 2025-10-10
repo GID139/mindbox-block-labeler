@@ -60,10 +60,11 @@ export function KonvaTextEditor({
     <div
       className="absolute z-[60] pointer-events-auto"
       style={{
-        left: x,
+        left: x + width / 2,
         top: y + height + 10,
         width,
         minHeight: height,
+        transform: 'translateX(-50%)',
       }}
     >
       <textarea
