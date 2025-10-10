@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import React from 'react';
 import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
 import { Switch } from '@/components/ui/switch';
+import { KonvaStyleSettings } from './SettingsKonva';
 
 export function SettingsPanel() {
   const { 
@@ -256,7 +257,6 @@ export function SettingsPanel() {
       case 'TEXT':
         return (
           <div className="space-y-4">
-            {/* Primary Settings */}
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Text Content</Label>
@@ -269,125 +269,84 @@ export function SettingsPanel() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-sm">Font Size (px)</Label>
-                <Input
-                  type="number"
-                  value={parseInt(currentBlock.settings.fontSize) || 16}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 16;
-                    updateSettings({ fontSize: `${value}px` });
-                  }}
-                  className="mt-1.5 h-9"
-                  placeholder="16"
-                  min={8}
-                  max={200}
-                />
+                <div>
+                  <Label className="text-sm">Font Size (px)</Label>
+                  <Input
+                    type="number"
+                    value={parseInt(currentBlock.settings.fontSize) || 16}
+                    onChange={(e) => updateSettings({ fontSize: parseInt(e.target.value) || 16 })}
+                    className="mt-1.5 h-9"
+                    min={8}
+                    max={200}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Font Family</Label>
+                  <Select
+                    value={currentBlock.settings.fontFamily || 'Arial'}
+                    onValueChange={(value) => updateSettings({ fontFamily: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Arial">Arial</SelectItem>
+                      <SelectItem value="Helvetica">Helvetica</SelectItem>
+                      <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                      <SelectItem value="Georgia">Georgia</SelectItem>
+                      <SelectItem value="Courier New">Courier New</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-                <ColorPickerInput
-                  label="Color"
-                  value={currentBlock.settings.color || '#000000'}
-                  onChange={(value) => updateSettings({ color: value })}
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-sm">Font Weight</Label>
+                  <Select
+                    value={currentBlock.settings.fontWeight || 'normal'}
+                    onValueChange={(value) => updateSettings({ fontWeight: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="bold">Bold</SelectItem>
+                      <SelectItem value="lighter">Lighter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm">Text Align</Label>
+                  <Select
+                    value={currentBlock.settings.textAlign || 'left'}
+                    onValueChange={(value) => updateSettings({ textAlign: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            {/* Advanced Settings */}
-            <Accordion type="multiple" className="border rounded-md">
-              <AccordionItem value="advanced" className="border-0">
-                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Advanced
-                    <Badge variant="outline" className="text-xs">Optional</Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 space-y-3">
-                  <BackgroundPicker
-                    value={block.settings.background || { type: 'transparent' }}
-                    onChange={(background) => updateSettings({ background })}
-                  />
-                  
-                  <div>
-                    <Label className="text-sm">Padding (px)</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.padding || '10px'}
-                      onChange={(e) => updateSettings({ padding: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="10px"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Presets</Label>
-                    <Select onValueChange={(preset) => applyPreset(textPresets[preset])}>
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue placeholder="Choose preset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="heading">Heading</SelectItem>
-                        <SelectItem value="subheading">Subheading</SelectItem>
-                        <SelectItem value="body">Body Text</SelectItem>
-                        <SelectItem value="caption">Caption</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Font Weight</Label>
-                    <Select
-                      value={block.settings.fontWeight || 'normal'}
-                      onValueChange={(value) => updateSettings({ fontWeight: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="bold">Bold</SelectItem>
-                        <SelectItem value="light">Light</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Text Align</Label>
-                    <Select
-                      value={block.settings.textAlign || 'left'}
-                      onValueChange={(value) => updateSettings({ textAlign: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="left">Left</SelectItem>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="right">Right</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Line Height</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.lineHeight || '1.5'}
-                      onChange={(e) => updateSettings({ lineHeight: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="1.5"
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <KonvaStyleSettings
+              settings={currentBlock.settings}
+              onUpdate={updateSettings}
+              showFillColor={true}
+            />
           </div>
         );
 
       case 'BUTTON':
         return (
           <div className="space-y-4">
-            {/* Primary Settings */}
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Button Text</Label>
@@ -395,102 +354,66 @@ export function SettingsPanel() {
                   value={currentBlock.settings.text || ''}
                   onChange={(e) => updateSettings({ text: e.target.value })}
                   className="mt-1.5 h-9"
-                  placeholder="Click me"
+                  placeholder="Button"
                 />
               </div>
 
-              <ColorPickerInput
-                label="Background Color"
-                value={currentBlock.settings.background?.color || '#007bff'}
-                onChange={(value) => updateSettings({ 
-                  background: { ...currentBlock.settings.background, type: 'solid', color: value }
-                })}
-              />
-
-              <div>
-                <Label className="text-sm">Link URL</Label>
-                <Input
-                  type="url"
-                  value={block.settings.href || ''}
-                  onChange={(e) => updateSettings({ href: e.target.value })}
-                  className="mt-1.5 h-9"
-                  placeholder="https://example.com"
+              <div className="grid grid-cols-2 gap-2">
+                <ColorPickerInput
+                  label="Fill Color"
+                  value={currentBlock.settings.fill || '#007bff'}
+                  onChange={(value) => updateSettings({ fill: value })}
                 />
+                <ColorPickerInput
+                  label="Text Color"
+                  value={currentBlock.settings.textColor || '#ffffff'}
+                  onChange={(value) => updateSettings({ textColor: value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-sm">Border Radius (px)</Label>
+                  <Input
+                    type="number"
+                    value={currentBlock.settings.borderRadius || 8}
+                    onChange={(e) => updateSettings({ borderRadius: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5 h-9"
+                    min={0}
+                    max={50}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Link URL</Label>
+                  <Input
+                    type="url"
+                    value={currentBlock.settings.href || ''}
+                    onChange={(e) => updateSettings({ href: e.target.value })}
+                    className="mt-1.5 h-9"
+                    placeholder="https://"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Advanced Settings */}
-            <Accordion type="multiple" className="border rounded-md">
-              <AccordionItem value="advanced" className="border-0">
-                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Advanced
-                    <Badge variant="outline" className="text-xs">Optional</Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 space-y-3">
-                  <div>
-                    <Label className="text-sm">Presets</Label>
-                    <Select onValueChange={(preset) => applyPreset(buttonPresets[preset])}>
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue placeholder="Choose preset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="primary">Primary</SelectItem>
-                        <SelectItem value="secondary">Secondary</SelectItem>
-                        <SelectItem value="outline">Outline</SelectItem>
-                        <SelectItem value="ghost">Ghost</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <ColorPickerInput
-                    label="Text Color"
-                    value={block.settings.color || '#ffffff'}
-                    onChange={(value) => updateSettings({ color: value })}
-                  />
-
-                  <div>
-                    <Label className="text-sm">Border Radius</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.borderRadius || '4px'}
-                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="4px"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Padding</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.padding || '8px 16px'}
-                      onChange={(e) => updateSettings({ padding: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="8px 16px"
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <KonvaStyleSettings
+              settings={currentBlock.settings}
+              onUpdate={updateSettings}
+              showFillColor={false}
+            />
           </div>
         );
 
       case 'IMAGE':
         return (
           <div className="space-y-4">
-            {/* Primary Settings */}
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Image URL</Label>
                 <Input
                   type="url"
-                  value={block.settings.url || ''}
-                  onChange={(e) => {
-                    const url = e.target.value;
-                    updateSettings({ url, src: url });
-                  }}
+                  value={currentBlock.settings.src || ''}
+                  onChange={(e) => updateSettings({ src: e.target.value })}
                   className="mt-1.5 h-9"
                   placeholder="https://example.com/image.jpg"
                 />
@@ -499,192 +422,74 @@ export function SettingsPanel() {
               <div>
                 <Label className="text-sm">Alt Text</Label>
                 <Input
-                  value={block.settings.alt || ''}
+                  value={currentBlock.settings.alt || ''}
                   onChange={(e) => updateSettings({ alt: e.target.value })}
                   className="mt-1.5 h-9"
                   placeholder="Image description"
                 />
               </div>
+
+              <div>
+                <Label className="text-sm">Border Radius (px)</Label>
+                <Input
+                  type="number"
+                  value={currentBlock.settings.borderRadius || 0}
+                  onChange={(e) => updateSettings({ borderRadius: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5 h-9"
+                  min={0}
+                  max={50}
+                />
+              </div>
             </div>
 
-            {/* Advanced Settings */}
-            <Accordion type="multiple" className="border rounded-md">
-              <AccordionItem value="advanced" className="border-0">
-                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Advanced
-                    <Badge variant="outline" className="text-xs">Optional</Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-sm">Width (px)</Label>
-                      <Input
-                        type="text"
-                        value={block.settings.width || 'auto'}
-                        onChange={(e) => updateSettings({ width: e.target.value })}
-                        className="mt-1.5 h-9"
-                        placeholder="auto"
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-sm">Height (px)</Label>
-                      <Input
-                        type="text"
-                        value={block.settings.height || 'auto'}
-                        onChange={(e) => updateSettings({ height: e.target.value })}
-                        className="mt-1.5 h-9"
-                        placeholder="auto"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Border Radius</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.borderRadius || '0px'}
-                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="0px"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Object Fit</Label>
-                    <Select
-                      value={block.settings.objectFit || 'cover'}
-                      onValueChange={(value) => updateSettings({ objectFit: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cover">Cover</SelectItem>
-                        <SelectItem value="contain">Contain</SelectItem>
-                        <SelectItem value="fill">Fill</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <KonvaStyleSettings
+              settings={currentBlock.settings}
+              onUpdate={updateSettings}
+              showFillColor={false}
+            />
           </div>
         );
 
       case 'CONTAINER':
-      case 'FLEX_CONTAINER':
         return (
           <div className="space-y-4">
-            {/* Primary Settings */}
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Layout Direction</Label>
-                <Select
-                  value={block.settings.flexDirection || 'row'}
-                  onValueChange={(value) => updateSettings({ flexDirection: value })}
-                >
-                  <SelectTrigger className="mt-1.5 h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="row">Horizontal (Row)</SelectItem>
-                    <SelectItem value="column">Vertical (Column)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm">Gap (px)</Label>
-                <Input
-                  type="text"
-                  value={block.settings.gap || '16px'}
-                  onChange={(e) => updateSettings({ gap: e.target.value })}
-                  className="mt-1.5 h-9"
-                  placeholder="16px"
-                />
-              </div>
-
               <ColorPickerInput
-                label="Background Color"
-                value={block.settings.backgroundColor || 'transparent'}
-                onChange={(value) => updateSettings({ backgroundColor: value })}
+                label="Fill Color"
+                value={currentBlock.settings.fill || 'transparent'}
+                onChange={(value) => updateSettings({ fill: value })}
               />
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-sm">Border Radius (px)</Label>
+                  <Input
+                    type="number"
+                    value={currentBlock.settings.borderRadius || 0}
+                    onChange={(e) => updateSettings({ borderRadius: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5 h-9"
+                    min={0}
+                    max={50}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Padding (px)</Label>
+                  <Input
+                    type="text"
+                    value={currentBlock.settings.padding || '10px'}
+                    onChange={(e) => updateSettings({ padding: e.target.value })}
+                    className="mt-1.5 h-9"
+                    placeholder="10px"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Advanced Settings */}
-            <Accordion type="multiple" className="border rounded-md">
-              <AccordionItem value="advanced" className="border-0">
-                <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Advanced
-                    <Badge variant="outline" className="text-xs">Optional</Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 space-y-3">
-                  <div>
-                    <Label className="text-sm">Justify Content</Label>
-                    <Select
-                      value={block.settings.justifyContent || 'flex-start'}
-                      onValueChange={(value) => updateSettings({ justifyContent: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="flex-start">Start</SelectItem>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="flex-end">End</SelectItem>
-                        <SelectItem value="space-between">Space Between</SelectItem>
-                        <SelectItem value="space-around">Space Around</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Align Items</Label>
-                    <Select
-                      value={block.settings.alignItems || 'stretch'}
-                      onValueChange={(value) => updateSettings({ alignItems: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="stretch">Stretch</SelectItem>
-                        <SelectItem value="flex-start">Start</SelectItem>
-                        <SelectItem value="center">Center</SelectItem>
-                        <SelectItem value="flex-end">End</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Padding (px)</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.padding || '10px'}
-                      onChange={(e) => updateSettings({ padding: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="10px"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Border Radius</Label>
-                    <Input
-                      type="text"
-                      value={block.settings.borderRadius || '0px'}
-                      onChange={(e) => updateSettings({ borderRadius: e.target.value })}
-                      className="mt-1.5 h-9"
-                      placeholder="0px"
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <KonvaStyleSettings
+              settings={currentBlock.settings}
+              onUpdate={updateSettings}
+              showFillColor={false}
+            />
           </div>
         );
 

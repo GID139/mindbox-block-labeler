@@ -25,38 +25,99 @@ const KonvaImageBlock = ({
   commonProps: any;
 }) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   
   useEffect(() => {
-    if (block.settings.src) {
-      const img = new window.Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => setImage(img);
-      img.onerror = () => setImage(null);
-      img.src = block.settings.src;
+    if (!block.settings.src) {
+      setImage(null);
+      setLoading(false);
+      setError(false);
+      return;
     }
+    
+    setLoading(true);
+    setError(false);
+    
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      setImage(img);
+      setLoading(false);
+    };
+    
+    img.onerror = () => {
+      setError(true);
+      setLoading(false);
+    };
+    
+    img.src = block.settings.src;
   }, [block.settings.src]);
 
-  if (!image) {
+  // No URL provided or error
+  if (!block.settings.src || error) {
     return (
-      <Rect
-        {...commonProps}
-        width={layout.width}
-        height={layout.height}
-        fill="#e5e7eb"
-        stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
-        strokeWidth={isSelected ? 2 : 0}
-      />
+      <Group {...commonProps}>
+        <Rect
+          width={layout.width}
+          height={layout.height}
+          fill="#f3f4f6"
+          stroke="#d1d5db"
+          strokeWidth={2}
+          dash={[5, 5]}
+        />
+        <Text
+          text={error ? 'Failed to load' : 'Enter image URL'}
+          fontSize={14}
+          fill="#6b7280"
+          width={layout.width}
+          height={layout.height}
+          align="center"
+          verticalAlign="middle"
+        />
+      </Group>
     );
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <Group {...commonProps}>
+        <Rect
+          width={layout.width}
+          height={layout.height}
+          fill="#f3f4f6"
+        />
+        <Text
+          text="Loading..."
+          fontSize={14}
+          fill="#6b7280"
+          width={layout.width}
+          height={layout.height}
+          align="center"
+          verticalAlign="middle"
+        />
+      </Group>
+    );
+  }
+
+  // Image loaded successfully
   return (
     <KonvaImage
       {...commonProps}
       image={image}
       width={layout.width}
       height={layout.height}
-      stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
-      strokeWidth={isSelected ? 2 : 0}
+      cornerRadius={parseInt(block.settings.borderRadius) || 0}
+      stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
+      strokeWidth={parseInt(block.settings.strokeWidth) || (isSelected ? 2 : 0)}
+      shadowColor={block.settings.shadowColor}
+      shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+      shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+      shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+      shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+      opacity={parseFloat(block.settings.opacity) || 1}
     />
   );
 };
@@ -136,12 +197,18 @@ const KonvaBlock = ({
           text={block.settings.text || 'Double-click to edit'}
           fontSize={parseInt(block.settings.fontSize) || 16}
           fontFamily={block.settings.fontFamily || 'Arial'}
-          fill={block.settings.color || '#000000'}
-          width={layout.width}
+          fontStyle={block.settings.fontWeight || 'normal'}
           align={block.settings.textAlign || 'left'}
-          verticalAlign={block.settings.verticalAlign || 'top'}
-          stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
-          strokeWidth={isSelected ? 1 : 0}
+          fill={block.settings.fill || '#000000'}
+          stroke={block.settings.stroke}
+          strokeWidth={parseInt(block.settings.strokeWidth) || 0}
+          shadowColor={block.settings.shadowColor}
+          shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+          shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+          shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+          shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+          opacity={parseFloat(block.settings.opacity) || 1}
+          width={layout.width}
         />
       );
 
@@ -161,17 +228,23 @@ const KonvaBlock = ({
           <Rect
             width={layout.width}
             height={layout.height}
-            fill={block.settings.background?.color || '#3b82f6'}
+            fill={block.settings.fill || '#3b82f6'}
             cornerRadius={parseInt(block.settings.borderRadius) || 8}
-            stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
-            strokeWidth={isSelected ? 2 : 0}
+            stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : undefined)}
+            strokeWidth={parseInt(block.settings.strokeWidth) || (isSelected ? 2 : 0)}
+            shadowColor={block.settings.shadowColor}
+            shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+            shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+            shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+            shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+            opacity={parseFloat(block.settings.opacity) || 1}
             listening={true}
           />
           <Text
             text={block.settings.text || 'Button'}
-            fontSize={parseInt(block.settings.fontSize) || 16}
-            fontFamily={block.settings.fontFamily || 'Arial'}
-            fill={block.settings.color || '#ffffff'}
+            fontSize={16}
+            fontFamily="Arial"
+            fill={block.settings.textColor || '#ffffff'}
             width={layout.width}
             height={layout.height}
             align="center"
@@ -191,18 +264,23 @@ const KonvaBlock = ({
         />
       );
 
-    case 'GROUP':
     case 'CONTAINER':
-      // Groups render their children
+      // Containers render their children
       return (
         <Group {...commonProps}>
           <Rect
             width={layout.width}
             height={layout.height}
-            fill="transparent"
-            stroke={isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb'}
-            strokeWidth={isSelected ? 2 : 1}
-            dash={block.type === 'GROUP' ? [10, 5] : undefined}
+            fill={block.settings.fill || 'transparent'}
+            cornerRadius={parseInt(block.settings.borderRadius) || 0}
+            stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb')}
+            strokeWidth={parseInt(block.settings.strokeWidth) || (isSelected ? 2 : 1)}
+            shadowColor={block.settings.shadowColor}
+            shadowOffsetX={parseInt(block.settings.shadowOffsetX) || 0}
+            shadowOffsetY={parseInt(block.settings.shadowOffsetY) || 0}
+            shadowBlur={parseInt(block.settings.shadowBlur) || 0}
+            shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
+            opacity={parseFloat(block.settings.opacity) || 1}
             listening={true}
           />
           {/* Render children */}
@@ -260,7 +338,9 @@ export function KonvaCanvas({
   const [isPanning, setIsPanning] = useState(false);
   
   // Marquee selection state
-  const [marqueeBox, setMarqueeBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [marqueeStart, setMarqueeStart] = useState<{ x: number; y: number } | null>(null);
+  const [marqueeRect, setMarqueeRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isDraggingMarquee, setIsDraggingMarquee] = useState(false);
   
   // Snap guides state
   const [snapGuides, setSnapGuides] = useState<Array<{ type: 'vertical' | 'horizontal'; position: number }>>([]);
@@ -624,73 +704,106 @@ export function KonvaCanvas({
     // Close context menu
     setContextMenu(null);
     
-    // Start marquee selection if clicking on empty canvas (not panning)
-    if (e.target === e.target.getStage() && !isPanning) {
-      const stage = e.target.getStage();
-      const pos = stage?.getPointerPosition();
-      if (!pos) return;
+    // Check if we clicked on empty space
+    const clickedOnEmpty = e.target === e.target.getStage();
+    
+    if (!clickedOnEmpty) return;
+    
+    // Don't start marquee if panning or ctrl is held
+    if (isPanning || e.evt.ctrlKey || e.evt.metaKey) return;
 
-      // Convert screen position to canvas position
-      const x = (pos.x - stagePos.x) / stageScale;
-      const y = (pos.y - stagePos.y) / stageScale;
+    const stage = e.target.getStage();
+    const pos = stage?.getPointerPosition();
+    if (!pos) return;
 
-      setMarqueeBox({ x, y, width: 0, height: 0 });
-    }
+    // Transform to stage coordinates
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    const stagePos = transform.point(pos);
+
+    setMarqueeStart(stagePos);
+    setMarqueeRect(null);
+    setIsDraggingMarquee(false);
   };
 
   const handleStageMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (marqueeBox && !isPanning) {
-      const stage = e.target.getStage();
-      const pos = stage?.getPointerPosition();
-      if (!pos) return;
+    if (!marqueeStart || isPanning) return;
 
-      // Convert screen position to canvas position
-      const x = (pos.x - stagePos.x) / stageScale;
-      const y = (pos.y - stagePos.y) / stageScale;
+    const stage = e.target.getStage();
+    const pos = stage?.getPointerPosition();
+    if (!pos) return;
 
-      const newBox = {
-        x: Math.min(marqueeBox.x, x),
-        y: Math.min(marqueeBox.y, y),
-        width: Math.abs(x - marqueeBox.x),
-        height: Math.abs(y - marqueeBox.y),
-      };
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    const stagePos = transform.point(pos);
 
-      setMarqueeBox(newBox);
+    // Check if mouse moved enough to start marquee
+    const moved = Math.abs(stagePos.x - marqueeStart.x) > 5 || 
+                  Math.abs(stagePos.y - marqueeStart.y) > 5;
+    
+    if (moved) {
+      setIsDraggingMarquee(true);
+    }
 
-      // Find all blocks inside marquee
+    setMarqueeRect({
+      x: Math.min(marqueeStart.x, stagePos.x),
+      y: Math.min(marqueeStart.y, stagePos.y),
+      width: Math.abs(stagePos.x - marqueeStart.x),
+      height: Math.abs(stagePos.y - marqueeStart.y),
+    });
+  };
+
+  const handleStageMouseUp = () => {
+    if (!marqueeStart) return;
+
+    // If marquee was NOT dragged (just a click), clear selection
+    if (!isDraggingMarquee) {
+      selectBlock('');
+      setMarqueeStart(null);
+      setMarqueeRect(null);
+      return;
+    }
+
+    if (marqueeRect && marqueeRect.width > 0 && marqueeRect.height > 0) {
+      // Find blocks that intersect with marquee
       const selectedIds: string[] = [];
+      
       rootBlocks.forEach(block => {
         const layout = visualLayout[block.id];
-        if (!layout) return;
+        if (!layout || block.hidden) return;
 
-        const blockBox = {
-          x: layout.x,
-          y: layout.y,
-          width: layout.width,
-          height: layout.height,
-        };
+        // Check intersection
+        const blockRight = layout.x + layout.width;
+        const blockBottom = layout.y + layout.height;
+        const marqueeRight = marqueeRect.x + marqueeRect.width;
+        const marqueeBottom = marqueeRect.y + marqueeRect.height;
 
-        // Check rectangle intersection
-        if (
-          newBox.x < blockBox.x + blockBox.width &&
-          newBox.x + newBox.width > blockBox.x &&
-          newBox.y < blockBox.y + blockBox.height &&
-          newBox.y + newBox.height > blockBox.y
-        ) {
+        const intersects = !(
+          blockRight < marqueeRect.x ||
+          layout.x > marqueeRight ||
+          blockBottom < marqueeRect.y ||
+          layout.y > marqueeBottom
+        );
+
+        if (intersects) {
           selectedIds.push(block.id);
         }
       });
 
-      // Update selection
-      useVisualEditorStore.setState({ selectedBlockIds: selectedIds });
+      if (selectedIds.length > 0) {
+        useVisualEditorStore.setState({ selectedBlockIds: selectedIds });
+        toast.success(`Selected ${selectedIds.length} blocks`);
+      }
     }
-  };
 
-  const handleStageMouseUp = () => {
-    setMarqueeBox(null);
+    // Don't clear selection here!
+    setMarqueeStart(null);
+    setMarqueeRect(null);
+    setIsDraggingMarquee(false);
   };
 
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    // IMPORTANT: Don't clear selection if was marquee drag!
+    if (isDraggingMarquee) return;
+    
     // Deselect when clicking on empty area
     if (e.target === e.target.getStage()) {
       selectBlock('');
@@ -889,12 +1002,12 @@ export function KonvaCanvas({
             ))}
 
             {/* Marquee selection box */}
-            {marqueeBox && (
+            {marqueeRect && (
               <Rect
-                x={marqueeBox.x}
-                y={marqueeBox.y}
-                width={marqueeBox.width}
-                height={marqueeBox.height}
+                x={marqueeRect.x}
+                y={marqueeRect.y}
+                width={marqueeRect.width}
+                height={marqueeRect.height}
                 fill="rgba(59, 130, 246, 0.15)"
                 stroke="rgba(59, 130, 246, 1)"
                 strokeWidth={2 / stageScale}

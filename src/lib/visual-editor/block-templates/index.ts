@@ -14,18 +14,9 @@ import { flexContainerTemplate } from './flex-container';
 
 export const blockTemplates: BlockTemplate[] = [
   textTemplate,
-  headingTemplate,
   buttonTemplate,
   imageTemplate,
   containerTemplate,
-  gridContainerTemplate,
-  flexContainerTemplate,
-  tableTemplate,
-  spacerTemplate,
-  rectangleTemplate,
-  circleTemplate,
-  lineTemplate,
-  groupTemplate,
 ];
 
 export const getTemplate = (type: BlockType): BlockTemplate => {
