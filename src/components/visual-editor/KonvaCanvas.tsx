@@ -1006,7 +1006,13 @@ export function KonvaCanvas({
   };
 
   // Filter root blocks only (blocks without parent)
-  const rootBlocks = blocks.filter(b => !b.parentId);
+  const rootBlocks = blocks
+    .filter(b => !b.parentId)
+    .sort((a, b) => {
+      const zIndexA = visualLayout[a.id]?.zIndex ?? 0;
+      const zIndexB = visualLayout[b.id]?.zIndex ?? 0;
+      return zIndexA - zIndexB;
+    });
 
   return (
     <div 
