@@ -130,23 +130,6 @@ export function VisualEditorTab() {
         // Handle visual canvas drop
         if (over.id === 'visual-canvas-root') {
           addBlock(newBlock);
-          
-          // Автоматически создать layout для нового блока в Visual Mode
-          const store = useVisualEditorStore.getState();
-          const layoutValues = Object.values(store.visualLayout);
-          const currentY = layoutValues.length > 0
-            ? Math.max(...layoutValues.map(l => l.y + l.height))
-            : 0;
-          
-          const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
-          store.updateVisualLayout(newBlock.id, {
-            x: 20,
-            y: currentY + 20,
-            width: defaultSize.width,
-            height: defaultSize.height,
-            zIndex: 0,
-          });
-          
           toast.success(`Added ${template.name}`);
           return;
         }

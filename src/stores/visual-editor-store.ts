@@ -303,8 +303,9 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       const newBlock = { ...block, parentId: parentId || null };
       
-      // Set initial coordinates (0, 0) relative to parent
+      // Set initial coordinates
       if (parentId) {
+        // Nested block - position relative to parent
         const parentLayout = state.visualLayout[parentId];
         if (parentLayout) {
           const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
@@ -319,6 +320,23 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
             zIndex: parentLayout.zIndex + 1,
           });
         }
+      } else {
+        // Root block - create visualLayout with smart positioning
+        const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
+        const layoutValues = Object.values(state.visualLayout);
+        
+        // Calculate next position: below last block or at (20, 20)
+        const currentY = layoutValues.length > 0
+          ? Math.max(...layoutValues.map(l => l.y + l.height))
+          : 0;
+        
+        state.updateVisualLayout(newBlock.id, {
+          x: 20,
+          y: layoutValues.length > 0 ? currentY + 20 : 20,
+          width: parseInt(String(newBlock.settings.width)) || defaultSize.width,
+          height: parseInt(String(newBlock.settings.height)) || defaultSize.height,
+          zIndex: 0,
+        });
       }
       
       // Simply push to flat array
