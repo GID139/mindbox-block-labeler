@@ -27,8 +27,8 @@ export function LayersPanel() {
     duplicateBlock, 
     removeBlock, 
     visualLayout,
-    bringToFront,
-    sendToBack
+    bringForward,
+    sendBackward
   } = useVisualEditorStore();
 
   const getBlockIcon = (type: BlockInstance['type']) => {
@@ -62,12 +62,12 @@ export function LayersPanel() {
 
   const moveLayerUp = (blockId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    bringToFront(blockId);
+    bringForward(blockId);
   };
 
   const moveLayerDown = (blockId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    sendToBack(blockId);
+    sendBackward(blockId);
   };
 
   const renderBlock = (block: BlockInstance, index: number) => {
@@ -114,7 +114,7 @@ export function LayersPanel() {
               className="w-6 h-6 flex items-center justify-center hover:bg-accent rounded disabled:opacity-30 disabled:cursor-not-allowed"
               onClick={(e) => moveLayerUp(block.id, e)}
               disabled={isTopmost}
-              title="Bring to Front"
+              title="Переместить на один слой вверх"
             >
               <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
@@ -124,7 +124,7 @@ export function LayersPanel() {
               className="w-6 h-6 flex items-center justify-center hover:bg-accent rounded disabled:opacity-30 disabled:cursor-not-allowed"
               onClick={(e) => moveLayerDown(block.id, e)}
               disabled={isBottommost}
-              title="Send to Back"
+              title="Переместить на один слой вниз"
             >
               <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
