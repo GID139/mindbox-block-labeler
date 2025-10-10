@@ -66,12 +66,22 @@ export interface ComponentDefinition {
   name: string;
   masterBlock: BlockInstance;
   variants: ComponentVariant[];
+  thumbnail?: string;
   createdAt: string;
 }
 
 export interface ComponentInstance extends BlockInstance {
   componentId?: string;
   variantId?: string;
+}
+
+export interface AutoLayoutSettings {
+  enabled: boolean;
+  direction: 'horizontal' | 'vertical';
+  gap: number;
+  padding: { top: number; right: number; bottom: number; left: number };
+  align: 'start' | 'center' | 'end';
+  justify: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
 }
 
 export interface VisualEditorProject {

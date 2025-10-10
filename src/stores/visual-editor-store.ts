@@ -36,9 +36,25 @@ export interface VisualLayout {
 }
 
 interface HistoryState {
-  past: BlockInstance[][];
-  present: BlockInstance[];
-  future: BlockInstance[][];
+  past: Array<{ blocks: BlockInstance[]; visualLayout: any; preview?: string; action?: string; timestamp?: number }>;
+  present: { blocks: BlockInstance[]; visualLayout: any; preview?: string; action?: string; timestamp?: number };
+  future: Array<{ blocks: BlockInstance[]; visualLayout: any; preview?: string; action?: string; timestamp?: number }>;
+}
+
+interface VisualEditorState {
+  // ... keep existing code
+
+  // History
+  canUndo: boolean;
+  canRedo: boolean;
+  historyIndex: number;
+  
+  // Actions
+  // ... keep existing code
+  
+  // History with preview
+  goToHistoryState: (index: number) => void;
+  getHistoryList: () => Array<{ index: number; action: string; timestamp: number; preview?: string }>;
 }
 
 interface VisualEditorState {
@@ -92,6 +108,7 @@ interface VisualEditorState {
   // History
   canUndo: boolean;
   canRedo: boolean;
+  historyIndex: number;
   
   // Actions
   setProjectName: (name: string) => void;
@@ -203,6 +220,8 @@ interface VisualEditorState {
   // History
   undo: () => void;
   redo: () => void;
+  goToHistoryState: (index: number) => void;
+  getHistoryList: () => Array<{ index: number; action: string; timestamp: number; preview?: string }>;
   
   // Code generation
   generateCode: () => { html: string; json: string };
@@ -222,20 +241,33 @@ interface VisualEditorState {
 const findBlockById = findBlockByIdUtil;
 
 export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
+  const MAX_HISTORY = 50;
+  
   let history: HistoryState = {
     past: [],
-    present: [],
+    present: { blocks: [], visualLayout: {}, action: 'Initial', timestamp: Date.now() },
     future: [],
   };
+  let historyIndex = -1;
 
-  const pushHistory = () => {
-    const blocks = get().blocks;
+  const pushHistory = (action: string = 'Change', preview?: string) => {
+    const state = get();
+    const newState = {
+      blocks: [...state.blocks],
+      visualLayout: { ...state.visualLayout },
+      preview,
+      action,
+      timestamp: Date.now(),
+    };
+    
     history = {
-      past: [...history.past, history.present],
-      present: blocks,
+      past: [...history.past.slice(-MAX_HISTORY + 1), history.present],
+      present: newState,
       future: [],
     };
-    set({ canUndo: history.past.length > 0, canRedo: false });
+    historyIndex = history.past.length;
+    
+    set({ canUndo: history.past.length > 0, canRedo: false, historyIndex });
   };
 
   return {
@@ -278,6 +310,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     snapToObjects: true,
     canUndo: false,
     canRedo: false,
+    historyIndex: -1,
     
     // Actions
     setProjectName: (name) => set({ projectName: name }),
@@ -1008,10 +1041,14 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         future: [history.present, ...history.future],
       };
       
+      historyIndex = newPast.length;
+      
       set({ 
-        blocks: previous,
+        blocks: previous.blocks,
+        visualLayout: previous.visualLayout,
         canUndo: newPast.length > 0,
         canRedo: true,
+        historyIndex,
       });
     },
 
@@ -1027,11 +1064,66 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         future: newFuture,
       };
       
+      historyIndex = history.past.length;
+      
       set({ 
-        blocks: next,
+        blocks: next.blocks,
+        visualLayout: next.visualLayout,
         canUndo: true,
         canRedo: newFuture.length > 0,
+        historyIndex,
       });
+    },
+
+    goToHistoryState: (index: number) => {
+      const allStates = [...history.past, history.present, ...history.future];
+      if (index < 0 || index >= allStates.length) return;
+
+      const targetState = allStates[index];
+      const currentIndex = history.past.length;
+
+      if (index < currentIndex) {
+        // Going back
+        const newPast = history.past.slice(0, index);
+        const newFuture = [...history.past.slice(index + 1), history.present, ...history.future];
+        
+        history = {
+          past: newPast,
+          present: targetState,
+          future: newFuture,
+        };
+      } else if (index > currentIndex) {
+        // Going forward
+        const stepsForward = index - currentIndex;
+        const newPast = [...history.past, history.present, ...history.future.slice(0, stepsForward - 1)];
+        const newFuture = history.future.slice(stepsForward);
+        
+        history = {
+          past: newPast,
+          present: targetState,
+          future: newFuture,
+        };
+      }
+
+      historyIndex = history.past.length;
+
+      set({
+        blocks: targetState.blocks,
+        visualLayout: targetState.visualLayout,
+        canUndo: history.past.length > 0,
+        canRedo: history.future.length > 0,
+        historyIndex,
+      });
+    },
+
+    getHistoryList: () => {
+      const allStates = [...history.past, history.present, ...history.future];
+      return allStates.map((state, index) => ({
+        index,
+        action: state.action || 'Change',
+        timestamp: state.timestamp || Date.now(),
+        preview: state.preview,
+      }));
     },
     
     generateCode: () => {
@@ -1184,7 +1276,12 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     },
     
     reset: () => {
-      history = { past: [], present: [], future: [] };
+      history = { 
+        past: [], 
+        present: { blocks: [], visualLayout: {}, action: 'Initial', timestamp: Date.now() }, 
+        future: [] 
+      };
+      historyIndex = -1;
       set({
         currentProjectId: null,
         projectName: 'Untitled Project',
@@ -1197,6 +1294,7 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         lastSavedAt: null,
         canUndo: false,
         canRedo: false,
+        historyIndex: -1,
       });
     },
     

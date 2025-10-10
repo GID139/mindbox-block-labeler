@@ -624,8 +624,8 @@ export function KonvaCanvas({
           onContextMenu={handleContextMenu}
           draggable={isPanning}
         >
-          <Layer>
-            {/* Grid */}
+          {/* Layer 1: Background (grid) */}
+          <Layer listening={false}>
             {showGrid && (
               <>
                 {Array.from({ length: Math.ceil(canvasWidth / gridSize) }).map((_, i) => (
@@ -648,8 +648,10 @@ export function KonvaCanvas({
                 ))}
               </>
             )}
+          </Layer>
 
-            {/* Render blocks */}
+          {/* Layer 2: Blocks */}
+          <Layer>
             {rootBlocks.map(block => (
               <Group key={block.id}>
                 <KonvaBlock
@@ -663,7 +665,10 @@ export function KonvaCanvas({
                 />
               </Group>
             ))}
+          </Layer>
 
+          {/* Layer 3: UI (transformer, guides, marquee) */}
+          <Layer listening={false}>
             {/* Snap guide lines */}
             {snapGuides.map((guide, i) => (
               <Line
@@ -693,8 +698,10 @@ export function KonvaCanvas({
                 listening={false}
               />
             )}
+          </Layer>
 
-            {/* Transformer for selected blocks */}
+          {/* Layer 4: Transformer (needs to be on top) */}
+          <Layer>
             <Transformer
               ref={transformerRef}
               onTransformEnd={handleTransformEnd}
