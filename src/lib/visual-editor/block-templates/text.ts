@@ -71,10 +71,14 @@ export const textTemplate: BlockTemplate = {
     }
     
     if (block.settings.fontSize) {
+      const fontSizeValue = typeof block.settings.fontSize === 'string' 
+        ? block.settings.fontSize.replace('px', '')
+        : block.settings.fontSize;
+      
       params.push({
         name: `${block.name}_fontSize`,
         type: 'size',
-        value: block.settings.fontSize.replace('px', ''),
+        value: fontSizeValue,
       });
     }
     

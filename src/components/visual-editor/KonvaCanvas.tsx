@@ -414,6 +414,36 @@ const KonvaBlock = ({
         </Group>
       );
 
+    case 'GROUP':
+      // Groups render their children without background
+      return (
+        <Group {...commonProps}>
+          {/* Transparent rect for selection */}
+          <Rect
+            width={outerWidth}
+            height={outerHeight}
+            fill="transparent"
+            stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
+            strokeWidth={isSelected ? 2 : 0}
+            dash={isSelected ? [5, 5] : undefined}
+            listening={true}
+          />
+          {/* Render children */}
+          {children.map(child => (
+            <KonvaBlock
+              key={child.id}
+              block={child}
+              isSelected={false}
+              onSelect={onSelect}
+              onDragMove={onDragMove}
+              onDragEnd={onDragEnd}
+              onDoubleClick={onDoubleClick}
+              allBlocks={allBlocks}
+            />
+          ))}
+        </Group>
+      );
+
     default:
       return null;
   }
