@@ -61,7 +61,7 @@ export function KonvaTextEditor({
       className="absolute z-[60] pointer-events-auto"
       style={{
         left: x,
-        top: y,
+        top: y + 10,
         width,
         minHeight: height,
       }}

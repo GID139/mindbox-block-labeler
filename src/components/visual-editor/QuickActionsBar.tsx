@@ -43,7 +43,7 @@ export function QuickActionsBar({ block, position, stageScale }: QuickActionsBar
         className="absolute flex gap-1 bg-card/95 backdrop-blur-sm border rounded-md shadow-xl p-1 z-50 animate-fade-in"
         style={{
           left: position.x,
-          top: position.y - (40 / stageScale),
+          top: position.y + (10 / stageScale),
           transform: 'translateX(-50%)',
         }}
         onClick={(e) => e.stopPropagation()}
