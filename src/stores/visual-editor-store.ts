@@ -5,13 +5,7 @@ import { toast } from 'sonner';
 import { Preset } from '@/lib/visual-editor/presets';
 import { getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { 
-  updateChildrenAbsoluteCoordinates,
-  findBlockById as findBlockByIdUtil,
-  getChildren,
-  getAllDescendants,
-  isAncestor,
-  getRootBlocks,
-  getBlockPath
+  findBlockById as findBlockByIdUtil
 } from '@/lib/visual-editor/coordinate-utils';
 
 export interface GlobalStyles {
@@ -30,8 +24,6 @@ export interface VisualLayout {
     width: number;
     height: number;
     zIndex: number;
-    relativeX?: number; // NEW: Relative X to parent (for reference)
-    relativeY?: number; // NEW: Relative Y to parent (for reference)
   };
 }
 
@@ -112,12 +104,12 @@ interface VisualEditorState {
   
   // Actions
   setProjectName: (name: string) => void;
-  addBlock: (block: BlockInstance, parentId?: string, index?: number) => void;
+  addBlock: (block: BlockInstance, x?: number, y?: number) => void;
   removeBlock: (id: string) => void;
   removeSelectedBlocks: () => void;
   updateBlock: (id: string, updates: Partial<BlockInstance>) => void;
-  moveBlock: (draggedId: string, targetId: string | null, index: number) => void;
-  extractFromParent: (blockId: string) => void;
+  moveBlock: (blockId: string, x: number, y: number) => void;
+  
   selectBlock: (id: string | null) => void;
   toggleBlockSelection: (id: string, isMulti: boolean) => void;
   clearSelection: () => void;
@@ -125,9 +117,7 @@ interface VisualEditorState {
   updateSetting: (blockId: string, settingKey: string, value: any) => void;
   duplicateBlock: (id: string) => void;
   
-  // Group/Lock/Hide actions
-  groupBlocks: (blockIds: string[]) => void;
-  ungroupBlock: (groupId: string) => void;
+  // Lock/Hide actions  
   toggleLock: (blockId: string) => void;
   toggleHide: (blockId: string) => void;
   
@@ -318,106 +308,65 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     // Actions
     setProjectName: (name) => set({ projectName: name }),
     
-    addBlock: (block, parentId, index) => {
+    addBlock: (block, x, y) => {
       pushHistory();
       const state = get();
       
-      // Validate nesting level
-      if (parentId) {
-        const parent = findBlockById(state.blocks, parentId);
-        if (!parent?.canContainChildren) {
-          toast.error('Cannot add child to this block type');
-          return;
-        }
-        
-        const path = getBlockPath(state.blocks, parentId);
-        if (path.length >= block.maxNestingLevel) {
-          toast.error(`Maximum nesting level reached (${block.maxNestingLevel})`);
-          return;
-        }
-      }
-      
-      const newBlock = { ...block, parentId: parentId || null };
-      
       // Set initial coordinates
-      if (parentId) {
-        // Nested block - position relative to parent
-        const parentLayout = state.visualLayout[parentId];
-        if (parentLayout) {
-          const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
-          
-          state.updateVisualLayout(newBlock.id, {
-            x: parentLayout.x,              // Absolute X = parent X
-            y: parentLayout.y,              // Absolute Y = parent Y
-            relativeX: 0,                   // Relative X = 0
-            relativeY: 0,                   // Relative Y = 0
-            width: parseInt(String(newBlock.settings.width)) || defaultSize.width,
-            height: parseInt(String(newBlock.settings.height)) || defaultSize.height,
-            zIndex: parentLayout.zIndex + 1,
-          });
-        }
-      } else {
-        // Root block - create visualLayout with smart positioning
-        const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
-        const layoutValues = Object.values(state.visualLayout);
-        
-        // Calculate next position: below last block or at (20, 20)
-        const currentY = layoutValues.length > 0
-          ? Math.max(...layoutValues.map(l => l.y + l.height))
-          : 0;
-        
-        state.updateVisualLayout(newBlock.id, {
-          x: 20,
-          y: layoutValues.length > 0 ? currentY + 20 : 20,
-          width: parseInt(String(newBlock.settings.width)) || defaultSize.width,
-          height: parseInt(String(newBlock.settings.height)) || defaultSize.height,
-          zIndex: 0,
-        });
-      }
+      const defaultSize = getDefaultBlockSize(block.type, block.settings);
+      const layoutValues = Object.values(state.visualLayout);
       
-      // Simply push to flat array
+      // Calculate next position if not provided
+      const posX = x !== undefined ? x : 20;
+      const posY = y !== undefined ? y : (layoutValues.length > 0 ? Math.max(...layoutValues.map(l => l.y + l.height)) + 20 : 20);
+      
+      // Find max zIndex and add 1
+      const maxZIndex = layoutValues.length > 0 
+        ? Math.max(...layoutValues.map(l => l.zIndex ?? 0))
+        : 0;
+      
+      state.updateVisualLayout(block.id, {
+        x: posX,
+        y: posY,
+        width: parseInt(String(block.settings.width)) || defaultSize.width,
+        height: parseInt(String(block.settings.height)) || defaultSize.height,
+        zIndex: maxZIndex + 1,
+      });
+      
+      // Add to blocks array
       set(state => ({
-        blocks: [...state.blocks, newBlock],
+        blocks: [...state.blocks, block],
       }));
-      
-      get().recalculateZIndexes();
     },
     
     removeBlock: (id) => {
       pushHistory();
       const state = get();
       
-      // Get all descendants to remove
-      const toRemove = [id, ...getAllDescendants(state.blocks, id).map(b => b.id)];
-      
-      // Remove from blocks array
-      const newBlocks = state.blocks.filter(block => !toRemove.includes(block.id));
+      // Simply remove the block
+      const newBlocks = state.blocks.filter(block => block.id !== id);
       
       // Remove from visualLayout
       const newLayout = { ...state.visualLayout };
-      toRemove.forEach(blockId => delete newLayout[blockId]);
+      delete newLayout[id];
       
       set({
         blocks: newBlocks,
         visualLayout: newLayout,
-        selectedBlockIds: state.selectedBlockIds.filter(bid => !toRemove.includes(bid)),
+        selectedBlockIds: state.selectedBlockIds.filter(bid => bid !== id),
       });
-      
-      get().recalculateZIndexes();
     },
     
     removeSelectedBlocks: () => {
       pushHistory();
       const state = get();
-      const toRemove = new Set<string>();
-      
-      state.selectedBlockIds.forEach(id => {
-        toRemove.add(id);
-        getAllDescendants(state.blocks, id).forEach(b => toRemove.add(b.id));
-      });
+      const toRemove = new Set<string>(state.selectedBlockIds);
       
       const newBlocks = state.blocks.filter(block => !toRemove.has(block.id));
-      set({ blocks: newBlocks, selectedBlockIds: [] });
+      const newLayout = { ...state.visualLayout };
+      toRemove.forEach(id => delete newLayout[id]);
+      
+      set({ blocks: newBlocks, visualLayout: newLayout, selectedBlockIds: [] });
     },
     
     updateBlock: (id, updates) => {
@@ -429,65 +378,9 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       }));
     },
     
-    moveBlock: (draggedId, targetId, index) => {
+    moveBlock: (blockId, x, y) => {
       pushHistory();
-      const state = get();
-      
-      // Prevent moving into self or descendants
-      if (targetId && isAncestor(state.blocks, targetId, draggedId)) {
-        toast.error('Cannot move block into its own child');
-        return;
-      }
-      
-      // Update parentId
-      set(state => ({
-        blocks: state.blocks.map(block => 
-          block.id === draggedId 
-            ? { ...block, parentId: targetId || null }
-            : block
-        ),
-      }));
-      
-      // Reset to (0, 0) relative to new parent
-      if (targetId) {
-        const parentLayout = state.visualLayout[targetId];
-        if (parentLayout) {
-          state.updateVisualLayout(draggedId, {
-            x: parentLayout.x,
-            y: parentLayout.y,
-            relativeX: 0,
-            relativeY: 0,
-          });
-        }
-      } else {
-        // Moved to root - keep absolute coords but clear relative
-        const currentLayout = state.visualLayout[draggedId];
-        if (currentLayout) {
-          state.updateVisualLayout(draggedId, {
-            relativeX: undefined,
-            relativeY: undefined,
-          });
-        }
-      }
-    },
-    
-    extractFromParent: (blockId) => {
-      pushHistory();
-      const state = get();
-      const block = findBlockById(state.blocks, blockId);
-      if (!block || !block.parentId) {
-        toast.info('Block is already at root level');
-        return;
-      }
-      
-      // Simply remove parentId
-      set(state => ({
-        blocks: state.blocks.map(b => 
-          b.id === blockId ? { ...b, parentId: null } : b
-        ),
-      }));
-      
-      toast.success('Block extracted from parent');
+      get().updateVisualLayout(blockId, { x, y });
     },
     
     selectBlock: (id) => set({ selectedBlockIds: id ? [id] : [], selectedTableCell: null }),
@@ -543,156 +436,16 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         name: `${block.name}_copy`,
       };
       
-      // Add to same parent
-      get().addBlock(newBlock, block.parentId || undefined);
-      
-      // Duplicate all children recursively
-      const children = getChildren(state.blocks, id);
-      const duplicateChildren = (parentId: string, children: BlockInstance[]) => {
-        children.forEach(child => {
-          const duplicatedChild = {
-            ...child,
-            id: `${child.type.toLowerCase()}-${Date.now()}-${Math.random()}`,
-            parentId: parentId,
-          };
-          get().addBlock(duplicatedChild, parentId);
-          
-          // Recursively duplicate this child's children
-          const grandchildren = getChildren(state.blocks, child.id);
-          if (grandchildren.length > 0) {
-            duplicateChildren(duplicatedChild.id, grandchildren);
-          }
-        });
-      };
-      
-      duplicateChildren(newBlock.id, children);
+      // Get current layout
+      const layout = state.visualLayout[id];
+      if (layout) {
+        // Add block at offset position
+        get().addBlock(newBlock, layout.x + 20, layout.y + 20);
+      } else {
+        get().addBlock(newBlock);
+      }
     },
     
-    groupBlocks: (blockIds) => {
-      if (blockIds.length < 2) {
-        toast.error('Select at least 2 blocks to group');
-        return;
-      }
-      
-      pushHistory();
-      const state = get();
-      
-      // Calculate bounding box
-      const layouts = blockIds.map(id => state.visualLayout[id]).filter(Boolean);
-      if (layouts.length === 0) return;
-      
-      const minX = Math.min(...layouts.map(l => l.x));
-      const minY = Math.min(...layouts.map(l => l.y));
-      const maxX = Math.max(...layouts.map(l => l.x + l.width));
-      const maxY = Math.max(...layouts.map(l => l.y + l.height));
-      const minZIndex = Math.min(...layouts.map(l => l.zIndex || 0));
-      
-      // Get common parent
-      const firstBlock = findBlockById(state.blocks, blockIds[0]);
-      const commonParentId = firstBlock?.parentId || null;
-      
-      // Create GROUP block
-      const groupBlock: BlockInstance = {
-        id: `group-${Date.now()}`,
-        type: 'GROUP',
-        name: `group${Math.floor(Math.random() * 1000)}`,
-        settings: {
-          display: 'block',
-          background: { type: 'transparent' },
-          clipChildren: false,
-          collapsed: false,
-        },
-        canContainChildren: true,
-        maxNestingLevel: 10,
-        parentId: commonParentId,
-      };
-      
-      // Add group with correct layout
-      set(state => ({
-        blocks: [...state.blocks, groupBlock],
-      }));
-      
-      // Set absolute coordinates for the group itself
-      state.updateVisualLayout(groupBlock.id, {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY,
-        zIndex: minZIndex,
-      });
-      
-      // Update children: set parentId and update BOTH relative AND absolute coords
-      set(state => ({
-        blocks: state.blocks.map(block => {
-          if (blockIds.includes(block.id)) {
-            const layout = state.visualLayout[block.id];
-            if (layout) {
-              const relX = layout.x - minX;
-              const relY = layout.y - minY;
-              
-              // Update both absolute (for rendering) and relative (for group logic) coordinates
-              state.updateVisualLayout(block.id, {
-                x: layout.x,        // Keep absolute coordinates
-                y: layout.y,        // Keep absolute coordinates
-                relativeX: relX,    // Set relative to group
-                relativeY: relY,    // Set relative to group
-                zIndex: (layout.zIndex || 0) - minZIndex,
-              });
-            }
-            return { ...block, parentId: groupBlock.id };
-          }
-          return block;
-        }),
-        selectedBlockIds: [groupBlock.id],
-      }));
-      
-      toast.success('Blocks grouped');
-    },
-    
-    ungroupBlock: (groupId) => {
-      const state = get();
-      const group = findBlockById(state.blocks, groupId);
-      if (!group || group.type !== 'GROUP') {
-        toast.error('Not a group block');
-        return;
-      }
-      
-      pushHistory();
-      
-      const groupLayout = state.visualLayout[groupId];
-      const children = getChildren(state.blocks, groupId);
-      
-      // Convert children back to absolute coords
-      children.forEach(child => {
-        const childLayout = state.visualLayout[child.id];
-        if (childLayout && groupLayout) {
-          state.updateVisualLayout(child.id, {
-            x: groupLayout.x + (childLayout.relativeX || 0),
-            y: groupLayout.y + (childLayout.relativeY || 0),
-            relativeX: undefined,
-            relativeY: undefined,
-            zIndex: (childLayout.zIndex || 0) + (groupLayout.zIndex || 0),
-          });
-        }
-      });
-      
-      // Remove group and restore parent hierarchy
-      set(state => ({
-        blocks: state.blocks
-          .filter(b => b.id !== groupId)
-          .map(b => children.some(c => c.id === b.id) 
-            ? { ...b, parentId: group.parentId || null } 
-            : b
-          ),
-        selectedBlockIds: children.map(c => c.id),
-      }));
-      
-      // Delete group layout
-      const { [groupId]: _, ...restLayout } = state.visualLayout;
-      set({ visualLayout: restLayout });
-      
-      toast.success('Group ungrouped');
-    },
     
     toggleLock: (blockId) => {
       const block = findBlockById(get().blocks, blockId);
@@ -851,39 +604,19 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     updateVisualLayout: (blockId, layout) => {
       const state = get();
       const currentLayout = state.visualLayout[blockId];
-      const blocks = state.blocks;
       
-      // Calculate deltas if position changed
-      const deltaX = layout.x !== undefined && currentLayout 
-        ? layout.x - currentLayout.x 
-        : 0;
-      const deltaY = layout.y !== undefined && currentLayout
-        ? layout.y - currentLayout.y 
-        : 0;
-      
-      const block = findBlockByIdUtil(blocks, blockId);
+      const block = findBlockByIdUtil(state.blocks, blockId);
       const defaultSize = block ? getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
       const current = currentLayout || { x: 0, y: 0, width: defaultSize.width, height: defaultSize.height, zIndex: 0 };
       
       // Update this block's layout
-      let updatedLayout = {
+      const updatedLayout = {
         ...state.visualLayout,
         [blockId]: {
           ...current,
           ...layout,
         },
       };
-      
-      // If position changed, update all children's absolute coordinates
-      if ((deltaX !== 0 || deltaY !== 0) && block) {
-        updatedLayout = updateChildrenAbsoluteCoordinates(
-          blockId,
-          deltaX,
-          deltaY,
-          blocks,
-          updatedLayout
-        );
-      }
       
       set({ visualLayout: updatedLayout });
     },
@@ -1592,63 +1325,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       get().sendBackward(blockId);
     },
 
-    moveBlockToGroup: (blockId, targetGroupId) => {
-      pushHistory('Move to Group');
-      const state = get();
-      const block = findBlockById(state.blocks, blockId);
-      if (!block) return;
-      
-      // Prevent moving into self or descendants
-      if (targetGroupId && isAncestor(state.blocks, targetGroupId, blockId)) {
-        toast.error('Cannot move block into its own child');
-        return;
-      }
-      
-      const updatedBlocks = state.blocks.map(b =>
-        b.id === blockId ? { ...b, parentId: targetGroupId } : b
-      );
-      
-      set({ blocks: updatedBlocks });
-      toast.success(targetGroupId ? 'Moved to group' : 'Moved to root');
-    },
-    
-    recalculateZIndexes: () => {
-      const { blocks, visualLayout } = get();
-      const newLayout = { ...visualLayout };
-      
-      // Calculate depth for each block
-      const getDepth = (blockId: string): number => {
-        const block = findBlockById(blocks, blockId);
-        if (!block || !block.parentId) return 0;
-        return 1 + getDepth(block.parentId);
-      };
-      
-      // Group blocks by depth
-      const blocksByDepth: Map<number, string[]> = new Map();
-      blocks.forEach(block => {
-        const depth = getDepth(block.id);
-        if (!blocksByDepth.has(depth)) {
-          blocksByDepth.set(depth, []);
-        }
-        blocksByDepth.get(depth)!.push(block.id);
-      });
-      
-      // Sort depths (0, 1, 2, ...)
-      const sortedDepths = Array.from(blocksByDepth.keys()).sort((a, b) => a - b);
-      
-      // Assign z-index: depth * 1000 + order within depth
-      sortedDepths.forEach(depth => {
-        const blocksAtDepth = blocksByDepth.get(depth)!;
-        blocksAtDepth.forEach((blockId, order) => {
-          const zIndex = depth * 1000 + order;
-          if (newLayout[blockId]) {
-            newLayout[blockId] = { ...newLayout[blockId], zIndex };
-          }
-        });
-      });
-      
-      set({ visualLayout: newLayout });
-    },
     
     // Guides
     addGuide: (orientation, position) => {
