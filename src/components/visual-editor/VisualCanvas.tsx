@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { MarqueeSelection } from './MarqueeSelection';
 import { BlockContextMenu } from './BlockContextMenu';
 import { Ruler } from './Ruler';
-import { Measurements } from './Measurements';
 import { GuideLines } from './GuideLines';
 import { SmartGuides } from './SmartGuides';
 import { importImage } from '@/lib/visual-editor/export-utils';
@@ -194,9 +193,19 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     setSnapGuides(snapResult.guides);
                   }
 
-                  // Apply canvas boundaries
-                  x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
-                  y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+                  // Apply constraints based on parent
+                  if (block.parentId) {
+                    const parent = blocks.find(b => b.id === block.parentId);
+                    const parentLayout = parent ? visualLayout[parent.id] : null;
+                    
+                    if (parentLayout) {
+                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - currentWidth));
+                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - currentHeight));
+                    }
+                  } else {
+                    x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
+                    y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+                  }
 
                   targetRef.current.style.transform = `translate(${x}px, ${y}px)`;
                 }
@@ -224,9 +233,19 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     if (snapResult.snappedY) y = snapResult.y;
                   }
 
-                  // Apply canvas boundaries
-                  x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
-                  y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+                  // Apply constraints based on parent
+                  if (block.parentId) {
+                    const parent = blocks.find(b => b.id === block.parentId);
+                    const parentLayout = parent ? visualLayout[parent.id] : null;
+                    
+                    if (parentLayout) {
+                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - currentWidth));
+                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - currentHeight));
+                    }
+                  } else {
+                    x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
+                    y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
+                  }
 
                   updateVisualLayout(block.id, { x, y });
                 }
@@ -244,11 +263,23 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   if (constraints.minHeight) newHeight = Math.max(constraints.minHeight, newHeight);
                   if (constraints.maxHeight) newHeight = Math.min(constraints.maxHeight, newHeight);
 
-                  // Apply canvas boundaries
-                  newWidth = Math.min(newWidth, canvasWidth - x);
-                  newHeight = Math.min(newHeight, canvasHeight - y);
-                  x = Math.max(0, Math.min(x, canvasWidth - newWidth));
-                  y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+                  // Apply constraints based on parent
+                  if (block.parentId) {
+                    const parent = blocks.find(b => b.id === block.parentId);
+                    const parentLayout = parent ? visualLayout[parent.id] : null;
+                    
+                    if (parentLayout) {
+                      newWidth = Math.min(newWidth, parentLayout.width);
+                      newHeight = Math.min(newHeight, parentLayout.height);
+                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - newWidth));
+                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - newHeight));
+                    }
+                  } else {
+                    newWidth = Math.min(newWidth, canvasWidth - x);
+                    newHeight = Math.min(newHeight, canvasHeight - y);
+                    x = Math.max(0, Math.min(x, canvasWidth - newWidth));
+                    y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+                  }
 
                   targetRef.current.style.transform = `translate(${x}px, ${y}px)`;
                   targetRef.current.style.width = `${newWidth}px`;
@@ -268,11 +299,23 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                   if (constraints.minHeight) newHeight = Math.max(constraints.minHeight, newHeight);
                   if (constraints.maxHeight) newHeight = Math.min(constraints.maxHeight, newHeight);
 
-                  // Apply canvas boundaries
-                  newWidth = Math.min(newWidth, canvasWidth - x);
-                  newHeight = Math.min(newHeight, canvasHeight - y);
-                  x = Math.max(0, Math.min(x, canvasWidth - newWidth));
-                  y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+                  // Apply constraints based on parent
+                  if (block.parentId) {
+                    const parent = blocks.find(b => b.id === block.parentId);
+                    const parentLayout = parent ? visualLayout[parent.id] : null;
+                    
+                    if (parentLayout) {
+                      newWidth = Math.min(newWidth, parentLayout.width);
+                      newHeight = Math.min(newHeight, parentLayout.height);
+                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - newWidth));
+                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - newHeight));
+                    }
+                  } else {
+                    newWidth = Math.min(newWidth, canvasWidth - x);
+                    newHeight = Math.min(newHeight, canvasHeight - y);
+                    x = Math.max(0, Math.min(x, canvasWidth - newWidth));
+                    y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+                  }
 
                   updateVisualLayout(block.id, {
                     width: newWidth,
@@ -344,6 +387,28 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                 canvasHeight={canvasHeight} 
               />
             )}
+            
+            {/* Measurements attached to block */}
+            <div
+              className="absolute pointer-events-none z-[9999]"
+              style={{
+                bottom: '-28px',
+                left: '0',
+                width: '100%',
+                height: '24px',
+              }}
+            >
+              <div className="relative w-full h-full">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-medium shadow-md whitespace-nowrap">
+                  {Math.round(layout.width)} × {Math.round(layout.height)}
+                </div>
+              </div>
+              <svg width={layout.width} height="24" className="absolute top-0 left-0">
+                <line x1="0" y1="12" x2={layout.width} y2="12" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeDasharray="2,2" />
+                <line x1="0" y1="8" x2="0" y2="16" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+                <line x1={layout.width} y1="8" x2={layout.width} y2="16" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+              </svg>
+            </div>
           </>
         )}
       </div>
@@ -573,9 +638,6 @@ export function VisualCanvas() {
         
         {/* Rulers */}
         {showRulers && <Ruler canvasWidth={canvasWidth} canvasHeight={canvasHeight} />}
-
-        {/* Measurements */}
-        {showMeasurements && <Measurements selectedBlockIds={selectedBlockIds} visualLayout={visualLayout} />}
       </div>
     </div>
   );
