@@ -1483,89 +1483,113 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       toast.success('Blocks distributed');
     },
     
-    // Z-index management - using array order instead of zIndex
+    // Z-index management - using visualLayout zIndex
     bringToFront: (blockId) => {
       pushHistory('Bring to Front');
       const state = get();
-      const block = state.blocks.find(b => b.id === blockId);
-      if (!block) return;
+      const layout = state.visualLayout[blockId];
+      if (!layout) return;
       
-      // Move to end of array (highest z-order)
-      const otherBlocks = state.blocks.filter(b => b.id !== blockId);
-      set({ blocks: [...otherBlocks, block] });
+      // Find max zIndex
+      const maxZIndex = Math.max(
+        ...Object.values(state.visualLayout).map(l => l.zIndex ?? 0),
+        0
+      );
+      
+      // Set to max + 1
+      state.updateVisualLayout(blockId, { zIndex: maxZIndex + 1 });
       toast.success('Brought to front');
     },
     
     sendToBack: (blockId) => {
       pushHistory('Send to Back');
       const state = get();
-      const block = state.blocks.find(b => b.id === blockId);
-      if (!block) return;
+      const layout = state.visualLayout[blockId];
+      if (!layout) return;
       
-      // Move to start of array (lowest z-order)
-      const otherBlocks = state.blocks.filter(b => b.id !== blockId);
-      set({ blocks: [block, ...otherBlocks] });
+      // Find min zIndex
+      const minZIndex = Math.min(
+        ...Object.values(state.visualLayout).map(l => l.zIndex ?? 0),
+        0
+      );
+      
+      // Set to min - 1
+      state.updateVisualLayout(blockId, { zIndex: minZIndex - 1 });
       toast.success('Sent to back');
     },
     
     bringForward: (blockId) => {
       pushHistory('Bring Forward');
       const state = get();
-      const index = state.blocks.findIndex(b => b.id === blockId);
-      if (index === -1 || index === state.blocks.length - 1) {
+      const layout = state.visualLayout[blockId];
+      if (!layout) return;
+      
+      const currentZ = layout.zIndex ?? 0;
+      
+      // Find next higher zIndex
+      const allZIndexes = Object.values(state.visualLayout)
+        .map(l => l.zIndex ?? 0)
+        .filter(z => z > currentZ)
+        .sort((a, b) => a - b);
+      
+      if (allZIndexes.length === 0) {
         toast.info('Already at front');
         return;
       }
       
-      const newBlocks = [...state.blocks];
-      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
-      set({ blocks: newBlocks });
+      // Swap with next higher element
+      const nextZ = allZIndexes[0];
+      const nextBlockId = Object.entries(state.visualLayout)
+        .find(([id, l]) => (l.zIndex ?? 0) === nextZ)?.[0];
+      
+      if (nextBlockId) {
+        state.updateVisualLayout(blockId, { zIndex: nextZ });
+        state.updateVisualLayout(nextBlockId, { zIndex: currentZ });
+      }
+      
       toast.success('Brought forward');
     },
     
     sendBackward: (blockId) => {
       pushHistory('Send Backward');
       const state = get();
-      const index = state.blocks.findIndex(b => b.id === blockId);
-      if (index <= 0) {
+      const layout = state.visualLayout[blockId];
+      if (!layout) return;
+      
+      const currentZ = layout.zIndex ?? 0;
+      
+      // Find next lower zIndex
+      const allZIndexes = Object.values(state.visualLayout)
+        .map(l => l.zIndex ?? 0)
+        .filter(z => z < currentZ)
+        .sort((a, b) => b - a);
+      
+      if (allZIndexes.length === 0) {
         toast.info('Already at back');
         return;
       }
       
-      const newBlocks = [...state.blocks];
-      [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
-      set({ blocks: newBlocks });
+      // Swap with next lower element
+      const prevZ = allZIndexes[0];
+      const prevBlockId = Object.entries(state.visualLayout)
+        .find(([id, l]) => (l.zIndex ?? 0) === prevZ)?.[0];
+      
+      if (prevBlockId) {
+        state.updateVisualLayout(blockId, { zIndex: prevZ });
+        state.updateVisualLayout(prevBlockId, { zIndex: currentZ });
+      }
+      
       toast.success('Sent backward');
     },
 
     moveUp: (blockId) => {
       pushHistory('Move Up');
-      const state = get();
-      const index = state.blocks.findIndex(b => b.id === blockId);
-      if (index === -1 || index === state.blocks.length - 1) {
-        toast.info('Already at top');
-        return;
-      }
-      
-      const newBlocks = [...state.blocks];
-      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
-      set({ blocks: newBlocks });
-      toast.success('Moved up');
+      get().bringForward(blockId);
     },
 
     moveDown: (blockId) => {
       pushHistory('Move Down');
-      const state = get();
-      const index = state.blocks.findIndex(b => b.id === blockId);
-      if (index <= 0) {
-        toast.info('Already at bottom');
-        return;
-      }
-      
-      const newBlocks = [...state.blocks];
-      [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
-      set({ blocks: newBlocks });
-      toast.success('Moved down');
+      get().sendBackward(blockId);
     },
 
     moveBlockToGroup: (blockId, targetGroupId) => {
