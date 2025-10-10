@@ -3,7 +3,7 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } 
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Toolbar } from './Toolbar';
 import { BlockLibrary } from './BlockLibrary';
-import { VisualCanvas } from './VisualCanvas';
+import { KonvaCanvas } from './KonvaCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
 import { LayersPanel } from './LayersPanel';
@@ -244,8 +244,8 @@ export function VisualEditorTab() {
           </div>
           
           {/* Center: Canvas */}
-          <div className="flex-1 overflow-y-auto p-4 canvas-container">
-            <VisualCanvas />
+          <div className="flex-1 overflow-hidden canvas-container">
+            <KonvaCanvas />
           </div>
           
           {/* Right: Layers Panel or Settings Panel */}
