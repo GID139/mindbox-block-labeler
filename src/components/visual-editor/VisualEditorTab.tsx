@@ -6,7 +6,6 @@ import { BlockLibrary } from './BlockLibrary';
 import { KonvaCanvas } from './KonvaCanvas';
 import { SettingsPanel } from './SettingsPanel';
 import { QuickTips } from './QuickTips';
-import { LayersPanel } from './LayersPanel';
 import { LayersPanelWithDragDrop } from './LayersDragDrop';
 import { InteractiveTutorial } from './InteractiveTutorial';
 import { ComponentsLibrary } from './ComponentsLibrary';
