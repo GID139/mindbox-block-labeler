@@ -1251,9 +1251,27 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     bringForward: (blockId) => {
       const state = get();
-      const layout = state.visualLayout[blockId];
-      if (!layout) return;
       
+      // Ensure block has layout entry
+      if (!state.visualLayout[blockId]) {
+        const block = findBlockById(state.blocks, blockId);
+        if (!block) return;
+        
+        const defaultSize = getDefaultBlockSize(block.type, block.settings);
+        const maxZ = Math.max(0, ...Object.values(state.visualLayout).map(l => l.zIndex ?? 0));
+        
+        state.updateVisualLayout(blockId, {
+          x: 20,
+          y: 20,
+          width: parseInt(String(block.settings.width)) || defaultSize.width,
+          height: parseInt(String(block.settings.height)) || defaultSize.height,
+          zIndex: maxZ + 1,
+        });
+        toast.info('Block layout initialized');
+        return;
+      }
+      
+      const layout = state.visualLayout[blockId];
       const currentZ = layout.zIndex ?? 0;
       
       // Find next higher zIndex
@@ -1288,9 +1306,27 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     
     sendBackward: (blockId) => {
       const state = get();
-      const layout = state.visualLayout[blockId];
-      if (!layout) return;
       
+      // Ensure block has layout entry
+      if (!state.visualLayout[blockId]) {
+        const block = findBlockById(state.blocks, blockId);
+        if (!block) return;
+        
+        const defaultSize = getDefaultBlockSize(block.type, block.settings);
+        const maxZ = Math.max(0, ...Object.values(state.visualLayout).map(l => l.zIndex ?? 0));
+        
+        state.updateVisualLayout(blockId, {
+          x: 20,
+          y: 20,
+          width: parseInt(String(block.settings.width)) || defaultSize.width,
+          height: parseInt(String(block.settings.height)) || defaultSize.height,
+          zIndex: maxZ + 1,
+        });
+        toast.info('Block layout initialized');
+        return;
+      }
+      
+      const layout = state.visualLayout[blockId];
       const currentZ = layout.zIndex ?? 0;
       
       // Find next lower zIndex
