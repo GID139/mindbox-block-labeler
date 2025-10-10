@@ -8,9 +8,10 @@ import { BlockInstance } from '@/types/visual-editor';
 interface QuickActionsBarProps {
   block: BlockInstance;
   position: { x: number; y: number };
+  stageScale: number;
 }
 
-export function QuickActionsBar({ block, position }: QuickActionsBarProps) {
+export function QuickActionsBar({ block, position, stageScale }: QuickActionsBarProps) {
   const { updateBlock, duplicateBlock, removeBlock } = useVisualEditorStore();
 
   const showColorPicker = ['RECTANGLE', 'CIRCLE', 'BUTTON', 'TEXT'].includes(block.type);
@@ -40,7 +41,7 @@ export function QuickActionsBar({ block, position }: QuickActionsBarProps) {
       className="absolute flex gap-1 bg-card/95 backdrop-blur-sm border rounded-md shadow-xl p-1 z-50 animate-fade-in"
       style={{
         left: position.x,
-        top: position.y - 48,
+        top: position.y - (40 / stageScale),
         transform: 'translateX(-50%)',
       }}
       onClick={(e) => e.stopPropagation()}

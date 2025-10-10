@@ -201,7 +201,7 @@ const KonvaBlock = ({
             stroke={isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb'}
             strokeWidth={isSelected ? 2 : 1}
             dash={block.type === 'GROUP' ? [10, 5] : undefined}
-            listening={false}
+            listening={true}
           />
           {/* Render children */}
           {children.map(child => (
@@ -246,6 +246,7 @@ export function KonvaCanvas({
     snapToObjects: snapEnabled,
   } = useVisualEditorStore();
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const internalStageRef = externalStageRef || stageRef;
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -271,6 +272,9 @@ export function KonvaCanvas({
   // Keyboard modifiers for resize
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isAltPressed, setIsAltPressed] = useState(false);
+  
+  // Canvas focus state
+  const [isCanvasFocused, setIsCanvasFocused] = useState(false);
 
   // Make canvas droppable
   const { setNodeRef, isOver } = useDroppable({
@@ -287,6 +291,25 @@ export function KonvaCanvas({
 
   const canvasWidth = deviceDimensions[deviceMode].width;
   const canvasHeight = deviceDimensions[deviceMode].height;
+  const STAGE_WIDTH = 5000;
+  const STAGE_HEIGHT = 5000;
+
+  // Focus management for canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleFocus = () => setIsCanvasFocused(true);
+    const handleBlur = () => setIsCanvasFocused(false);
+
+    container.addEventListener('focus', handleFocus);
+    container.addEventListener('blur', handleBlur);
+
+    return () => {
+      container.removeEventListener('focus', handleFocus);
+      container.removeEventListener('blur', handleBlur);
+    };
+  }, []);
 
   // Zoom & Pan via Mouse Wheel
   useEffect(() => {
@@ -332,10 +355,10 @@ export function KonvaCanvas({
     return () => container.removeEventListener('wheel', handleWheel);
   }, [internalStageRef, onStageTransform]);
 
-  // Pan via Space + Drag
+  // Pan via Space + Drag (only when canvas is focused)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !isPanning && !editingTextBlock) {
+      if (e.code === 'Space' && !isPanning && !editingTextBlock && isCanvasFocused) {
         e.preventDefault();
         setIsPanning(true);
         if (internalStageRef.current) {
@@ -364,7 +387,7 @@ export function KonvaCanvas({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isPanning, editingTextBlock, internalStageRef]);
+  }, [isPanning, editingTextBlock, internalStageRef, isCanvasFocused]);
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -599,8 +622,14 @@ export function KonvaCanvas({
 
   return (
     <div 
-      ref={setNodeRef}
-      className="relative w-full h-full flex items-center justify-center bg-muted/20"
+      ref={(node) => {
+        setNodeRef(node);
+        if (node) containerRef.current = node;
+      }}
+      tabIndex={0}
+      className="relative w-full h-full flex items-center justify-center bg-muted/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+      onMouseEnter={() => containerRef.current?.focus()}
+      data-canvas-container
     >
       <div 
         className="relative bg-card shadow-lg"
@@ -628,19 +657,19 @@ export function KonvaCanvas({
           <Layer listening={false}>
             {showGrid && (
               <>
-                {Array.from({ length: Math.ceil(canvasWidth / gridSize) }).map((_, i) => (
+                {Array.from({ length: Math.ceil(STAGE_WIDTH / gridSize) }).map((_, i) => (
                   <Line
                     key={`v-${i}`}
-                    points={[i * gridSize, 0, i * gridSize, canvasHeight]}
+                    points={[i * gridSize, 0, i * gridSize, STAGE_HEIGHT]}
                     stroke="hsl(214, 32%, 91%)"
                     strokeWidth={0.5}
                     listening={false}
                   />
                 ))}
-                {Array.from({ length: Math.ceil(canvasHeight / gridSize) }).map((_, i) => (
+                {Array.from({ length: Math.ceil(STAGE_HEIGHT / gridSize) }).map((_, i) => (
                   <Line
                     key={`h-${i}`}
-                    points={[0, i * gridSize, canvasWidth, i * gridSize]}
+                    points={[0, i * gridSize, STAGE_WIDTH, i * gridSize]}
                     stroke="hsl(214, 32%, 91%)"
                     strokeWidth={0.5}
                     listening={false}
@@ -648,6 +677,19 @@ export function KonvaCanvas({
                 ))}
               </>
             )}
+            
+            {/* Visible canvas area indicator */}
+            <Rect
+              x={0}
+              y={0}
+              width={canvasWidth}
+              height={canvasHeight}
+              fill="transparent"
+              stroke="#94a3b8"
+              strokeWidth={2}
+              dash={[10, 5]}
+              listening={false}
+            />
           </Layer>
 
           {/* Layer 2: Blocks */}
@@ -675,8 +717,8 @@ export function KonvaCanvas({
                 key={`guide-${i}`}
                 points={
                   guide.type === 'vertical'
-                    ? [guide.position, 0, guide.position, canvasHeight]
-                    : [0, guide.position, canvasWidth, guide.position]
+                    ? [guide.position, 0, guide.position, STAGE_HEIGHT]
+                    : [0, guide.position, STAGE_WIDTH, guide.position]
                 }
                 stroke="#ff00ff"
                 strokeWidth={1}
@@ -787,6 +829,7 @@ export function KonvaCanvas({
               x: (layout.x + layout.width / 2) * zoom * stageScale + stagePos.x,
               y: layout.y * zoom * stageScale + stagePos.y,
             }}
+            stageScale={zoom * stageScale}
           />
         );
       })()}

@@ -25,6 +25,12 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if canvas is focused
+      const activeElement = document.activeElement;
+      const isCanvasFocused = activeElement?.closest('[data-canvas-container]');
+      
+      if (!isCanvasFocused) return; // Ignore shortcuts if canvas not focused
+      
       // Tool shortcuts (only in visual mode)
       if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
         if (e.key === 'v' || e.key === 'V') {

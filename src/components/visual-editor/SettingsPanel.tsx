@@ -15,6 +15,7 @@ import { BackgroundSetting, BlockInstance } from '@/types/visual-editor';
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
+import { Switch } from '@/components/ui/switch';
 
 export function SettingsPanel() {
   const { 
@@ -88,6 +89,142 @@ export function SettingsPanel() {
   };
 
   const layout = visualLayout[currentBlock.id];
+
+  const renderUniversalSettings = () => (
+    <Accordion type="multiple" className="border rounded-md mb-4">
+      <AccordionItem value="block-properties" className="border-0">
+        <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+          Block Properties
+        </AccordionTrigger>
+        <AccordionContent className="px-3 pb-3 space-y-3">
+          <div>
+            <Label className="text-sm">Name</Label>
+            <Input
+              value={currentBlock.name}
+              onChange={(e) => updateBlock(currentBlock.id, { name: e.target.value })}
+              className="mt-1.5 h-9"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">Locked</Label>
+            <Switch
+              checked={currentBlock.locked || false}
+              onCheckedChange={(locked) => updateBlock(currentBlock.id, { locked })}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">Hidden</Label>
+            <Switch
+              checked={currentBlock.hidden || false}
+              onCheckedChange={(hidden) => updateBlock(currentBlock.id, { hidden })}
+            />
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      
+      <AccordionItem value="position-size" className="border-0">
+        <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+          Position & Size
+        </AccordionTrigger>
+        <AccordionContent className="px-3 pb-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-sm">X</Label>
+              <Input
+                type="number"
+                value={Math.round(layout?.x || 0)}
+                onChange={(e) => updateVisualLayout(currentBlock.id, { x: parseInt(e.target.value) })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Y</Label>
+              <Input
+                type="number"
+                value={Math.round(layout?.y || 0)}
+                onChange={(e) => updateVisualLayout(currentBlock.id, { y: parseInt(e.target.value) })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Width</Label>
+              <Input
+                type="number"
+                value={Math.round(layout?.width || 0)}
+                onChange={(e) => updateVisualLayout(currentBlock.id, { width: parseInt(e.target.value) })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Height</Label>
+              <Input
+                type="number"
+                value={Math.round(layout?.height || 0)}
+                onChange={(e) => updateVisualLayout(currentBlock.id, { height: parseInt(e.target.value) })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      
+      <AccordionItem value="constraints" className="border-0">
+        <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+          Constraints
+        </AccordionTrigger>
+        <AccordionContent className="px-3 pb-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-sm">Min Width</Label>
+              <Input
+                type="number"
+                value={currentBlock.constraints?.minWidth || 20}
+                onChange={(e) => updateBlock(currentBlock.id, {
+                  constraints: { ...currentBlock.constraints, minWidth: parseInt(e.target.value) }
+                })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Max Width</Label>
+              <Input
+                type="number"
+                value={currentBlock.constraints?.maxWidth || 1000}
+                onChange={(e) => updateBlock(currentBlock.id, {
+                  constraints: { ...currentBlock.constraints, maxWidth: parseInt(e.target.value) }
+                })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Min Height</Label>
+              <Input
+                type="number"
+                value={currentBlock.constraints?.minHeight || 20}
+                onChange={(e) => updateBlock(currentBlock.id, {
+                  constraints: { ...currentBlock.constraints, minHeight: parseInt(e.target.value) }
+                })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-sm">Max Height</Label>
+              <Input
+                type="number"
+                value={currentBlock.constraints?.maxHeight || 1000}
+                onChange={(e) => updateBlock(currentBlock.id, {
+                  constraints: { ...currentBlock.constraints, maxHeight: parseInt(e.target.value) }
+                })}
+                className="mt-1.5 h-9"
+              />
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
 
   const renderSettings = () => {
     // Alias for settings access - use currentBlock for context-aware settings
@@ -998,6 +1135,95 @@ export function SettingsPanel() {
 
         {/* Settings */}
         <Card className="p-4">
+          {/* Universal Settings */}
+          <Accordion type="multiple" className="border rounded-md mb-4">
+            <AccordionItem value="block-properties" className="border-0">
+              <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                Block Properties
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 space-y-3">
+                <div>
+                  <Label className="text-sm">Name</Label>
+                  <Input
+                    value={currentBlock.name}
+                    onChange={(e) => updateBlock(currentBlock.id, { name: e.target.value })}
+                    className="mt-1.5 h-9"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Locked</Label>
+                  <Switch
+                    checked={currentBlock.locked || false}
+                    onCheckedChange={(locked) => updateBlock(currentBlock.id, { locked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Hidden</Label>
+                  <Switch
+                    checked={currentBlock.hidden || false}
+                    onCheckedChange={(hidden) => updateBlock(currentBlock.id, { hidden })}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="constraints" className="border-0">
+              <AccordionTrigger className="px-3 py-2 text-sm hover:no-underline">
+                Constraints
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-sm">Min Width</Label>
+                    <Input
+                      type="number"
+                      value={currentBlock.constraints?.minWidth || 20}
+                      onChange={(e) => updateBlock(currentBlock.id, {
+                        constraints: { ...currentBlock.constraints, minWidth: parseInt(e.target.value) }
+                      })}
+                      className="mt-1.5 h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Max Width</Label>
+                    <Input
+                      type="number"
+                      value={currentBlock.constraints?.maxWidth || 1000}
+                      onChange={(e) => updateBlock(currentBlock.id, {
+                        constraints: { ...currentBlock.constraints, maxWidth: parseInt(e.target.value) }
+                      })}
+                      className="mt-1.5 h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Min Height</Label>
+                    <Input
+                      type="number"
+                      value={currentBlock.constraints?.minHeight || 20}
+                      onChange={(e) => updateBlock(currentBlock.id, {
+                        constraints: { ...currentBlock.constraints, minHeight: parseInt(e.target.value) }
+                      })}
+                      className="mt-1.5 h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Max Height</Label>
+                    <Input
+                      type="number"
+                      value={currentBlock.constraints?.maxHeight || 1000}
+                      onChange={(e) => updateBlock(currentBlock.id, {
+                        constraints: { ...currentBlock.constraints, maxHeight: parseInt(e.target.value) }
+                      })}
+                      className="mt-1.5 h-9"
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          
           {renderSettings()}
         </Card>
 
