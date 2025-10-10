@@ -18,8 +18,37 @@ import {
 } from '@/components/ui/tooltip';
 
 export function AlignmentToolbar() {
-  const { selectedBlockIds, alignSelectedBlocks, distributeSelectedBlocks } = useVisualEditorStore();
+  const { 
+    selectedBlockIds, 
+    alignSelectedBlocks, 
+    distributeSelectedBlocks,
+    visualLayout,
+    updateVisualLayout,
+    deviceMode
+  } = useVisualEditorStore();
   const disabled = selectedBlockIds.length < 2;
+
+  const deviceDimensions = {
+    desktop: { width: 1440, height: 900 },
+    tablet: { width: 768, height: 1024 },
+    mobile: { width: 375, height: 667 },
+  };
+
+  const canvasWidth = deviceDimensions[deviceMode].width;
+  const canvasHeight = deviceDimensions[deviceMode].height;
+
+  const handleAlignToCanvas = (type: 'center-h' | 'center-v') => {
+    selectedBlockIds.forEach(id => {
+      const layout = visualLayout[id];
+      if (!layout) return;
+
+      if (type === 'center-h') {
+        updateVisualLayout(id, { x: (canvasWidth - layout.width) / 2 });
+      } else {
+        updateVisualLayout(id, { y: (canvasHeight - layout.height) / 2 });
+      }
+    });
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -146,6 +175,38 @@ export function AlignmentToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Distribute Vertically</TooltipContent>
+        </Tooltip>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs"
+              disabled={selectedBlockIds.length === 0}
+              onClick={() => handleAlignToCanvas('center-h')}
+            >
+              Center H
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Center Horizontally on Canvas</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs"
+              disabled={selectedBlockIds.length === 0}
+              onClick={() => handleAlignToCanvas('center-v')}
+            >
+              Center V
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Center Vertically on Canvas</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

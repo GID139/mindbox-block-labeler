@@ -1,91 +1,73 @@
 interface RulerProps {
-  canvasWidth: number;
-  canvasHeight: number;
+  orientation: 'horizontal' | 'vertical';
+  stageScale: number;
+  stagePos: { x: number; y: number };
+  canvasSize: number;
+  viewportSize: number;
 }
 
-export function Ruler({ canvasWidth, canvasHeight }: RulerProps) {
+export function Ruler({ orientation, stageScale, stagePos, canvasSize, viewportSize }: RulerProps) {
+  const rulerSize = 30;
   const majorInterval = 100;
   const minorInterval = 20;
 
-  const horizontalTicks = Math.ceil(canvasWidth / minorInterval);
-  const verticalTicks = Math.ceil(canvasHeight / minorInterval);
+  const offset = orientation === 'horizontal' ? stagePos.x : stagePos.y;
+  
+  // Calculate visible range on canvas
+  const start = -offset / stageScale;
+  const end = start + (viewportSize / stageScale);
+
+  const ticks: JSX.Element[] = [];
+  for (let i = Math.floor(start / minorInterval) * minorInterval; i <= end; i += minorInterval) {
+    const isMajor = i % majorInterval === 0;
+    const pos = i * stageScale + offset;
+
+    // Skip if outside viewport
+    if (pos < 0 || pos > viewportSize) continue;
+
+    ticks.push(
+      <div
+        key={i}
+        className="absolute"
+        style={{
+          [orientation === 'horizontal' ? 'left' : 'top']: `${pos}px`,
+          [orientation === 'horizontal' ? 'height' : 'width']: isMajor ? '12px' : '6px',
+          [orientation === 'horizontal' ? 'width' : 'height']: '1px',
+          backgroundColor: 'hsl(var(--muted-foreground))',
+          [orientation === 'horizontal' ? 'bottom' : 'right']: '0',
+        }}
+      >
+        {isMajor && (
+          <span
+            className="absolute text-[9px] text-foreground font-mono"
+            style={{
+              [orientation === 'horizontal' ? 'top' : 'left']: orientation === 'horizontal' ? '-14px' : '2px',
+              [orientation === 'horizontal' ? 'left' : 'top']: orientation === 'horizontal' ? '-8px' : '-18px',
+              ...(orientation === 'vertical' && {
+                transform: 'rotate(-90deg)',
+                transformOrigin: 'left top',
+              }),
+            }}
+          >
+            {i}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Horizontal Ruler */}
-      <div className="absolute top-0 left-0 right-0 h-6 bg-muted/80 border-b border-border pointer-events-none z-[9999]">
-        <svg width={canvasWidth} height="24">
-          {Array.from({ length: horizontalTicks }).map((_, i) => {
-            const pos = i * minorInterval;
-            const isMajor = i % (majorInterval / minorInterval) === 0;
-            
-            if (pos > canvasWidth) return null;
-            
-            return (
-              <g key={i}>
-                <line
-                  x1={pos}
-                  y1={isMajor ? 0 : 14}
-                  x2={pos}
-                  y2={24}
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-muted-foreground"
-                />
-                {isMajor && (
-                  <text
-                    x={pos + 4}
-                    y={12}
-                    fontSize="9"
-                    fill="currentColor"
-                    className="text-foreground font-mono"
-                  >
-                    {i * minorInterval}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      {/* Vertical Ruler */}
-      <div className="absolute top-0 left-0 bottom-0 w-6 bg-muted/80 border-r border-border pointer-events-none z-[9999]">
-        <svg width="24" height={canvasHeight}>
-          {Array.from({ length: verticalTicks }).map((_, i) => {
-            const pos = i * minorInterval;
-            const isMajor = i % (majorInterval / minorInterval) === 0;
-            
-            if (pos > canvasHeight) return null;
-            
-            return (
-              <g key={i}>
-                <line
-                  x1={isMajor ? 0 : 14}
-                  y1={pos}
-                  x2={24}
-                  y2={pos}
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-muted-foreground"
-                />
-                {isMajor && (
-                  <text
-                    x={12}
-                    y={pos - 4}
-                    fontSize="9"
-                    fill="currentColor"
-                    transform={`rotate(-90 12 ${pos - 4})`}
-                    className="text-foreground font-mono"
-                  >
-                    {i * minorInterval}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </>
+    <div
+      className="absolute bg-card/90 backdrop-blur-sm border-border pointer-events-none z-[45]"
+      style={{
+        [orientation === 'horizontal' ? 'top' : 'left']: 0,
+        [orientation === 'horizontal' ? 'left' : 'top']: orientation === 'horizontal' ? `${rulerSize}px` : 0,
+        [orientation === 'horizontal' ? 'width' : 'height']: orientation === 'horizontal' ? `calc(100% - ${rulerSize}px)` : '100%',
+        [orientation === 'horizontal' ? 'height' : 'width']: `${rulerSize}px`,
+        [orientation === 'horizontal' ? 'borderBottom' : 'borderRight']: '1px solid',
+      }}
+    >
+      {ticks}
+    </div>
   );
 }

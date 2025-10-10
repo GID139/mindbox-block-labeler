@@ -1,6 +1,7 @@
 import { toPng, toSvg } from 'html-to-image';
 import { BlockInstance } from '@/types/visual-editor';
 import { toast } from 'sonner';
+import Konva from 'konva';
 
 export const exportToPNG = async (element: HTMLElement, filename: string = 'canvas.png') => {
   try {
@@ -100,3 +101,45 @@ export const importImage = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 };
+
+// Konva Stage Export Functions
+export async function exportStageToPNG(stage: Konva.Stage, filename: string) {
+  try {
+    const dataURL = stage.toDataURL({
+      mimeType: 'image/png',
+      quality: 1,
+      pixelRatio: 2, // HQ export (2x resolution)
+    });
+
+    downloadDataURL(dataURL, `${filename}.png`);
+    toast.success('Exported to PNG');
+  } catch (error) {
+    console.error('Error exporting to PNG:', error);
+    toast.error('Failed to export PNG');
+  }
+}
+
+export async function exportStageToJPEG(stage: Konva.Stage, filename: string) {
+  try {
+    const dataURL = stage.toDataURL({
+      mimeType: 'image/jpeg',
+      quality: 0.9,
+      pixelRatio: 2,
+    });
+
+    downloadDataURL(dataURL, `${filename}.jpeg`);
+    toast.success('Exported to JPEG');
+  } catch (error) {
+    console.error('Error exporting to JPEG:', error);
+    toast.error('Failed to export JPEG');
+  }
+}
+
+function downloadDataURL(dataURL: string, filename: string) {
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = dataURL;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}

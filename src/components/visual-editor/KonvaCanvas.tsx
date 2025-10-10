@@ -10,6 +10,7 @@ import { getChildren } from '@/lib/visual-editor/coordinate-utils';
 import { findSnapPoints, snapToObjects } from '@/lib/visual-editor/snapping-utils';
 import { KonvaContextMenu } from './KonvaContextMenu';
 import { KonvaTextEditor } from './KonvaTextEditor';
+import { QuickActionsBar } from './QuickActionsBar';
 
 // Separate component for IMAGE block to handle image loading
 const KonvaImageBlock = ({ 
@@ -223,7 +224,13 @@ const KonvaBlock = ({
   }
 };
 
-export function KonvaCanvas() {
+export function KonvaCanvas({ 
+  stageRef: externalStageRef,
+  onStageTransform
+}: { 
+  stageRef?: React.RefObject<Konva.Stage>;
+  onStageTransform?: (scale: number, pos: { x: number; y: number }) => void;
+}) {
   const {
     blocks,
     visualLayout,
@@ -240,6 +247,7 @@ export function KonvaCanvas() {
   } = useVisualEditorStore();
 
   const stageRef = useRef<Konva.Stage>(null);
+  const internalStageRef = externalStageRef || stageRef;
   const transformerRef = useRef<Konva.Transformer>(null);
   const [selectedNodes, setSelectedNodes] = useState<Konva.Node[]>([]);
   
@@ -282,7 +290,7 @@ export function KonvaCanvas() {
 
   // Zoom & Pan via Mouse Wheel
   useEffect(() => {
-    const stage = stageRef.current;
+    const stage = internalStageRef.current;
     if (!stage) return;
 
     const handleWheel = (e: WheelEvent) => {
@@ -312,12 +320,17 @@ export function KonvaCanvas() {
       stage.position(newPos);
       setStageScale(clampedScale);
       setStagePos(newPos);
+      
+      // Notify parent
+      if (onStageTransform) {
+        onStageTransform(clampedScale, newPos);
+      }
     };
 
     const container = stage.container();
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [internalStageRef, onStageTransform]);
 
   // Pan via Space + Drag
   useEffect(() => {
@@ -325,8 +338,8 @@ export function KonvaCanvas() {
       if (e.code === 'Space' && !isPanning && !editingTextBlock) {
         e.preventDefault();
         setIsPanning(true);
-        if (stageRef.current) {
-          stageRef.current.draggable(true);
+        if (internalStageRef.current) {
+          internalStageRef.current.draggable(true);
         }
       }
       if (e.key === 'Shift') setIsShiftPressed(true);
@@ -336,8 +349,8 @@ export function KonvaCanvas() {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         setIsPanning(false);
-        if (stageRef.current) {
-          stageRef.current.draggable(false);
+        if (internalStageRef.current) {
+          internalStageRef.current.draggable(false);
         }
       }
       if (e.key === 'Shift') setIsShiftPressed(false);
@@ -351,14 +364,14 @@ export function KonvaCanvas() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isPanning, editingTextBlock]);
+  }, [isPanning, editingTextBlock, internalStageRef]);
 
   // Update transformer when selection changes
   useEffect(() => {
-    if (!transformerRef.current || !stageRef.current) return;
+    if (!transformerRef.current || !internalStageRef.current) return;
 
     const nodes: Konva.Node[] = [];
-    const stage = stageRef.current;
+    const stage = internalStageRef.current;
     
     selectedBlockIds.forEach(id => {
       const node = stage.findOne(`#block-${id}`) as Konva.Node;
@@ -374,7 +387,7 @@ export function KonvaCanvas() {
     setSelectedNodes(nodes);
     transformerRef.current.nodes(nodes);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [selectedBlockIds, blocks]);
+  }, [selectedBlockIds, blocks, internalStageRef]);
 
   const handleBlockSelect = (blockId: string, e?: Konva.KonvaEventObject<MouseEvent>) => {
     const isMultiSelect = e?.evt?.ctrlKey || e?.evt?.metaKey;
@@ -598,7 +611,7 @@ export function KonvaCanvas() {
         }}
       >
         <Stage
-          ref={stageRef}
+          ref={internalStageRef}
           width={canvasWidth * zoom}
           height={canvasHeight * zoom}
           scaleX={zoom}
@@ -750,6 +763,23 @@ export function KonvaCanvas() {
               setEditingTextBlock(null);
             }}
             onCancel={() => setEditingTextBlock(null)}
+          />
+        );
+      })()}
+
+      {/* Quick Actions Bar */}
+      {selectedBlockIds.length === 1 && !editingTextBlock && (() => {
+        const block = blocks.find(b => b.id === selectedBlockIds[0]);
+        const layout = visualLayout[selectedBlockIds[0]];
+        if (!block || !layout) return null;
+
+        return (
+          <QuickActionsBar
+            block={block}
+            position={{
+              x: (layout.x + layout.width / 2) * zoom * stageScale + stagePos.x,
+              y: layout.y * zoom * stageScale + stagePos.y,
+            }}
           />
         );
       })()}

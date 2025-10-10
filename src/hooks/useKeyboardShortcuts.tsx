@@ -144,6 +144,50 @@ export function useKeyboardShortcuts() {
         e.preventDefault();
         toggleHide(selectedBlockIds[0]);
       }
+
+      // Zoom In
+      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        const { zoom, setZoom } = useVisualEditorStore.getState();
+        setZoom(Math.min(4, zoom * 1.2));
+      }
+
+      // Zoom Out
+      if ((e.metaKey || e.ctrlKey) && (e.key === '-' || e.key === '_')) {
+        e.preventDefault();
+        const { zoom, setZoom } = useVisualEditorStore.getState();
+        setZoom(Math.max(0.25, zoom / 1.2));
+      }
+
+      // Zoom to 100%
+      if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+        e.preventDefault();
+        const { setZoom } = useVisualEditorStore.getState();
+        setZoom(1);
+      }
+
+      // Arrow keys for precise movement
+      if (e.key.startsWith('Arrow') && selectedBlockIds.length > 0 && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const { visualLayout, updateVisualLayout } = useVisualEditorStore.getState();
+
+        selectedBlockIds.forEach(id => {
+          const layout = visualLayout[id];
+          if (!layout) return;
+
+          let deltaX = 0, deltaY = 0;
+          if (e.key === 'ArrowLeft') deltaX = -step;
+          if (e.key === 'ArrowRight') deltaX = step;
+          if (e.key === 'ArrowUp') deltaY = -step;
+          if (e.key === 'ArrowDown') deltaY = step;
+
+          updateVisualLayout(id, {
+            x: layout.x + deltaX,
+            y: layout.y + deltaY,
+          });
+        });
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);

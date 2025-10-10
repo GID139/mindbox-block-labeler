@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Toolbar } from './Toolbar';
@@ -18,12 +18,26 @@ import { BlockInstance } from '@/types/visual-editor';
 import { getTemplateByName, getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
 import { toast } from 'sonner';
+import Konva from 'konva';
+import { Ruler } from './Ruler';
 
 export function VisualEditorTab() {
-  const { blocks, addBlock, moveBlock, selectedBlockIds, addBlockToTableCell } = useVisualEditorStore();
+  const { 
+    blocks, 
+    addBlock, 
+    moveBlock, 
+    selectedBlockIds, 
+    addBlockToTableCell,
+    showRulers,
+    deviceMode,
+    zoom
+  } = useVisualEditorStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeBlock, setActiveBlock] = useState<BlockInstance | null>(null);
   const [rightPanelMode, setRightPanelMode] = useState<'layers' | 'settings'>('layers');
+  const stageRef = useRef<Konva.Stage>(null);
+  const [stageScale, setStageScale] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 
   const selectedBlockId = selectedBlockIds[0];
 
@@ -199,7 +213,7 @@ export function VisualEditorTab() {
     >
       <div className="flex flex-col h-full">
         <div className="toolbar">
-          <Toolbar />
+          <Toolbar stageRef={stageRef} />
         </div>
         
         <div className="flex flex-1 gap-4 overflow-hidden">
@@ -226,9 +240,35 @@ export function VisualEditorTab() {
             </Tabs>
           </div>
           
-          {/* Center: Canvas */}
-          <div className="flex-1 overflow-hidden canvas-container">
-            <KonvaCanvas />
+          {/* Center: Canvas with Rulers */}
+          <div className="flex-1 overflow-hidden relative canvas-container">
+            {showRulers && (
+              <>
+                <Ruler
+                  orientation="horizontal"
+                  stageScale={stageScale}
+                  stagePos={stagePos}
+                  canvasSize={deviceMode === 'desktop' ? 1440 : deviceMode === 'tablet' ? 768 : 375}
+                  viewportSize={1200}
+                />
+                <Ruler
+                  orientation="vertical"
+                  stageScale={stageScale}
+                  stagePos={stagePos}
+                  canvasSize={deviceMode === 'desktop' ? 900 : deviceMode === 'tablet' ? 1024 : 667}
+                  viewportSize={800}
+                />
+              </>
+            )}
+            <div className={showRulers ? 'absolute inset-0 pl-[30px] pt-[30px]' : 'w-full h-full'}>
+              <KonvaCanvas 
+                stageRef={stageRef}
+                onStageTransform={(scale, pos) => {
+                  setStageScale(scale);
+                  setStagePos(pos);
+                }}
+              />
+            </div>
           </div>
           
           {/* Right: Layers Panel or Settings Panel */}

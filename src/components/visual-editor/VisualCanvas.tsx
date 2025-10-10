@@ -703,7 +703,24 @@ export function VisualCanvas() {
         <GuideLines guides={guides} />
         
         {/* Rulers */}
-        {showRulers && <Ruler canvasWidth={canvasWidth} canvasHeight={canvasHeight} />}
+        {showRulers && (
+          <>
+            <Ruler
+              orientation="horizontal"
+              stageScale={1}
+              stagePos={{ x: 0, y: 0 }}
+              canvasSize={canvasWidth}
+              viewportSize={canvasWidth}
+            />
+            <Ruler
+              orientation="vertical"
+              stageScale={1}
+              stagePos={{ x: 0, y: 0 }}
+              canvasSize={canvasHeight}
+              viewportSize={canvasHeight}
+            />
+          </>
+        )}
       </div>
     </div>
   );

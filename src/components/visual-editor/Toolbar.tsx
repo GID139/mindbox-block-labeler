@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
-import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone, FolderPlus, FolderMinus } from 'lucide-react';
+import { Save, Eye, Code, Loader2, Undo, Redo, Monitor, Tablet, Smartphone, FolderPlus, FolderMinus, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { CodePreviewModal } from './CodePreviewModal';
 import { ViewDropdown } from './ViewDropdown';
@@ -12,8 +12,14 @@ import { ToolsDropdown } from './ToolsDropdown';
 import { ZoomDropdown } from './ZoomDropdown';
 import { FileDropdown } from './FileDropdown';
 import { generateHTML } from '@/lib/visual-editor/code-generator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-export function Toolbar() {
+export function Toolbar({ stageRef }: { stageRef?: React.RefObject<any> }) {
   const {
     currentProjectId,
     projectName,
@@ -218,6 +224,44 @@ export function Toolbar() {
 
         {/* File Operations */}
         <FileDropdown />
+
+        <div className="h-6 w-px bg-border" />
+
+        {/* Export Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={async () => {
+                if (!stageRef?.current) {
+                  toast.error('Canvas not available');
+                  return;
+                }
+                const { exportStageToPNG } = await import('@/lib/visual-editor/export-utils');
+                exportStageToPNG(stageRef.current, projectName || 'canvas');
+              }}
+            >
+              Export as PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                if (!stageRef?.current) {
+                  toast.error('Canvas not available');
+                  return;
+                }
+                const { exportStageToJPEG } = await import('@/lib/visual-editor/export-utils');
+                exportStageToJPEG(stageRef.current, projectName || 'canvas');
+              }}
+            >
+              Export as JPEG
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="flex-1" />
 
