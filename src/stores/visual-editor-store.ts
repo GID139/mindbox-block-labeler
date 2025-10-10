@@ -303,20 +303,17 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       const newBlock = { ...block, parentId: parentId || null };
       
-      // Set initial absolute coordinates
+      // Set initial coordinates (0, 0) relative to parent
       if (parentId) {
         const parentLayout = state.visualLayout[parentId];
         if (parentLayout) {
-          const relativeX = parseInt(String(newBlock.settings.x)) || 10;
-          const relativeY = parseInt(String(newBlock.settings.y)) || 10;
-          
           const defaultSize = getDefaultBlockSize(newBlock.type, newBlock.settings);
           
           state.updateVisualLayout(newBlock.id, {
-            x: parentLayout.x + relativeX,
-            y: parentLayout.y + relativeY,
-            relativeX,
-            relativeY,
+            x: parentLayout.x,              // Absolute X = parent X
+            y: parentLayout.y,              // Absolute Y = parent Y
+            relativeX: 0,                   // Relative X = 0
+            relativeY: 0,                   // Relative Y = 0
             width: parseInt(String(newBlock.settings.width)) || defaultSize.width,
             height: parseInt(String(newBlock.settings.height)) || defaultSize.height,
             zIndex: parentLayout.zIndex + 1,
@@ -397,17 +394,25 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
         ),
       }));
       
-      // Recalculate absolute coordinates if parent changed
+      // Reset to (0, 0) relative to new parent
       if (targetId) {
         const parentLayout = state.visualLayout[targetId];
         if (parentLayout) {
-          const currentLayout = state.visualLayout[draggedId];
-          if (currentLayout) {
-            state.updateVisualLayout(draggedId, {
-              x: parentLayout.x + (currentLayout.relativeX || 10),
-              y: parentLayout.y + (currentLayout.relativeY || 10),
-            });
-          }
+          state.updateVisualLayout(draggedId, {
+            x: parentLayout.x,
+            y: parentLayout.y,
+            relativeX: 0,
+            relativeY: 0,
+          });
+        }
+      } else {
+        // Moved to root - keep absolute coords but clear relative
+        const currentLayout = state.visualLayout[draggedId];
+        if (currentLayout) {
+          state.updateVisualLayout(draggedId, {
+            relativeX: undefined,
+            relativeY: undefined,
+          });
         }
       }
     },

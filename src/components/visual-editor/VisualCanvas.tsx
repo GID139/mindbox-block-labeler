@@ -199,8 +199,17 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     const parentLayout = parent ? visualLayout[parent.id] : null;
                     
                     if (parentLayout) {
-                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - currentWidth));
-                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - currentHeight));
+                      // Calculate relative position
+                      const relativeX = x - parentLayout.x;
+                      const relativeY = y - parentLayout.y;
+                      
+                      // Constrain relative position to [0, parent size - block size]
+                      const constrainedRelativeX = Math.max(0, Math.min(relativeX, parentLayout.width - currentWidth));
+                      const constrainedRelativeY = Math.max(0, Math.min(relativeY, parentLayout.height - currentHeight));
+                      
+                      // Convert back to absolute
+                      x = parentLayout.x + constrainedRelativeX;
+                      y = parentLayout.y + constrainedRelativeY;
                     }
                   } else {
                     x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
@@ -239,14 +248,32 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     const parentLayout = parent ? visualLayout[parent.id] : null;
                     
                     if (parentLayout) {
-                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - currentWidth));
-                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - currentHeight));
+                      // Calculate relative position
+                      const relativeX = x - parentLayout.x;
+                      const relativeY = y - parentLayout.y;
+                      
+                      // Constrain relative position
+                      const constrainedRelativeX = Math.max(0, Math.min(relativeX, parentLayout.width - currentWidth));
+                      const constrainedRelativeY = Math.max(0, Math.min(relativeY, parentLayout.height - currentHeight));
+                      
+                      // Convert back to absolute and save relative coords
+                      x = parentLayout.x + constrainedRelativeX;
+                      y = parentLayout.y + constrainedRelativeY;
+                      
+                      // Save both absolute and relative
+                      updateVisualLayout(block.id, { 
+                        x, 
+                        y,
+                        relativeX: constrainedRelativeX,
+                        relativeY: constrainedRelativeY,
+                      });
+                      return; // Exit early to avoid updating without relative coords
                     }
-                  } else {
-                    x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
-                    y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
                   }
 
+                  // Root block - just update absolute coords
+                  x = Math.max(0, Math.min(x, canvasWidth - currentWidth));
+                  y = Math.max(0, Math.min(y, canvasHeight - currentHeight));
                   updateVisualLayout(block.id, { x, y });
                 }
               }}
@@ -269,10 +296,18 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     const parentLayout = parent ? visualLayout[parent.id] : null;
                     
                     if (parentLayout) {
-                      newWidth = Math.min(newWidth, parentLayout.width);
-                      newHeight = Math.min(newHeight, parentLayout.height);
-                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - newWidth));
-                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - newHeight));
+                      const relativeX = x - parentLayout.x;
+                      const relativeY = y - parentLayout.y;
+                      
+                      // Constrain size and position
+                      newWidth = Math.min(newWidth, parentLayout.width - relativeX);
+                      newHeight = Math.min(newHeight, parentLayout.height - relativeY);
+                      
+                      const constrainedRelativeX = Math.max(0, Math.min(relativeX, parentLayout.width - newWidth));
+                      const constrainedRelativeY = Math.max(0, Math.min(relativeY, parentLayout.height - newHeight));
+                      
+                      x = parentLayout.x + constrainedRelativeX;
+                      y = parentLayout.y + constrainedRelativeY;
                     }
                   } else {
                     newWidth = Math.min(newWidth, canvasWidth - x);
@@ -305,24 +340,41 @@ function VisualBlock({ block, canvasWidth, canvasHeight }: VisualBlockProps) {
                     const parentLayout = parent ? visualLayout[parent.id] : null;
                     
                     if (parentLayout) {
-                      newWidth = Math.min(newWidth, parentLayout.width);
-                      newHeight = Math.min(newHeight, parentLayout.height);
-                      x = Math.max(parentLayout.x, Math.min(x, parentLayout.x + parentLayout.width - newWidth));
-                      y = Math.max(parentLayout.y, Math.min(y, parentLayout.y + parentLayout.height - newHeight));
+                      const relativeX = x - parentLayout.x;
+                      const relativeY = y - parentLayout.y;
+                      
+                      // Constrain size and position
+                      newWidth = Math.min(newWidth, parentLayout.width - relativeX);
+                      newHeight = Math.min(newHeight, parentLayout.height - relativeY);
+                      
+                      const constrainedRelativeX = Math.max(0, Math.min(relativeX, parentLayout.width - newWidth));
+                      const constrainedRelativeY = Math.max(0, Math.min(relativeY, parentLayout.height - newHeight));
+                      
+                      x = parentLayout.x + constrainedRelativeX;
+                      y = parentLayout.y + constrainedRelativeY;
+                      
+                      updateVisualLayout(block.id, {
+                        width: newWidth,
+                        height: newHeight,
+                        x,
+                        y,
+                        relativeX: constrainedRelativeX,
+                        relativeY: constrainedRelativeY,
+                      });
                     }
                   } else {
                     newWidth = Math.min(newWidth, canvasWidth - x);
                     newHeight = Math.min(newHeight, canvasHeight - y);
                     x = Math.max(0, Math.min(x, canvasWidth - newWidth));
                     y = Math.max(0, Math.min(y, canvasHeight - newHeight));
+                    
+                    updateVisualLayout(block.id, {
+                      width: newWidth,
+                      height: newHeight,
+                      x,
+                      y,
+                    });
                   }
-
-                  updateVisualLayout(block.id, {
-                    width: newWidth,
-                    height: newHeight,
-                    x,
-                    y,
-                  });
 
                   // Update block settings based on type (Фаза 2: Синхронизация размеров)
                   const oldWidth = layout.width;
