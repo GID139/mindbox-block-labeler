@@ -46,6 +46,8 @@ const KonvaImageBlock = ({
     setError(false);
     
     const img = new window.Image();
+    
+    // Try with CORS first
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
@@ -54,8 +56,21 @@ const KonvaImageBlock = ({
     };
     
     img.onerror = () => {
-      setError(true);
-      setLoading(false);
+      // If CORS fails, try without CORS
+      const imgNoCors = new window.Image();
+      
+      imgNoCors.onload = () => {
+        setImage(imgNoCors);
+        setLoading(false);
+      };
+      
+      imgNoCors.onerror = () => {
+        console.error('Failed to load image:', block.settings.src);
+        setError(true);
+        setLoading(false);
+      };
+      
+      imgNoCors.src = block.settings.src;
     };
     
     img.src = block.settings.src;
@@ -347,9 +362,19 @@ const KonvaBlock = ({
       // Containers render their children
       return (
         <Group {...commonProps}>
+          {/* Outer transparent rect for events */}
           <Rect
             width={outerWidth}
             height={outerHeight}
+            fill="transparent"
+            listening={true}
+          />
+          {/* Inner colored rect with padding offset */}
+          <Rect
+            x={padding.left}
+            y={padding.top}
+            width={contentWidth}
+            height={contentHeight}
             fill={block.settings.fill || 'transparent'}
             cornerRadius={parseInt(block.settings.borderRadius) || 0}
             stroke={block.settings.stroke || (isSelected ? 'hsl(166, 96%, 29%)' : '#e5e7eb')}
@@ -360,7 +385,7 @@ const KonvaBlock = ({
             shadowBlur={parseInt(block.settings.shadowBlur) || 0}
             shadowOpacity={parseFloat(block.settings.shadowOpacity) || 0}
             opacity={parseFloat(block.settings.opacity) || 1}
-            listening={true}
+            listening={false}
           />
           <Group
             x={padding.left}
