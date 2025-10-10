@@ -1,7 +1,8 @@
-import { Lock, Eye, Copy, Trash, Palette } from 'lucide-react';
+import { Lock, Eye, Copy, Trash, Palette, ArrowUp, ArrowDown, MoveUp, MoveDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HexColorPicker } from 'react-colorful';
 import { BlockInstance } from '@/types/visual-editor';
 
@@ -12,7 +13,7 @@ interface QuickActionsBarProps {
 }
 
 export function QuickActionsBar({ block, position, stageScale }: QuickActionsBarProps) {
-  const { updateBlock, duplicateBlock, removeBlock } = useVisualEditorStore();
+  const { updateBlock, duplicateBlock, removeBlock, bringToFront, sendToBack, moveUp, moveDown } = useVisualEditorStore();
 
   const showColorPicker = ['RECTANGLE', 'CIRCLE', 'BUTTON', 'TEXT'].includes(block.type);
 
@@ -37,90 +38,178 @@ export function QuickActionsBar({ block, position, stageScale }: QuickActionsBar
   };
 
   return (
-    <div
-      className="absolute flex gap-1 bg-card/95 backdrop-blur-sm border rounded-md shadow-xl p-1 z-50 animate-fade-in"
-      style={{
-        left: position.x,
-        top: position.y - (40 / stageScale),
-        transform: 'translateX(-50%)',
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={(e) => {
-          e.stopPropagation();
-          updateBlock(block.id, { locked: !block.locked });
+    <TooltipProvider>
+      <div
+        className="absolute flex gap-1 bg-card/95 backdrop-blur-sm border rounded-md shadow-xl p-1 z-50 animate-fade-in"
+        style={{
+          left: position.x,
+          top: position.y - (40 / stageScale),
+          transform: 'translateX(-50%)',
         }}
-        title={block.locked ? 'Unlock' : 'Lock'}
-        className="h-8 w-8 p-0"
+        onClick={(e) => e.stopPropagation()}
       >
-        <Lock className={`h-4 w-4 ${block.locked ? 'fill-current' : ''}`} />
-      </Button>
-
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={(e) => {
-          e.stopPropagation();
-          updateBlock(block.id, { hidden: !block.hidden });
-        }}
-        title={block.hidden ? 'Show' : 'Hide'}
-        className="h-8 w-8 p-0"
-      >
-        <Eye className={`h-4 w-4 ${block.hidden ? 'opacity-50' : ''}`} />
-      </Button>
-
-      {showColorPicker && (
-        <Popover>
-          <PopoverTrigger asChild>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
               size="sm"
               variant="ghost"
-              title="Change Color"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateBlock(block.id, { locked: !block.locked });
+              }}
               className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
             >
-              <Palette className="h-4 w-4" />
+              <Lock className={`h-4 w-4 ${block.locked ? 'fill-current' : ''}`} />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-3" onClick={(e) => e.stopPropagation()}>
-            <HexColorPicker
-              color={getCurrentColor()}
-              onChange={handleColorChange}
-            />
-          </PopoverContent>
-        </Popover>
-      )}
+          </TooltipTrigger>
+          <TooltipContent>{block.locked ? 'Unlock' : 'Lock'}</TooltipContent>
+        </Tooltip>
 
-      <div className="w-px h-6 bg-border mx-1" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateBlock(block.id, { hidden: !block.hidden });
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Eye className={`h-4 w-4 ${block.hidden ? 'opacity-50' : ''}`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{block.hidden ? 'Show' : 'Hide'}</TooltipContent>
+        </Tooltip>
 
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={(e) => {
-          e.stopPropagation();
-          duplicateBlock(block.id);
-        }}
-        title="Duplicate"
-        className="h-8 w-8 p-0"
-      >
-        <Copy className="h-4 w-4" />
-      </Button>
+        {showColorPicker && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Change Color"
+                className="h-8 w-8 p-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" onClick={(e) => e.stopPropagation()}>
+              <HexColorPicker
+                color={getCurrentColor()}
+                onChange={handleColorChange}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
 
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={(e) => {
-          e.stopPropagation();
-          removeBlock(block.id);
-        }}
-        title="Delete"
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
-        <Trash className="h-4 w-4" />
-      </Button>
-    </div>
+        <div className="w-px h-6 bg-border mx-1" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                bringToFront(block.id);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <MoveUp className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Bring to Front</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                sendToBack(block.id);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <MoveDown className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Send to Back</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                moveUp(block.id);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Move Up</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                moveDown(block.id);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Move Down</TooltipContent>
+        </Tooltip>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                duplicateBlock(block.id);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Duplicate</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeBlock(block.id);
+              }}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }

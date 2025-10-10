@@ -239,7 +239,7 @@ export function SettingsPanel() {
               <div>
                 <Label className="text-sm font-medium">Text Content</Label>
                 <Textarea
-                  value={block.settings.text || ''}
+                  value={currentBlock.settings.text || ''}
                   onChange={(e) => updateSettings({ text: e.target.value })}
                   className="mt-1.5 min-h-[80px]"
                   placeholder="Enter text..."
@@ -251,7 +251,7 @@ export function SettingsPanel() {
                 <Label className="text-sm">Font Size (px)</Label>
                 <Input
                   type="number"
-                  value={parseInt(block.settings.fontSize) || 16}
+                  value={parseInt(currentBlock.settings.fontSize) || 16}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 16;
                     updateSettings({ fontSize: `${value}px` });
@@ -265,7 +265,7 @@ export function SettingsPanel() {
 
                 <ColorPickerInput
                   label="Color"
-                  value={block.settings.color || '#000000'}
+                  value={currentBlock.settings.color || '#000000'}
                   onChange={(value) => updateSettings({ color: value })}
                 />
               </div>
@@ -370,7 +370,7 @@ export function SettingsPanel() {
               <div>
                 <Label className="text-sm font-medium">Button Text</Label>
                 <Input
-                  value={block.settings.text || ''}
+                  value={currentBlock.settings.text || ''}
                   onChange={(e) => updateSettings({ text: e.target.value })}
                   className="mt-1.5 h-9"
                   placeholder="Click me"
@@ -379,8 +379,10 @@ export function SettingsPanel() {
 
               <ColorPickerInput
                 label="Background Color"
-                value={block.settings.backgroundColor || '#007bff'}
-                onChange={(value) => updateSettings({ backgroundColor: value })}
+                value={currentBlock.settings.background?.color || '#007bff'}
+                onChange={(value) => updateSettings({ 
+                  background: { ...currentBlock.settings.background, type: 'solid', color: value }
+                })}
               />
 
               <div>

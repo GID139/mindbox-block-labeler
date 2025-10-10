@@ -176,6 +176,9 @@ interface VisualEditorState {
   sendToBack: (blockId: string) => void;
   bringForward: (blockId: string) => void;
   sendBackward: (blockId: string) => void;
+  moveUp: (blockId: string) => void;
+  moveDown: (blockId: string) => void;
+  moveBlockToGroup: (blockId: string, targetGroupId: string | null) => void;
   recalculateZIndexes: () => void;
   
   // Guides
@@ -1508,6 +1511,56 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       get().updateVisualLayout(blockId, { zIndex: currentZ - 1 });
       toast.success('Sent backward');
+    },
+
+    moveUp: (blockId) => {
+      pushHistory('Move Up');
+      const state = get();
+      const index = state.blocks.findIndex(b => b.id === blockId);
+      if (index === -1 || index === state.blocks.length - 1) {
+        toast.info('Already at top');
+        return;
+      }
+      
+      const newBlocks = [...state.blocks];
+      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+      set({ blocks: newBlocks });
+      toast.success('Moved up');
+    },
+
+    moveDown: (blockId) => {
+      pushHistory('Move Down');
+      const state = get();
+      const index = state.blocks.findIndex(b => b.id === blockId);
+      if (index <= 0) {
+        toast.info('Already at bottom');
+        return;
+      }
+      
+      const newBlocks = [...state.blocks];
+      [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
+      set({ blocks: newBlocks });
+      toast.success('Moved down');
+    },
+
+    moveBlockToGroup: (blockId, targetGroupId) => {
+      pushHistory('Move to Group');
+      const state = get();
+      const block = findBlockById(state.blocks, blockId);
+      if (!block) return;
+      
+      // Prevent moving into self or descendants
+      if (targetGroupId && isAncestor(state.blocks, targetGroupId, blockId)) {
+        toast.error('Cannot move block into its own child');
+        return;
+      }
+      
+      const updatedBlocks = state.blocks.map(b =>
+        b.id === blockId ? { ...b, parentId: targetGroupId } : b
+      );
+      
+      set({ blocks: updatedBlocks });
+      toast.success(targetGroupId ? 'Moved to group' : 'Moved to root');
     },
     
     recalculateZIndexes: () => {

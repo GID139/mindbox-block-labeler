@@ -357,9 +357,17 @@ export function KonvaCanvas({
 
   // Pan via Space + Drag (only when canvas is focused)
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !isPanning && !editingTextBlock && isCanvasFocused) {
+      // ВАЖНО: preventDefault() ПЕРЕД любыми проверками для Space
+      if (e.code === 'Space') {
         e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      if (e.code === 'Space' && !isPanning && !editingTextBlock) {
         setIsPanning(true);
         if (internalStageRef.current) {
           internalStageRef.current.draggable(true);
@@ -371,6 +379,8 @@ export function KonvaCanvas({
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
+        e.preventDefault();
+        e.stopPropagation();
         setIsPanning(false);
         if (internalStageRef.current) {
           internalStageRef.current.draggable(false);
@@ -380,14 +390,15 @@ export function KonvaCanvas({
       if (e.key === 'Alt') setIsAltPressed(false);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    // Слушать на контейнере, а не на window
+    container.addEventListener('keydown', handleKeyDown);
+    container.addEventListener('keyup', handleKeyUp);
     
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      container.removeEventListener('keydown', handleKeyDown);
+      container.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isPanning, editingTextBlock, internalStageRef, isCanvasFocused]);
+  }, [isPanning, editingTextBlock, containerRef]);
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -413,7 +424,9 @@ export function KonvaCanvas({
   }, [selectedBlockIds, blocks, internalStageRef]);
 
   const handleBlockSelect = (blockId: string, e?: Konva.KonvaEventObject<MouseEvent>) => {
-    const isMultiSelect = e?.evt?.ctrlKey || e?.evt?.metaKey;
+    const isMultiSelect = e?.evt?.ctrlKey || e?.evt?.metaKey || e?.evt?.shiftKey;
+    
+    console.log('Block select:', blockId, 'Multi:', isMultiSelect, 'Current:', selectedBlockIds);
     
     if (isMultiSelect) {
       toggleBlockSelection(blockId, true);
@@ -734,9 +747,9 @@ export function KonvaCanvas({
                 y={marqueeBox.y}
                 width={marqueeBox.width}
                 height={marqueeBox.height}
-                fill="rgba(0, 123, 255, 0.1)"
-                stroke="rgba(0, 123, 255, 0.8)"
-                strokeWidth={1}
+                fill="rgba(59, 130, 246, 0.15)"
+                stroke="rgba(59, 130, 246, 1)"
+                strokeWidth={2 / stageScale}
                 listening={false}
               />
             )}
