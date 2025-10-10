@@ -147,7 +147,19 @@ const KonvaBlock = ({
   
   if (!layout) return null;
 
-    const commonProps = {
+  // Calculate margin and padding
+  const margin = block.settings.margin || { top: 0, right: 0, bottom: 0, left: 0 };
+  const padding = block.settings.padding || { top: 0, right: 0, bottom: 0, left: 0 };
+
+  // Apply margin to position
+  const adjustedX = layout.x + margin.left;
+  const adjustedY = layout.y + margin.top;
+
+  // Apply padding to content dimensions
+  const contentWidth = layout.width - padding.left - padding.right;
+  const contentHeight = layout.height - padding.top - padding.bottom;
+
+  const commonProps = {
       id: `block-${block.id}`,
       x: adjustedX,
       y: adjustedY,
