@@ -216,6 +216,8 @@ const KonvaBlock = ({
       id: `block-${block.id}`,
       x: adjustedX,
       y: adjustedY,
+      width: outerWidth,
+      height: outerHeight,
       draggable: !block.locked,
     onClick: (e: Konva.KonvaEventObject<MouseEvent>) => onSelect(e),
     onTap: (e: Konva.KonvaEventObject<MouseEvent>) => onSelect(e),
