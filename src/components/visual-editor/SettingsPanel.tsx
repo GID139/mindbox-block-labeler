@@ -131,7 +131,10 @@ export function SettingsPanel() {
         <AccordionContent className="px-3 pb-3 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-sm">X</Label>
+              <Label className="text-sm flex items-center justify-between">
+                <span>X</span>
+                <span className="text-xs text-muted-foreground">{Math.round(layout?.x || 0)}px</span>
+              </Label>
               <Input
                 type="number"
                 value={Math.round(layout?.x || 0)}
@@ -140,7 +143,10 @@ export function SettingsPanel() {
               />
             </div>
             <div>
-              <Label className="text-sm">Y</Label>
+              <Label className="text-sm flex items-center justify-between">
+                <span>Y</span>
+                <span className="text-xs text-muted-foreground">{Math.round(layout?.y || 0)}px</span>
+              </Label>
               <Input
                 type="number"
                 value={Math.round(layout?.y || 0)}
@@ -149,7 +155,10 @@ export function SettingsPanel() {
               />
             </div>
             <div>
-              <Label className="text-sm">Width</Label>
+              <Label className="text-sm flex items-center justify-between">
+                <span>Width</span>
+                <span className="text-xs text-muted-foreground">{Math.round(layout?.width || 0)}px</span>
+              </Label>
               <Input
                 type="number"
                 value={Math.round(layout?.width || 0)}
@@ -158,7 +167,10 @@ export function SettingsPanel() {
               />
             </div>
             <div>
-              <Label className="text-sm">Height</Label>
+              <Label className="text-sm flex items-center justify-between">
+                <span>Height</span>
+                <span className="text-xs text-muted-foreground">{Math.round(layout?.height || 0)}px</span>
+              </Label>
               <Input
                 type="number"
                 value={Math.round(layout?.height || 0)}
@@ -180,7 +192,12 @@ export function SettingsPanel() {
               <Label className="text-sm">Min Width</Label>
               <Input
                 type="number"
-                value={currentBlock.constraints?.minWidth || 20}
+                value={currentBlock.constraints?.minWidth || (
+                  currentBlock.type === 'BUTTON' ? 60 :
+                  currentBlock.type === 'CONTAINER' || currentBlock.type === 'GROUP' ? 100 :
+                  currentBlock.type === 'TEXT' ? 50 :
+                  20
+                )}
                 onChange={(e) => updateBlock(currentBlock.id, {
                   constraints: { ...currentBlock.constraints, minWidth: parseInt(e.target.value) }
                 })}
@@ -191,7 +208,7 @@ export function SettingsPanel() {
               <Label className="text-sm">Max Width</Label>
               <Input
                 type="number"
-                value={currentBlock.constraints?.maxWidth || 1000}
+                value={currentBlock.constraints?.maxWidth || 2000}
                 onChange={(e) => updateBlock(currentBlock.id, {
                   constraints: { ...currentBlock.constraints, maxWidth: parseInt(e.target.value) }
                 })}
@@ -202,7 +219,12 @@ export function SettingsPanel() {
               <Label className="text-sm">Min Height</Label>
               <Input
                 type="number"
-                value={currentBlock.constraints?.minHeight || 20}
+                value={currentBlock.constraints?.minHeight || (
+                  currentBlock.type === 'BUTTON' ? 30 :
+                  currentBlock.type === 'CONTAINER' || currentBlock.type === 'GROUP' ? 100 :
+                  currentBlock.type === 'TEXT' ? 20 :
+                  20
+                )}
                 onChange={(e) => updateBlock(currentBlock.id, {
                   constraints: { ...currentBlock.constraints, minHeight: parseInt(e.target.value) }
                 })}
@@ -213,7 +235,7 @@ export function SettingsPanel() {
               <Label className="text-sm">Max Height</Label>
               <Input
                 type="number"
-                value={currentBlock.constraints?.maxHeight || 1000}
+                value={currentBlock.constraints?.maxHeight || 2000}
                 onChange={(e) => updateBlock(currentBlock.id, {
                   constraints: { ...currentBlock.constraints, maxHeight: parseInt(e.target.value) }
                 })}

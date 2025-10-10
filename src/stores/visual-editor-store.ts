@@ -1478,38 +1478,58 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       toast.success('Blocks distributed');
     },
     
-    // Z-index management
+    // Z-index management - using array order instead of zIndex
     bringToFront: (blockId) => {
-      const { visualLayout } = get();
-      const allZIndices = Object.values(visualLayout).map(l => l.zIndex);
-      const maxZ = Math.max(...allZIndices, 0);
+      pushHistory('Bring to Front');
+      const state = get();
+      const block = state.blocks.find(b => b.id === blockId);
+      if (!block) return;
       
-      get().updateVisualLayout(blockId, { zIndex: maxZ + 1 });
+      // Move to end of array (highest z-order)
+      const otherBlocks = state.blocks.filter(b => b.id !== blockId);
+      set({ blocks: [...otherBlocks, block] });
       toast.success('Brought to front');
     },
     
     sendToBack: (blockId) => {
-      const { visualLayout } = get();
-      const allZIndices = Object.values(visualLayout).map(l => l.zIndex);
-      const minZ = Math.min(...allZIndices, 0);
+      pushHistory('Send to Back');
+      const state = get();
+      const block = state.blocks.find(b => b.id === blockId);
+      if (!block) return;
       
-      get().updateVisualLayout(blockId, { zIndex: minZ - 1 });
+      // Move to start of array (lowest z-order)
+      const otherBlocks = state.blocks.filter(b => b.id !== blockId);
+      set({ blocks: [block, ...otherBlocks] });
       toast.success('Sent to back');
     },
     
     bringForward: (blockId) => {
-      const { visualLayout } = get();
-      const currentZ = visualLayout[blockId]?.zIndex || 0;
+      pushHistory('Bring Forward');
+      const state = get();
+      const index = state.blocks.findIndex(b => b.id === blockId);
+      if (index === -1 || index === state.blocks.length - 1) {
+        toast.info('Already at front');
+        return;
+      }
       
-      get().updateVisualLayout(blockId, { zIndex: currentZ + 1 });
+      const newBlocks = [...state.blocks];
+      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+      set({ blocks: newBlocks });
       toast.success('Brought forward');
     },
     
     sendBackward: (blockId) => {
-      const { visualLayout } = get();
-      const currentZ = visualLayout[blockId]?.zIndex || 0;
+      pushHistory('Send Backward');
+      const state = get();
+      const index = state.blocks.findIndex(b => b.id === blockId);
+      if (index <= 0) {
+        toast.info('Already at back');
+        return;
+      }
       
-      get().updateVisualLayout(blockId, { zIndex: currentZ - 1 });
+      const newBlocks = [...state.blocks];
+      [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
+      set({ blocks: newBlocks });
       toast.success('Sent backward');
     },
 

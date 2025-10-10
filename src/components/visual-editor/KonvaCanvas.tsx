@@ -425,6 +425,74 @@ export function KonvaCanvas({
     transformerRef.current.getLayer()?.batchDraw();
   }, [selectedBlockIds, blocks, internalStageRef]);
 
+  // Set up boundBoxFunc for constraining resize
+  useEffect(() => {
+    if (!transformerRef.current || selectedNodes.length === 0) return;
+    
+    const transformer = transformerRef.current;
+    
+    transformer.boundBoxFunc((oldBox, newBox) => {
+      // Get the selected block
+      const selectedId = selectedBlockIds[0];
+      const selectedBlock = blocks.find(b => b.id === selectedId);
+      
+      if (!selectedBlock) return newBox;
+      
+      // Determine minimum sizes by block type
+      let minWidth = 20;
+      let minHeight = 20;
+      
+      switch (selectedBlock.type) {
+        case 'BUTTON':
+          minWidth = 60;
+          minHeight = 30;
+          break;
+        case 'CONTAINER':
+        case 'GROUP':
+        case 'GRID_CONTAINER':
+        case 'FLEX_CONTAINER':
+          minWidth = 100;
+          minHeight = 100;
+          break;
+        case 'TEXT':
+          minWidth = 50;
+          minHeight = 20;
+          break;
+        case 'TABLE':
+          minWidth = 200;
+          minHeight = 100;
+          break;
+      }
+      
+      // Apply constraints from block if they exist
+      if (selectedBlock.constraints) {
+        minWidth = selectedBlock.constraints.minWidth || minWidth;
+        minHeight = selectedBlock.constraints.minHeight || minHeight;
+      }
+      
+      // Constrain dimensions
+      if (newBox.width < minWidth) {
+        newBox.width = minWidth;
+      }
+      if (newBox.height < minHeight) {
+        newBox.height = minHeight;
+      }
+      
+      // Apply maximum constraints
+      const maxWidth = selectedBlock.constraints?.maxWidth || 2000;
+      const maxHeight = selectedBlock.constraints?.maxHeight || 2000;
+      
+      if (newBox.width > maxWidth) {
+        newBox.width = maxWidth;
+      }
+      if (newBox.height > maxHeight) {
+        newBox.height = maxHeight;
+      }
+      
+      return newBox;
+    });
+  }, [transformerRef, selectedNodes, selectedBlockIds, blocks]);
+
   const handleBlockSelect = (blockId: string, e?: Konva.KonvaEventObject<MouseEvent>) => {
     const isMultiSelect = e?.evt?.ctrlKey || e?.evt?.metaKey || e?.evt?.shiftKey;
     
@@ -498,15 +566,53 @@ export function KonvaCanvas({
     
     if (!blockId) return;
 
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
+    
+    // Determine minimum sizes by block type
+    let minWidth = 20;
+    let minHeight = 20;
+    
+    switch (block.type) {
+      case 'BUTTON':
+        minWidth = 60;
+        minHeight = 30;
+        break;
+      case 'CONTAINER':
+      case 'GROUP':
+      case 'GRID_CONTAINER':
+      case 'FLEX_CONTAINER':
+        minWidth = 100;
+        minHeight = 100;
+        break;
+      case 'TEXT':
+        minWidth = 50;
+        minHeight = 20;
+        break;
+      case 'TABLE':
+        minWidth = 200;
+        minHeight = 100;
+        break;
+    }
+    
+    if (block.constraints) {
+      minWidth = block.constraints.minWidth || minWidth;
+      minHeight = block.constraints.minHeight || minHeight;
+    }
+
+    // Apply constraints
+    const newWidth = Math.max(minWidth, node.width() * scaleX);
+    const newHeight = Math.max(minHeight, node.height() * scaleY);
 
     // Update layout with new dimensions
     updateVisualLayout(blockId, {
       x: node.x(),
       y: node.y(),
-      width: Math.max(5, node.width() * scaleX),
-      height: Math.max(5, node.height() * scaleY),
+      width: newWidth,
+      height: newHeight,
     });
 
     // Reset scale to 1
