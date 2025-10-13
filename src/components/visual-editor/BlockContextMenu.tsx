@@ -24,6 +24,8 @@ import {
   MoveDown,
   ArrowUp,
   ArrowDown,
+  Group,
+  Ungroup,
 } from 'lucide-react';
 
 interface BlockContextMenuProps {
@@ -45,10 +47,13 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
     sendBackward,
     duplicateBlock,
     clipboard,
+    groupSelectedBlocks,
+    ungroupBlock,
   } = useVisualEditorStore();
 
   const isMultipleSelected = selectedBlockIds.length > 1;
   const hasClipboard = clipboard.length > 0;
+  const isGroupBlock = block?.type === 'GROUP';
 
   const handleCopy = () => {
     copySelectedBlocks();
@@ -173,6 +178,28 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
         </ContextMenuItem>
         
         <ContextMenuSeparator />
+        
+        {isMultipleSelected && (
+          <>
+            <ContextMenuItem onClick={() => groupSelectedBlocks()}>
+              <Group className="mr-2 h-4 w-4" />
+              Group
+              <ContextMenuShortcut>⌘G</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+        
+        {isGroupBlock && (
+          <>
+            <ContextMenuItem onClick={() => block && ungroupBlock(block.id)}>
+              <Ungroup className="mr-2 h-4 w-4" />
+              Ungroup
+              <ContextMenuShortcut>⌘⇧G</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
         
         <ContextMenuItem onClick={handleDelete} className="text-destructive">
           <Trash2 className="mr-2 h-4 w-4" />

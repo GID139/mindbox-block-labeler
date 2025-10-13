@@ -19,6 +19,7 @@ export interface BlockInstance {
   locked?: boolean; // Prevents editing/moving
   hidden?: boolean; // Hides from canvas but shows in layers
   constraints?: ResizeConstraints;
+  children?: BlockInstance[]; // For GROUP blocks
 }
 
 export interface BlockTemplate {

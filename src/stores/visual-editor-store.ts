@@ -161,6 +161,10 @@ interface VisualEditorState {
   alignSelectedBlocks: (alignType: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
   distributeSelectedBlocks: (distributeType: 'horizontal' | 'vertical') => void;
   
+  // Grouping
+  groupSelectedBlocks: () => void;
+  ungroupBlock: (groupId: string) => void;
+  
   // Z-index management
   bringToFront: (blockId: string) => void;
   sendToBack: (blockId: string) => void;
@@ -1197,6 +1201,188 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
     },
     
     distributeSelectedBlocks: (distributeType) => {
+      const { selectedBlockIds, blocks, visualLayout } = get();
+      
+      if (selectedBlockIds.length < 3) {
+        toast.error('Select at least 3 blocks to distribute');
+        return;
+      }
+      
+      const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
+      
+      // Import distribution utilities
+      const { distributeBlocks } = require('@/lib/visual-editor/alignment-utils');
+      const newLayout = distributeBlocks(selectedBlocks, visualLayout, distributeType);
+      
+      set({ visualLayout: newLayout });
+      toast.success('Blocks distributed');
+    },
+    
+    // Grouping
+    groupSelectedBlocks: () => {
+      const { selectedBlockIds, blocks, visualLayout } = get();
+      
+      if (selectedBlockIds.length < 2) {
+        toast.error('Select at least 2 blocks to group');
+        return;
+      }
+      
+      pushHistory('Group blocks');
+      
+      const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
+      
+      // Calculate bounding box of all selected blocks
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      selectedBlocks.forEach(block => {
+        const layout = visualLayout[block.id];
+        if (!layout) return;
+        
+        minX = Math.min(minX, layout.x);
+        minY = Math.min(minY, layout.y);
+        maxX = Math.max(maxX, layout.x + layout.width);
+        maxY = Math.max(maxY, layout.y + layout.height);
+      });
+      
+      const groupWidth = maxX - minX;
+      const groupHeight = maxY - minY;
+      
+      // Find max zIndex from selected blocks
+      const maxZIndex = Math.max(...selectedBlockIds.map(id => visualLayout[id]?.zIndex ?? 0));
+      
+      // Generate unique name for group
+      const { generateBlockName, getAllBlockNames } = require('@/lib/visual-editor/naming');
+      const existingNames = getAllBlockNames(blocks);
+      const groupName = generateBlockName('GROUP', existingNames);
+      
+      // Create GROUP block
+      const groupId = `group-${Date.now()}`;
+      const groupBlock: BlockInstance = {
+        id: groupId,
+        type: 'GROUP',
+        name: groupName,
+        settings: {
+          background: { type: 'transparent' as const },
+          padding: '0px',
+        },
+        canContainChildren: true,
+        maxNestingLevel: 10,
+      };
+      
+      // Convert selected blocks' coordinates to relative (within group)
+      const childBlocks = selectedBlocks.map(block => {
+        const layout = visualLayout[block.id];
+        return {
+          ...block,
+          // Store relative position in settings for reconstruction
+          _relativeX: layout.x - minX,
+          _relativeY: layout.y - minY,
+        };
+      });
+      
+      // Remove selected blocks from main blocks array
+      const newBlocks = blocks.filter(b => !selectedBlockIds.includes(b.id));
+      
+      // Add GROUP block with children
+      const groupWithChildren = {
+        ...groupBlock,
+        children: childBlocks,
+      };
+      
+      // Create new visualLayout without selected blocks
+      const newLayout = { ...visualLayout };
+      selectedBlockIds.forEach(id => delete newLayout[id]);
+      
+      // Add GROUP to layout
+      newLayout[groupId] = {
+        x: minX,
+        y: minY,
+        width: groupWidth,
+        height: groupHeight,
+        zIndex: maxZIndex + 1,
+      };
+      
+      set({
+        blocks: [...newBlocks, groupWithChildren],
+        visualLayout: newLayout,
+        selectedBlockIds: [groupId],
+      });
+      
+      toast.success('Blocks grouped');
+    },
+    
+    ungroupBlock: (groupId) => {
+      const { blocks, visualLayout } = get();
+      const groupBlock = findBlockById(blocks, groupId);
+      
+      if (!groupBlock || groupBlock.type !== 'GROUP') {
+        toast.error('Not a group block');
+        return;
+      }
+      
+      if (!groupBlock.children || groupBlock.children.length === 0) {
+        toast.error('Group has no children');
+        return;
+      }
+      
+      pushHistory('Ungroup blocks');
+      
+      const groupLayout = visualLayout[groupId];
+      if (!groupLayout) return;
+      
+      // Convert children coordinates back to absolute
+      const childBlocks = groupBlock.children.map((child: any) => {
+        const absoluteX = groupLayout.x + (child._relativeX || 0);
+        const absoluteY = groupLayout.y + (child._relativeY || 0);
+        
+        // Remove relative position metadata
+        const { _relativeX, _relativeY, ...cleanChild } = child;
+        
+        return {
+          block: cleanChild,
+          x: absoluteX,
+          y: absoluteY,
+        };
+      });
+      
+      // Remove GROUP from blocks
+      const newBlocks = blocks.filter(b => b.id !== groupId);
+      
+      // Add children back to blocks
+      childBlocks.forEach(({ block }) => {
+        newBlocks.push(block);
+      });
+      
+      // Remove GROUP from layout and add children
+      const newLayout = { ...visualLayout };
+      delete newLayout[groupId];
+      
+      childBlocks.forEach(({ block, x, y }) => {
+        const template = require('@/lib/visual-editor/block-templates').getTemplate(block.type);
+        const defaultSize = template ? require('@/lib/visual-editor/block-templates').getDefaultBlockSize(block.type, block.settings) : { width: 200, height: 100 };
+        
+        newLayout[block.id] = {
+          x,
+          y,
+          width: parseInt(String(block.settings.width)) || defaultSize.width,
+          height: parseInt(String(block.settings.height)) || defaultSize.height,
+          zIndex: groupLayout.zIndex,
+        };
+      });
+      
+      // Select ungrouped blocks
+      const childIds = childBlocks.map(({ block }) => block.id);
+      
+      set({
+        blocks: newBlocks,
+        visualLayout: newLayout,
+        selectedBlockIds: childIds,
+      });
+      
+      toast.success('Group ungrouped');
+    },
+    
+    distributeSelectedBlocks_old: (distributeType) => {
       const { selectedBlockIds, blocks, visualLayout } = get();
       
       if (selectedBlockIds.length < 3) {

@@ -7,20 +7,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Wrench, AlignLeft, AlignCenterHorizontal, AlignRight, AlignVerticalJustifyStart, AlignCenterVertical, AlignVerticalJustifyEnd, StretchHorizontal, StretchVertical, BringToFront, SendToBack } from 'lucide-react';
+import { Wrench, AlignLeft, AlignCenterHorizontal, AlignRight, AlignVerticalJustifyStart, AlignCenterVertical, AlignVerticalJustifyEnd, StretchHorizontal, StretchVertical, BringToFront, SendToBack, Group, Ungroup } from 'lucide-react';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 
 export function ToolsDropdown() {
   const { 
     selectedBlockIds, 
+    blocks,
     alignSelectedBlocks, 
     distributeSelectedBlocks,
     bringToFront,
     sendToBack,
+    groupSelectedBlocks,
+    ungroupBlock,
   } = useVisualEditorStore();
   
   const disabled = selectedBlockIds.length < 2;
   const hasSelection = selectedBlockIds.length > 0;
+  
+  // Check if selected block is a GROUP
+  const selectedBlock = selectedBlockIds.length === 1 
+    ? blocks.find(b => b.id === selectedBlockIds[0])
+    : null;
+  const isGroupSelected = selectedBlock?.type === 'GROUP';
 
   return (
     <DropdownMenu>
@@ -77,6 +86,17 @@ export function ToolsDropdown() {
         <DropdownMenuItem disabled={!hasSelection} onClick={() => hasSelection && sendToBack(selectedBlockIds[0])}>
           <SendToBack className="h-4 w-4 mr-2" />
           Send to Back
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Grouping</DropdownMenuLabel>
+        <DropdownMenuItem disabled={disabled} onClick={() => groupSelectedBlocks()}>
+          <Group className="h-4 w-4 mr-2" />
+          Group Selection
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!isGroupSelected} onClick={() => selectedBlock && ungroupBlock(selectedBlock.id)}>
+          <Ungroup className="h-4 w-4 mr-2" />
+          Ungroup
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
