@@ -9,6 +9,64 @@ export interface ResizeConstraints {
   maxHeight?: number;
 }
 
+export interface MindboxTextStyles {
+  font: string;
+  fontSize: string;
+  lineHeight: string;
+  inscription?: string[]; // ['bold', 'italic', 'underline']
+  color: string;
+  fallbackFont?: string;
+  letterSpacing?: string;
+}
+
+export interface MindboxBackgroundSetting {
+  type: 'color' | 'image' | 'transparent';
+  color?: string;
+  image?: string;
+  mode?: 'contain' | 'cover' | 'repeat' | 'stretch';
+}
+
+export interface MindboxSizeSetting {
+  type: 'pixels' | 'percent';
+  value: string;
+}
+
+export interface MindboxSettings {
+  enabled: boolean;
+  blockName: string; // e.g., 'header', 'footer'
+  
+  // Базовые настройки (доступны для всех блоков)
+  background: MindboxBackgroundSetting;
+  innerSpacing: string; // '10 10 20 10' (top right bottom left)
+  outerSpacing: string; // '10' (для padding обёртки)
+  displayToggle: boolean;
+  width?: MindboxSizeSetting;
+  height?: string;
+  border: string; // 'none' или '1px solid #000000'
+  borderRadius: string; // '0 0 0 0' (top-left top-right bottom-right bottom-left)
+  align: 'left' | 'center' | 'right';
+  
+  // Специфичные для TEXT блоков
+  textSettings?: {
+    text: string;
+    textStyles: MindboxTextStyles;
+  };
+  
+  // Специфичные для BUTTON блоков
+  buttonSettings?: {
+    url: string;
+    buttonText: string;
+    textStyles: MindboxTextStyles;
+  };
+  
+  // Специфичные для IMAGE блоков
+  imageSettings?: {
+    url: string;
+    image: string;
+    alt: string;
+  };
+}
+
 export interface BlockInstance {
   id: string;
   type: BlockType;
@@ -20,6 +78,7 @@ export interface BlockInstance {
   hidden?: boolean; // Hides from canvas but shows in layers
   constraints?: ResizeConstraints;
   children?: BlockInstance[]; // For GROUP blocks
+  mindboxSettings?: MindboxSettings; // Mindbox-специфичные настройки
 }
 
 export interface BlockTemplate {
@@ -33,6 +92,8 @@ export interface BlockTemplate {
   availableSettings: string[]; // ['display', 'text', 'textStyles', 'link']
   generateHTML: (block: BlockInstance) => string;
   generateJSON: (block: BlockInstance) => any[];
+  generateMindboxHTML?: (block: BlockInstance, children?: string) => string;
+  generateMindboxJSON?: (block: BlockInstance) => any[];
 }
 
 export interface TableCellSettings {
