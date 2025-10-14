@@ -1283,11 +1283,22 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       };
       
       // Convert selected blocks' coordinates to relative (within group)
+      // Keep layout data for children in the new visualLayout
       const childBlocks = selectedBlocks.map(block => {
         const layout = visualLayout[block.id];
+        
+        // Update child layout to be relative to group
+        newLayout[block.id] = {
+          x: layout.x - minX,
+          y: layout.y - minY,
+          width: layout.width,
+          height: layout.height,
+          zIndex: layout.zIndex ?? 0,
+        };
+        
         return {
           ...block,
-          // Store relative position in settings for reconstruction
+          // Store relative position for legacy compatibility
           _relativeX: layout.x - minX,
           _relativeY: layout.y - minY,
         };
@@ -1296,15 +1307,14 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       // Remove selected blocks from main blocks array
       const newBlocks = blocks.filter(b => !selectedBlockIds.includes(b.id));
       
+      // Create new visualLayout (we'll keep child layouts but update them)
+      const newLayout = { ...visualLayout };
+      
       // Add GROUP block with children
       const groupWithChildren = {
         ...groupBlock,
         children: childBlocks,
       };
-      
-      // Create new visualLayout without selected blocks
-      const newLayout = { ...visualLayout };
-      selectedBlockIds.forEach(id => delete newLayout[id]);
       
       // Add GROUP to layout
       newLayout[groupId] = {

@@ -403,19 +403,13 @@ const KonvaBlock = ({
           />
           {/* Render children blocks */}
           {block.children?.map(childBlock => {
-            const relativeX = (childBlock as any)._relativeX ?? 0;
-            const relativeY = (childBlock as any)._relativeY ?? 0;
+            const childLayout = visualLayout[childBlock.id];
+            if (!childLayout) return null;
             
             return (
               <KonvaBlock
                 key={childBlock.id}
-                block={{
-                  ...childBlock,
-                  settings: {
-                    ...childBlock.settings,
-                    margin: { top: relativeY, left: relativeX, right: 0, bottom: 0 }
-                  }
-                }}
+                block={childBlock}
                 isSelected={selectedBlockIds.includes(childBlock.id)}
                 onSelect={(e) => {
                   if (e) e.cancelBubble = true;
