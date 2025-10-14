@@ -52,6 +52,14 @@ export function validateMindboxBlock(block: BlockInstance): MindboxValidationErr
       message: `Block name "${settings.blockName}" contains invalid characters. Only letters, numbers and underscore allowed.`,
       field: 'blockName'
     });
+  } else if (settings.blockName.includes('_')) {
+    errors.push({
+      blockId: block.id,
+      blockName: block.name,
+      severity: 'warning',
+      message: `Block name "${settings.blockName}" contains underscores. Consider using camelCase (e.g., "myBlock") for better Mindbox compatibility.`,
+      field: 'blockName'
+    });
   }
 
   // Validate background

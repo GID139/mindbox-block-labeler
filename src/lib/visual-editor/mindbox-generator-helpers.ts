@@ -20,14 +20,10 @@ export class MindboxHTMLGenerator {
    */
   generateBackgroundTD(content: string): string {
     const name = this.ctx.blockName;
-    return `<td bgcolor="\${editor.${name}_background}" 
-    style="padding: \${editor.${name}_innerSpacing}; 
-           border-radius: \${editor.${name}_borderRadius}; 
-           border: \${editor.${name}_border}; 
-           \${editor.${name}_background.formattedBackgroundStyles};" 
-    \${if(editor.${name}_background.type = "image", 
-         'background="' & editor.${name}_background.image & '"', 
-         "" )}>
+    return `<td style="\${editor.${name}Background.background}; 
+           padding: \${editor.${name}InnerSpacing}; 
+           border-radius: \${editor.${name}BorderRadius}; 
+           border: \${editor.${name}Border};">
   ${content}
 </td>`;
   }
@@ -82,32 +78,32 @@ export class MindboxJSONGenerator {
         extra: { label: `Показывать ${name}` }
       },
       {
-        name: `${name}_background`,
+        name: `${name}Background`,
         type: 'BACKGROUND',
         defaultValue: s.background,
-        group: `Общие стили ${name}`,
-        extra: { label: `Фон ${name}` }
+        group: `${groupName} >> Общие стили`,
+        extra: { label: 'Фон' }
       },
       {
-        name: `${name}_innerSpacing`,
+        name: `${name}InnerSpacing`,
         type: 'INNER_SPACING',
         defaultValue: s.innerSpacing,
-        group: `Общие стили ${name}`,
-        extra: { label: 'Внутренние отступы блока (px)' }
+        group: `${groupName} >> Общие стили`,
+        extra: { label: 'Внутренние отступы (px)' }
       },
       {
-        name: `${name}_border`,
+        name: `${name}Border`,
         type: 'BORDER',
         defaultValue: s.border,
-        group: `Общие стили ${name}`,
-        extra: { label: `Обводка ${name}` }
+        group: `${groupName} >> Общие стили`,
+        extra: { label: 'Обводка' }
       },
       {
-        name: `${name}_borderRadius`,
+        name: `${name}BorderRadius`,
         type: 'BORDER_RADIUS',
         defaultValue: s.borderRadius,
-        group: `Общие стили ${name}`,
-        extra: { label: `Скругление углов ${name} (px)` }
+        group: `${groupName} >> Общие стили`,
+        extra: { label: 'Скругление углов (px)' }
       }
     ];
   }
@@ -123,14 +119,14 @@ export class MindboxJSONGenerator {
 
     return [
       {
-        name: `${name}_text`,
+        name: `${name}Text`,
         type: 'TEXT',
         defaultValue: s.textSettings.text,
         group: capitalize(name),
         extra: { label: 'Текст' }
       },
       {
-        name: `${name}_styles`,
+        name: `${name}Styles`,
         type: 'TEXT_STYLES',
         defaultValue: s.textSettings.textStyles,
         group: capitalize(name),
@@ -150,21 +146,21 @@ export class MindboxJSONGenerator {
 
     return [
       {
-        name: `${name}_url`,
+        name: `${name}Url`,
         type: 'URL',
         defaultValue: s.buttonSettings.url,
         group: capitalize(name),
         extra: { label: 'Ссылка кнопки' }
       },
       {
-        name: `${name}_buttonText`,
+        name: `${name}ButtonText`,
         type: 'SIMPLE_TEXT',
         defaultValue: s.buttonSettings.buttonText,
         group: capitalize(name),
         extra: { label: 'Текст кнопки' }
       },
       {
-        name: `${name}_buttonStyles`,
+        name: `${name}ButtonStyles`,
         type: 'SIMPLE_TEXT_STYLES',
         defaultValue: s.buttonSettings.textStyles,
         group: capitalize(name),
@@ -184,21 +180,21 @@ export class MindboxJSONGenerator {
 
     return [
       {
-        name: `${name}_url`,
+        name: `${name}Url`,
         type: 'URL',
         defaultValue: s.imageSettings.url,
         group: capitalize(name),
         extra: { label: 'Ссылка' }
       },
       {
-        name: `${name}_image`,
+        name: `${name}Image`,
         type: 'IMAGE',
         defaultValue: s.imageSettings.image,
         group: capitalize(name),
         extra: { label: 'Картинка' }
       },
       {
-        name: `${name}_alt`,
+        name: `${name}Alt`,
         type: 'ALT',
         defaultValue: s.imageSettings.alt,
         group: capitalize(name),

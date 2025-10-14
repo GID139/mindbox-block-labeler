@@ -2,6 +2,7 @@ import { BlockInstance } from '@/types/visual-editor';
 import { VisualLayout } from '@/stores/visual-editor-store';
 import { getTemplate } from './block-templates';
 import { buildBlockTree } from './hierarchy-detector';
+import { validateBlockName } from './naming';
 
 /**
  * Exports blocks to Mindbox HTML format
@@ -11,10 +12,29 @@ export function exportMindboxHTML(
   visualLayout: VisualLayout,
   templateName: string = 'my_template'
 ): string {
+  // Validate and sanitize template name
+  const sanitizedName = templateName.replace(/\s+/g, '_');
+  if (!validateBlockName(sanitizedName)) {
+    throw new Error(
+      `Invalid template name: "${templateName}". Use only Latin letters, digits, and underscores.`
+    );
+  }
+
+  // Validate all Mindbox block names
+  const mindboxBlocks = blocks.filter(b => b.mindboxSettings?.enabled);
+  for (const block of mindboxBlocks) {
+    const blockName = block.mindboxSettings?.blockName || '';
+    if (!validateBlockName(blockName)) {
+      throw new Error(
+        `Invalid block name: "${blockName}" (block ID: ${block.id}). Use only Latin letters, digits, and underscores.`
+      );
+    }
+  }
+
   // Build hierarchy tree (автоматическое определение вложенности)
   const tree = buildBlockTree(blocks, visualLayout);
 
-  let html = `<!-- EDITOR_BLOCK_TEMPLATE: ${templateName} -->
+  let html = `<!-- EDITOR_BLOCK_TEMPLATE: ${sanitizedName} -->
 
 <!--[if mso]>
 <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="600" align="center">
