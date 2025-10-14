@@ -188,10 +188,12 @@ const KonvaBlock = ({
   onDragEnd, 
   allBlocks,
   onDragMove,
-  onDoubleClick 
+  onDoubleClick,
+  selectedBlockIds = []
 }: KonvaBlockProps & { 
   onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDoubleClick?: () => void;
+  selectedBlockIds?: string[];
 }) => {
   const { visualLayout } = useVisualEditorStore();
   const layout = visualLayout[block.id];
@@ -389,15 +391,42 @@ const KonvaBlock = ({
     case 'GROUP':
       return (
         <Group {...commonProps}>
+          {/* Group boundary */}
           <Rect
             width={outerWidth}
             height={outerHeight}
             fill="transparent"
-            stroke={isSelected ? 'hsl(166, 96%, 29%)' : undefined}
-            strokeWidth={isSelected ? 2 : 0}
-            dash={isSelected ? [5, 5] : undefined}
+            stroke={isSelected ? 'hsl(166, 96%, 29%)' : '#94a3b8'}
+            strokeWidth={isSelected ? 2 : 1}
+            dash={isSelected ? [5, 5] : [10, 5]}
             listening={true}
           />
+          {/* Render children blocks */}
+          {block.children?.map(childBlock => {
+            const relativeX = (childBlock as any)._relativeX ?? 0;
+            const relativeY = (childBlock as any)._relativeY ?? 0;
+            
+            return (
+              <KonvaBlock
+                key={childBlock.id}
+                block={{
+                  ...childBlock,
+                  settings: {
+                    ...childBlock.settings,
+                    margin: { top: relativeY, left: relativeX, right: 0, bottom: 0 }
+                  }
+                }}
+                isSelected={selectedBlockIds.includes(childBlock.id)}
+                onSelect={(e) => {
+                  if (e) e.cancelBubble = true;
+                  onSelect(e);
+                }}
+                onDragEnd={() => {}}
+                allBlocks={allBlocks}
+                selectedBlockIds={selectedBlockIds}
+              />
+            );
+          })}
         </Group>
       );
 
@@ -1054,6 +1083,7 @@ export function KonvaCanvas({
                   onDragEnd={handleDragEnd(block.id)}
                   onDoubleClick={() => handleDoubleClick(block.id)}
                   allBlocks={blocks}
+                  selectedBlockIds={selectedBlockIds}
                 />
               </Group>
             ))}
