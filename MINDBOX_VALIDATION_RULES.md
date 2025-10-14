@@ -59,19 +59,51 @@
 <td bgcolor="${editor.containerBgColor}">
 ```
 
-### 4. Максимум 2 точки в путях переменных (КРИТИЧНО)
+### 4. ⚠️ КРИТИЧНО: Ограничение точек в переменных
 
-**❌ ЗАПРЕЩЕНО (3+ точки):**
+Mindbox парсер **НЕ ПОДДЕРЖИВАЕТ** более 1 точки в путях переменных.
+
+**❌ ЗАПРЕЩЕНО (2+ точки):**
 ```html
-${editor.container1_background.formattedBackgroundStyles}
-${editor.text1_background.color.value}
+${editor.container1Background.background}  <!-- 2 точки -->
+${editor.text1_background.color.value}     <!-- 3 точки -->
 ```
 
-**✅ ПРАВИЛЬНО (1-2 точки):**
+**✅ ПРАВИЛЬНО (максимум 1 точка):**
 ```html
-${editor.container1Background.background}
-${editor.text1Styles}
-${editor.button1Url}
+${editor.container1BgColor}                          <!-- 0 точек -->
+${editor.text1Styles}                                <!-- 0 точек -->
+${editor.titleWidth.formattedWidthAttribute}         <!-- 1 точка, спец. тип SIZE -->
+${editor.imageHeight.formattedHeight}                <!-- 1 точка, спец. тип HEIGHTV2 -->
+```
+
+**Исключения (разрешённые паттерны с 1 точкой):**
+- `*.formattedWidthAttribute` (тип SIZE)
+- `*.formattedWidthStyle` (тип SIZE)
+- `*.formattedHeight` (тип HEIGHTV2)
+- `*.containerHeightAttribute` (тип TEXT_SIZE)
+- `*.containerStyle` (тип TEXT_SIZE)
+
+**Решение для фонов:**
+
+Вместо `BACKGROUND` типа используйте `COLOR`:
+
+**JSON:**
+```json
+{
+  "name": "containerBgColor",
+  "type": "COLOR",
+  "defaultValue": "#FFFFFF",
+  "group": "Container >> Общие стили",
+  "extra": { "label": "Цвет фона" }
+}
+```
+
+**HTML:**
+```html
+<td style="background-color: ${editor.containerBgColor};">
+  <!-- контент -->
+</td>
 ```
 
 ### 5. Именование переменных

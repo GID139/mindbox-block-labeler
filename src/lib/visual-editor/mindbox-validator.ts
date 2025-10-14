@@ -91,6 +91,54 @@ export function validateMindboxBlock(block: BlockInstance): MindboxValidationErr
     }
   }
 
+  // Validate: Mindbox supports max 1 dot in variable paths
+  // Generate HTML temporarily to check for invalid variables
+  if (block.type && settings.enabled) {
+    try {
+      const template = require('./block-templates').getBlockTemplate(block.type);
+      if (template?.generateMindboxHTML) {
+        const generatedHTML = template.generateMindboxHTML(block);
+        
+        const twoDotsPattern = /\$\{editor\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*\}/g;
+        const potentialMatches = generatedHTML.match(twoDotsPattern) || [];
+        
+        // Allowed patterns with exactly 1 dot (special Mindbox types)
+        const allowedPatterns = [
+          '.formattedWidthAttribute',
+          '.formattedWidthStyle',
+          '.formattedHeight',
+          '.containerHeightAttribute',
+          '.containerStyle'
+        ];
+        
+        // Filter out allowed patterns and find actual violations (2+ dots)
+        const invalidVars = potentialMatches.filter(varMatch => {
+          // Check if this is an allowed pattern
+          const isAllowed = allowedPatterns.some(pattern => varMatch.includes(pattern));
+          if (isAllowed) return false;
+          
+          // Count dots - if more than 1 dot after "editor.", it's invalid
+          const afterEditor = varMatch.split('editor.')[1];
+          if (!afterEditor) return false;
+          const dotCount = (afterEditor.match(/\./g) || []).length;
+          return dotCount >= 1;
+        });
+        
+        if (invalidVars.length > 0) {
+          errors.push({
+            blockId: block.id,
+            blockName: block.name,
+            severity: 'error',
+            message: `Mindbox allows max 1 dot in variable paths. Found: ${invalidVars.join(', ')}. Use COLOR type instead of BACKGROUND.background`,
+            field: 'mindboxHTML'
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore if template not found or error during generation
+    }
+  }
+
   // Validate spacing format (should be "top right bottom left")
   if (settings.innerSpacing && !/^\d+\s+\d+\s+\d+\s+\d+$/.test(settings.innerSpacing)) {
     errors.push({

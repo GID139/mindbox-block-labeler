@@ -20,7 +20,7 @@ export class MindboxHTMLGenerator {
    */
   generateBackgroundTD(content: string): string {
     const name = this.ctx.blockName;
-    return `<td style="\${editor.${name}Background.background}; 
+    return `<td style="background-color: \${editor.${name}BgColor}; 
            padding: \${editor.${name}InnerSpacing}; 
            border-radius: \${editor.${name}BorderRadius}; 
            border: \${editor.${name}Border};">
@@ -78,11 +78,11 @@ export class MindboxJSONGenerator {
         extra: { label: `Показывать ${name}` }
       },
       {
-        name: `${name}Background`,
-        type: 'BACKGROUND',
-        defaultValue: s.background,
+        name: `${name}BgColor`,
+        type: 'COLOR',
+        defaultValue: s.background || '#FFFFFF',
         group: `${groupName} >> Общие стили`,
-        extra: { label: 'Фон' }
+        extra: { label: 'Цвет фона' }
       },
       {
         name: `${name}InnerSpacing`,
