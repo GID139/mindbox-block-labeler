@@ -12,6 +12,7 @@ import { FileDown, FileUp } from 'lucide-react';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { exportToPNG, exportToSVG, exportToJSON } from '@/lib/visual-editor/export-utils';
 import { exportMindboxHTML, exportMindboxJSON, downloadMindboxHTML, downloadMindboxJSON } from '@/lib/visual-editor/mindbox-exporter';
+import { validateMindboxProject } from '@/lib/visual-editor/mindbox-validator';
 import { toast } from '@/hooks/use-toast';
 
 export function FileDropdown() {
@@ -107,6 +108,25 @@ export function FileDropdown() {
   };
 
   const handleExportMindbox = () => {
+    // Validate before export
+    const validation = validateMindboxProject(blocks, visualLayout);
+    
+    if (!validation.valid) {
+      toast({
+        title: "Validation failed",
+        description: `Found ${validation.errors.length} error(s). Please fix them before exporting.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      toast({
+        title: "Validation warnings",
+        description: `Found ${validation.warnings.length} warning(s). Export will proceed.`,
+      });
+    }
+
     const html = exportMindboxHTML(blocks, visualLayout, projectName);
     const json = exportMindboxJSON(blocks);
     

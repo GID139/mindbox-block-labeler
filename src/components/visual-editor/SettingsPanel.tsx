@@ -19,6 +19,10 @@ import { Switch } from '@/components/ui/switch';
 import { KonvaStyleSettings } from './SettingsKonva';
 import { SpacingSettings } from './SpacingSettings';
 import { MindboxSettingsPanel } from './MindboxSettings';
+import { HierarchyPreview } from './HierarchyPreview';
+import { MindboxValidationPanel } from './MindboxValidationPanel';
+import { HierarchyCorrection } from './HierarchyCorrection';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function SettingsPanel() {
   const { 
@@ -1211,6 +1215,24 @@ export function SettingsPanel() {
             }
           }}
         />
+
+        {/* Hierarchy Tools */}
+        <div className="space-y-4 mt-6 pt-6 border-t">
+          <h3 className="text-sm font-medium">Mindbox Tools</h3>
+          
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-4 pr-4">
+              <HierarchyPreview 
+                blocks={blocks} 
+                visualLayout={visualLayout} 
+              />
+              
+              <HierarchyCorrection />
+              
+              <MindboxValidationPanel />
+            </div>
+          </ScrollArea>
+        </div>
 
       </div>
     </div>
