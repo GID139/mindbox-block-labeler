@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { callBothubAPI, estimateTokens } from "@/lib/bothub-api";
 import { useMindboxPrompts } from "@/hooks/useMindboxPrompts";
 import type { Scenario } from "@/lib/prompts";
+import { buildSingleShotPrompt } from "@/lib/prompts";
 import { saveToHistory } from "@/lib/history-manager";
 import { components, friendlyNames, smartHints } from "@/lib/component-settings";
 import type { MindboxState } from "@/types/mindbox";
@@ -250,7 +251,72 @@ ${step3Prompt}`;
 
     try {
       // ============================================================
-      // ШАГ 1: ГЕНЕРАЦИЯ ИЛИ ВАЛИДАЦИЯ HTML (всегда выполняется)
+      // БЫСТРЫЙ РЕЖИМ: 1 ЗАПРОС С ПОЛНЫМ KB
+      // ============================================================
+      if (state.fastMode) {
+        setCurrentStep(1);
+        setProgress(10);
+        setProgressMessage("Генерация в быстром режиме...");
+        addLog("Быстрый режим: отправка единого запроса с полным Knowledge Base");
+
+        const singlePrompt = buildSingleShotPrompt({
+          goal: state.goal,
+          html: state.originalHtml,
+          json: state.originalJson,
+          visualHtml: state.visualHtml,
+          isDynamicGrid: state.isDynamicGrid,
+          isEditable: state.isEditable,
+          settingsList
+        });
+
+        setProgress(20);
+        setProgressMessage("Отправка запроса в AI модель...");
+
+        const response = await callBothubAPI(
+          [{ role: "user", content: singlePrompt }],
+          { model: "claude-sonnet-4", signal: controller.signal }
+        );
+
+        setProgress(60);
+        setProgressMessage("Обработка полученного кода...");
+
+        const { html, json } = parseCodeBlocks(response);
+        
+        updateState({ 
+          html, 
+          json,
+          fixedHtml: html,
+          fixedJson: json,
+          reportMarkdown: '✅ Быстрая генерация завершена (1 запрос)'
+        });
+
+        setProgress(100);
+        setProgressMessage("✅ Быстрая генерация завершена!");
+        addLog("Быстрая генерация завершена");
+
+        // Сохраняем в историю
+        saveToHistory("Автосохранение (быстрый режим)", {
+          goal: state.goal,
+          originalHtml: state.originalHtml,
+          originalJson: state.originalJson,
+          html,
+          json,
+          fixedHtml: html,
+          fixedJson: json,
+          reportMarkdown: '✅ Быстрая генерация завершена'
+        });
+
+        toast.success("Генерация завершена (быстрый режим)");
+        
+        setTimeout(() => {
+          setActiveTab('fixed');
+        }, 500);
+
+        return;
+      }
+
+      // ============================================================
+      // ОБЫЧНЫЙ РЕЖИМ: 3 ЗАПРОСА (ШАГ 1)
       // ============================================================
       setCurrentStep(1);
       setProgress(10);
@@ -485,14 +551,31 @@ ${step3Prompt}`;
 
             <div className="flex items-center space-x-2">
               <Checkbox
+                id="fastMode"
+                checked={state.fastMode || false}
+                onCheckedChange={(checked) => 
+                  updateState({ fastMode: checked as boolean })
+                }
+              />
+              <Label htmlFor="fastMode" className="text-sm font-normal cursor-pointer">
+                Быстрый режим (1 запрос, ~5-10 сек)
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
                 id="quickFix"
                 checked={state.quickFix}
                 onCheckedChange={(checked) => 
                   updateState({ quickFix: checked as boolean })
                 }
+                disabled={state.fastMode}
               />
-              <Label htmlFor="quickFix" className="text-sm font-normal cursor-pointer">
-                Быстрое исправление (без подробного отчета)
+              <Label 
+                htmlFor="quickFix" 
+                className={`text-sm font-normal ${state.fastMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                Быстрое исправление (без подробного отчета, только для обычного режима)
               </Label>
             </div>
 
@@ -640,15 +723,29 @@ ${step3Prompt}`;
         />
 
         <Card className="p-6">
-          <h3 className="font-semibold mb-3">Как работает пайплайн:</h3>
-          <ol className="text-sm space-y-2 text-muted-foreground list-decimal list-inside">
-            <li><strong>Шаг 1</strong>: Генерация или валидация HTML кода</li>
-            <li><strong>Шаг 2</strong>: Генерация или валидация JSON настроек</li>
-            <li><strong>Шаг 3</strong>: Финальная отладка и синхронизация</li>
-            <li className="pt-2 border-t">Все 3 шага выполняются всегда, независимо от наличия кода</li>
-            <li>Нажмите кнопку анализа</li>
-            <li>Получите исправленный код</li>
-          </ol>
+          <h3 className="font-semibold mb-3">Режимы работы:</h3>
+          <div className="text-sm space-y-3 text-muted-foreground">
+            <div className="border-b pb-2">
+              <strong className="text-foreground">Быстрый режим (1 запрос)</strong>
+              <ul className="mt-1 ml-4 space-y-1 list-disc">
+                <li>Время: ~5-10 секунд</li>
+                <li>Отправляет полный Knowledge Base за раз</li>
+                <li>Рекомендуется для простых блоков</li>
+                <li>Быстрее, но меньше валидации</li>
+              </ul>
+            </div>
+            
+            <div>
+              <strong className="text-foreground">Обычный режим (3 запроса)</strong>
+              <ul className="mt-1 ml-4 space-y-1 list-disc">
+                <li>Время: ~20-30 секунд</li>
+                <li><strong>Шаг 1</strong>: Генерация/валидация HTML</li>
+                <li><strong>Шаг 2</strong>: Генерация/валидация JSON</li>
+                <li><strong>Шаг 3</strong>: Финальная отладка и синхронизация</li>
+                <li>Рекомендуется для сложных блоков и исправлений</li>
+              </ul>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

@@ -16,6 +16,7 @@ export interface MindboxState {
   reportMarkdown: string;
   
   quickFix: boolean;
+  fastMode?: boolean;
   isDynamicGrid: boolean;
   isEditable: boolean;
   settings: Record<string, boolean>;
