@@ -24,7 +24,6 @@ export function HierarchyCorrection() {
   const hasNestedBlocks = tree.some(node => node.children.length > 0);
 
   const handleAutoGroup = () => {
-    // Auto-group based on hierarchy
     if (selectedBlockIds.length >= 2) {
       groupSelectedBlocks();
     }

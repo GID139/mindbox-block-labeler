@@ -90,13 +90,27 @@ export function ToolsDropdown() {
         
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Grouping</DropdownMenuLabel>
-        <DropdownMenuItem disabled={disabled} onClick={() => groupSelectedBlocks()}>
+        <DropdownMenuItem 
+          disabled={selectedBlockIds.length < 2} 
+          onClick={() => {
+            if (selectedBlockIds.length >= 2) {
+              groupSelectedBlocks();
+            }
+          }}
+        >
           <Group className="h-4 w-4 mr-2" />
-          Group Selection
+          Group Selection (Ctrl+G)
         </DropdownMenuItem>
-        <DropdownMenuItem disabled={!isGroupSelected} onClick={() => selectedBlock && ungroupBlock(selectedBlock.id)}>
+        <DropdownMenuItem 
+          disabled={!isGroupSelected} 
+          onClick={() => {
+            if (selectedBlock && selectedBlock.type === 'GROUP') {
+              ungroupBlock(selectedBlock.id);
+            }
+          }}
+        >
           <Ungroup className="h-4 w-4 mr-2" />
-          Ungroup
+          Ungroup (Ctrl+Shift+G)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

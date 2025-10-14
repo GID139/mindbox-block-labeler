@@ -179,12 +179,16 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
         
         <ContextMenuSeparator />
         
-        {isMultipleSelected && (
+        {selectedBlockIds.length >= 2 && (
           <>
-            <ContextMenuItem onClick={() => groupSelectedBlocks()}>
+            <ContextMenuItem onClick={() => {
+              if (selectedBlockIds.length >= 2) {
+                groupSelectedBlocks();
+              }
+            }}>
               <Group className="mr-2 h-4 w-4" />
               Group
-              <ContextMenuShortcut>⌘G</ContextMenuShortcut>
+              <ContextMenuShortcut>Ctrl+G</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>
@@ -192,10 +196,14 @@ export function BlockContextMenu({ block, children }: BlockContextMenuProps) {
         
         {isGroupBlock && (
           <>
-            <ContextMenuItem onClick={() => block && ungroupBlock(block.id)}>
+            <ContextMenuItem onClick={() => {
+              if (block && block.type === 'GROUP') {
+                ungroupBlock(block.id);
+              }
+            }}>
               <Ungroup className="mr-2 h-4 w-4" />
               Ungroup
-              <ContextMenuShortcut>⌘⇧G</ContextMenuShortcut>
+              <ContextMenuShortcut>Ctrl+Shift+G</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>

@@ -147,16 +147,20 @@ export function useKeyboardShortcuts() {
       // Group
       if ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey && selectedBlockIds.length >= 2) {
         e.preventDefault();
+        e.stopPropagation();
         groupSelectedBlocks();
+        return;
       }
       
       // Ungroup
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'g' && selectedBlockIds.length === 1) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'G' && selectedBlockIds.length === 1) {
         e.preventDefault();
+        e.stopPropagation();
         const selectedBlock = blocks.find(b => b.id === selectedBlockIds[0]);
         if (selectedBlock?.type === 'GROUP') {
           ungroupBlock(selectedBlockIds[0]);
         }
+        return;
       }
 
       // Zoom In
