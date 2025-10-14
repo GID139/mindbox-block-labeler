@@ -7,6 +7,8 @@ import { getDefaultBlockSize } from '@/lib/visual-editor/block-templates';
 import { 
   findBlockById as findBlockByIdUtil
 } from '@/lib/visual-editor/coordinate-utils';
+import { generateBlockName, getAllBlockNames } from '@/lib/visual-editor/naming';
+import { distributeBlocks } from '@/lib/visual-editor/alignment-utils';
 
 export interface GlobalStyles {
   defaultFont: 'Arial' | 'Helvetica' | 'Roboto' | 'Open Sans' | 'Montserrat';
@@ -1210,8 +1212,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
       
-      // Import distribution utilities
-      const { distributeBlocks } = require('@/lib/visual-editor/alignment-utils');
       const newLayout = distributeBlocks(selectedBlocks, visualLayout, distributeType);
       
       set({ visualLayout: newLayout });
@@ -1251,7 +1251,6 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       const maxZIndex = Math.max(...selectedBlockIds.map(id => visualLayout[id]?.zIndex ?? 0));
       
       // Generate unique name for group
-      const { generateBlockName, getAllBlockNames } = require('@/lib/visual-editor/naming');
       const existingNames = getAllBlockNames(blocks);
       const groupName = generateBlockName('GROUP', existingNames);
       
