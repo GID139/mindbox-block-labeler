@@ -1231,18 +1231,32 @@ export const useVisualEditorStore = create<VisualEditorState>((set, get) => {
       
       const selectedBlocks = selectedBlockIds.map(id => findBlockById(blocks, id)).filter(Boolean) as BlockInstance[];
       
+      // Verify all blocks have layout data
+      const blocksWithoutLayout = selectedBlocks.filter(block => !visualLayout[block.id]);
+      if (blocksWithoutLayout.length > 0) {
+        console.error('Some blocks missing layout data:', blocksWithoutLayout.map(b => b.id));
+        toast.error('Cannot group blocks without layout data');
+        return;
+      }
+      
       // Calculate bounding box of all selected blocks
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       
       selectedBlocks.forEach(block => {
         const layout = visualLayout[block.id];
-        if (!layout) return;
         
         minX = Math.min(minX, layout.x);
         minY = Math.min(minY, layout.y);
         maxX = Math.max(maxX, layout.x + layout.width);
         maxY = Math.max(maxY, layout.y + layout.height);
       });
+      
+      // Validate calculated bounds
+      if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+        console.error('Invalid bounds calculated:', { minX, minY, maxX, maxY });
+        toast.error('Cannot calculate group bounds');
+        return;
+      }
       
       const groupWidth = maxX - minX;
       const groupHeight = maxY - minY;
