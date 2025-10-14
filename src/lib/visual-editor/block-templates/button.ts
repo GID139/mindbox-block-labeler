@@ -123,8 +123,9 @@ export const buttonTemplate: BlockTemplate = {
     const buttonContent = `<a href="\${editor.${name}Url}" style="\${editor.${name}ButtonStyles}">\${editor.${name}ButtonText}</a>`;
     const content = htmlGen.generateBackgroundTD(buttonContent + (childrenHTML || ''));
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    const withGhost = htmlGen.generateGhostTable(wrapped);
     
-    return htmlGen.generateDisplayToggle(wrapped);
+    return htmlGen.generateDisplayToggle(withGhost);
   },
 
   generateMindboxJSON: (block: BlockInstance): any[] => {

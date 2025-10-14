@@ -133,8 +133,9 @@ export const containerTemplate: BlockTemplate = {
     
     const content = htmlGen.generateBackgroundTD(childrenHTML || '');
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    const withGhost = htmlGen.generateGhostTable(wrapped);
     
-    return htmlGen.generateDisplayToggle(wrapped);
+    return htmlGen.generateDisplayToggle(withGhost);
   },
 
   generateMindboxJSON: (block: BlockInstance): any[] => {

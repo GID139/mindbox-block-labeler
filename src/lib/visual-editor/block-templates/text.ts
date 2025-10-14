@@ -107,8 +107,9 @@ export const textTemplate: BlockTemplate = {
     const textContent = `<div style="\${editor.${name}Styles}">\${editor.${name}Text}</div>`;
     const content = htmlGen.generateBackgroundTD(textContent + (childrenHTML || ''));
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    const withGhost = htmlGen.generateGhostTable(wrapped);
     
-    return htmlGen.generateDisplayToggle(wrapped);
+    return htmlGen.generateDisplayToggle(withGhost);
   },
 
   generateMindboxJSON: (block: BlockInstance): any[] => {

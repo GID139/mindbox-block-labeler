@@ -20,26 +20,60 @@ export class MindboxHTMLGenerator {
    */
   generateBackgroundTD(content: string): string {
     const name = this.ctx.blockName;
-    return `<td style="background-color: \${editor.${name}BgColor}; 
-           padding: \${editor.${name}InnerSpacing}; 
-           border-radius: \${editor.${name}BorderRadius}; 
-           border: \${editor.${name}Border};">
-  ${content}
-</td>`;
+    return `<table width="\${editor.${name}Width.formattedWidthAttribute}" 
+           style="\${editor.${name}Width.formattedWidthStyle}; 
+                  background-color: \${editor.${name}BgColor}; 
+                  border-radius: \${editor.${name}BorderRadius}; 
+                  border: \${editor.${name}Border};" 
+           border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td style="padding: \${editor.${name}InnerSpacing};">
+      ${content}
+    </td>
+  </tr>
+</table>`;
   }
 
   /**
-   * Generates outer wrapper with outer spacing (margin emulation)
+   * Generates Ghost Table wrapper for Outlook compatibility
+   */
+  generateGhostTable(content: string, width: string = '600'): string {
+    return `<!--[if mso | IE]>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="${width}">
+<tr><td>
+<![endif]-->
+${content}
+<!--[if mso | IE]>
+</td></tr></table>
+<![endif]-->`;
+  }
+
+  /**
+   * Generates outer wrapper with outer spacing via vertical spacers
    */
   generateWrapper(content: string, align: string = 'center'): string {
+    const name = this.ctx.blockName;
     const outerSpacing = this.ctx.settings.outerSpacing || '0';
+    
+    // Верхний spacer
+    const topSpacer = outerSpacing !== '0' && outerSpacing !== '0 0 0 0'
+      ? `<tr><td><div style="height: \${editor.${name}OuterSpacing}; line-height: \${editor.${name}OuterSpacing}; font-size: 8px;">&nbsp;</div></td></tr>`
+      : '';
+    
+    // Нижний spacer
+    const bottomSpacer = outerSpacing !== '0' && outerSpacing !== '0 0 0 0'
+      ? `<tr><td><div style="height: \${editor.${name}OuterSpacing}; line-height: \${editor.${name}OuterSpacing}; font-size: 8px;">&nbsp;</div></td></tr>`
+      : '';
+    
     return `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
   <tbody>
+    ${topSpacer}
     <tr>
-      <td align="${align}" valign="top" style="padding: ${outerSpacing};">
+      <td align="${align}" valign="top">
         ${content}
       </td>
     </tr>
+    ${bottomSpacer}
   </tbody>
 </table>`;
   }
@@ -78,11 +112,29 @@ export class MindboxJSONGenerator {
         extra: { label: `Показывать ${name}` }
       },
       {
+        name: `${name}Width`,
+        type: 'SIZE',
+        defaultValue: 'manual 100 600',
+        group: `${groupName} >> Общие стили`,
+        extra: { 
+          label: 'Ширина блока',
+          defaultMaxWidth: '600px',
+          allowedTypes: ['inherit', 'manual']
+        }
+      },
+      {
         name: `${name}BgColor`,
         type: 'COLOR',
         defaultValue: s.background || '#FFFFFF',
         group: `${groupName} >> Общие стили`,
         extra: { label: 'Цвет фона' }
+      },
+      {
+        name: `${name}OuterSpacing`,
+        type: 'OUTER_SPACING',
+        defaultValue: s.outerSpacing || '0 0 0 0',
+        group: `${groupName} >> Общие стили`,
+        extra: { label: 'Внешние отступы (px)' }
       },
       {
         name: `${name}InnerSpacing`,
@@ -117,6 +169,12 @@ export class MindboxJSONGenerator {
     
     if (!s.textSettings) return [];
 
+    // Ensure fallbackFont is present
+    const textStyles: any = s.textSettings.textStyles || {};
+    if (!textStyles.fallbackFont && textStyles.font) {
+      textStyles.fallbackFont = 'Arial, sans-serif';
+    }
+
     return [
       {
         name: `${name}Text`,
@@ -128,7 +186,7 @@ export class MindboxJSONGenerator {
       {
         name: `${name}Styles`,
         type: 'TEXT_STYLES',
-        defaultValue: s.textSettings.textStyles,
+        defaultValue: textStyles,
         group: capitalize(name),
         extra: { label: 'Стили текста' }
       }
@@ -143,6 +201,12 @@ export class MindboxJSONGenerator {
     const s = this.ctx.settings;
     
     if (!s.buttonSettings) return [];
+
+    // Ensure fallbackFont is present
+    const textStyles: any = s.buttonSettings.textStyles || {};
+    if (!textStyles.fallbackFont && textStyles.font) {
+      textStyles.fallbackFont = 'Arial, sans-serif';
+    }
 
     return [
       {
@@ -162,7 +226,7 @@ export class MindboxJSONGenerator {
       {
         name: `${name}ButtonStyles`,
         type: 'SIMPLE_TEXT_STYLES',
-        defaultValue: s.buttonSettings.textStyles,
+        defaultValue: textStyles,
         group: capitalize(name),
         extra: { label: 'Стили текста кнопки' }
       }

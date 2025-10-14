@@ -91,15 +91,16 @@ export const imageTemplate: BlockTemplate = {
     const name = block.mindboxSettings.blockName;
     const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
     
-    const imgTag = `<img src="\${editor.${name}_image}" alt="\${editor.${name}_alt}" style="display: block; max-width: 100%;" />`;
+    const imgTag = `<img src="\${editor.${name}Image}" alt="\${editor.${name}Alt}" style="display: block; max-width: 100%;" />`;
     const imageContent = block.mindboxSettings.imageSettings?.url 
-      ? `<a href="\${editor.${name}_url}">${imgTag}</a>`
+      ? `<a href="\${editor.${name}Url}">${imgTag}</a>`
       : imgTag;
     
     const content = htmlGen.generateBackgroundTD(imageContent + (childrenHTML || ''));
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    const withGhost = htmlGen.generateGhostTable(wrapped);
     
-    return htmlGen.generateDisplayToggle(wrapped);
+    return htmlGen.generateDisplayToggle(withGhost);
   },
 
   generateMindboxJSON: (block: BlockInstance): any[] => {

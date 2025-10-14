@@ -198,8 +198,8 @@ export function validateMindboxBlock(block: BlockInstance): MindboxValidationErr
         errors.push({
           blockId: block.id,
           blockName: block.name,
-          severity: 'error',
-          message: 'Fallback font is required in text styles',
+          severity: 'warning',
+          message: 'Fallback font is recommended in text styles (will default to "Arial, sans-serif")',
           field: 'textSettings.textStyles.fallbackFont'
         });
       }
@@ -234,6 +234,17 @@ export function validateMindboxBlock(block: BlockInstance): MindboxValidationErr
         severity: 'warning',
         message: 'Button URL is not set',
         field: 'buttonSettings.url'
+      });
+    }
+
+    // Validate fallbackFont in button text styles
+    if (settings.buttonSettings.textStyles && !settings.buttonSettings.textStyles.fallbackFont) {
+      errors.push({
+        blockId: block.id,
+        blockName: block.name,
+        severity: 'warning',
+        message: 'Fallback font is recommended in button text styles (will default to "Arial, sans-serif")',
+        field: 'buttonSettings.textStyles.fallbackFont'
       });
     }
   }

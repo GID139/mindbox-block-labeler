@@ -142,15 +142,15 @@ button1_buttonText  →  button1ButtonText
 <td style="${editor.container1Background.background};">
 ```
 
-### 7. Ghost Tables для Outlook (рекомендация)
+### 7. Ghost Tables для Outlook (ОБЯЗАТЕЛЬНО)
 
-Добавляйте в начало и конец каждого блока:
+Каждый блок ОБЯЗАН быть обернут в ghost tables для обеспечения совместимости с Outlook:
 
 ```html
 <!-- EDITOR_BLOCK_TEMPLATE: block_name -->
 
 <!--[if mso | IE]>
-<table role="presentation" border="0" cellspacing="0" cellpadding="0" width="600">
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600">
 <tr><td>
 <![endif]-->
 
@@ -160,6 +160,71 @@ button1_buttonText  →  button1ButtonText
 </td></tr>
 </table>
 <![endif]-->
+```
+
+### 8. Внешние отступы через вертикальные spacer'ы
+
+НЕ использовать `padding` для внешних отступов. Вместо этого использовать `<div>` с фиксированной высотой:
+
+```html
+<!-- ❌ Неправильно -->
+<td style="padding: 20px;">...</td>
+
+<!-- ✅ Правильно -->
+<tr>
+  <td>
+    <div style="height: ${editor.blockOuterSpacing}; line-height: ${editor.blockOuterSpacing}; font-size: 8px;">&nbsp;</div>
+  </td>
+</tr>
+```
+
+### 9. SIZE контрол для каждого блока
+
+Каждый блок ДОЛЖЕН иметь параметр SIZE для управления шириной с использованием `formattedWidthAttribute` и `formattedWidthStyle`:
+
+**JSON:**
+```json
+{
+  "name": "blockWidth",
+  "type": "SIZE",
+  "defaultValue": "manual 100 600",
+  "group": "Block >> Общие стили",
+  "extra": {
+    "label": "Ширина блока",
+    "defaultMaxWidth": "600px",
+    "allowedTypes": ["inherit", "manual"]
+  }
+}
+```
+
+**HTML:**
+```html
+<table width="${editor.blockWidth.formattedWidthAttribute}" 
+       style="${editor.blockWidth.formattedWidthStyle}; background-color: ${editor.blockBgColor};">
+  <tr>
+    <td style="padding: ${editor.blockInnerSpacing};">
+      <!-- контент -->
+    </td>
+  </tr>
+</table>
+```
+
+### 10. FallbackFont в TEXT_STYLES
+
+Каждый TEXT_STYLES и SIMPLE_TEXT_STYLES параметр ДОЛЖЕН содержать `fallbackFont`:
+
+```json
+{
+  "name": "textStyles",
+  "type": "TEXT_STYLES",
+  "defaultValue": {
+    "font": "Arial",
+    "fallbackFont": "Arial, sans-serif",
+    "fontSize": "16px",
+    "color": "#000000",
+    "lineHeight": "1.5"
+  }
+}
 ```
 
 ## 🛠️ Реализованные изменения
