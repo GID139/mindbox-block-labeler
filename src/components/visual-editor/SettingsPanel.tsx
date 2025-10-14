@@ -18,6 +18,7 @@ import { findBlockById } from '@/lib/visual-editor/coordinate-utils';
 import { Switch } from '@/components/ui/switch';
 import { KonvaStyleSettings } from './SettingsKonva';
 import { SpacingSettings } from './SpacingSettings';
+import { MindboxSettingsPanel } from './MindboxSettings';
 
 export function SettingsPanel() {
   const { 
@@ -1196,6 +1197,20 @@ export function SettingsPanel() {
             </div>
           </Card>
         )}
+
+        {/* Mindbox Settings */}
+        <MindboxSettingsPanel
+          block={currentBlock}
+          onUpdate={(settings) => {
+            if (currentBlock.mindboxSettings) {
+              updateBlock(currentBlock.id, { 
+                mindboxSettings: { ...currentBlock.mindboxSettings, ...settings } 
+              });
+            } else {
+              updateBlock(currentBlock.id, { mindboxSettings: settings as any });
+            }
+          }}
+        />
 
       </div>
     </div>

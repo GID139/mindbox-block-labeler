@@ -11,10 +11,11 @@ import {
 import { FileDown, FileUp } from 'lucide-react';
 import { useVisualEditorStore } from '@/stores/visual-editor-store';
 import { exportToPNG, exportToSVG, exportToJSON } from '@/lib/visual-editor/export-utils';
+import { exportMindboxHTML, exportMindboxJSON, downloadMindboxHTML, downloadMindboxJSON } from '@/lib/visual-editor/mindbox-exporter';
 import { toast } from '@/hooks/use-toast';
 
 export function FileDropdown() {
-  const { blocks, projectName } = useVisualEditorStore();
+  const { blocks, projectName, visualLayout } = useVisualEditorStore();
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportPNG = async () => {
@@ -105,6 +106,19 @@ export function FileDropdown() {
     input.click();
   };
 
+  const handleExportMindbox = () => {
+    const html = exportMindboxHTML(blocks, visualLayout, projectName);
+    const json = exportMindboxJSON(blocks);
+    
+    downloadMindboxHTML(html, `${projectName}_mindbox.html`);
+    downloadMindboxJSON(json, `${projectName}_mindbox.json`);
+    
+    toast({ 
+      title: 'Mindbox template exported',
+      description: 'HTML and JSON files downloaded'
+    });
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -126,6 +140,10 @@ export function FileDropdown() {
         <DropdownMenuItem onClick={handleExportJSON}>
           <FileDown className="h-4 w-4 mr-2" />
           Export as JSON
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleExportMindbox}>
+          <FileDown className="h-4 w-4 mr-2" />
+          Export Mindbox Template
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

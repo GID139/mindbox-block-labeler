@@ -1,6 +1,7 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
 import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
+import { MindboxHTMLGenerator, MindboxJSONGenerator } from '../mindbox-generator-helpers';
 
 export const imageTemplate: BlockTemplate = {
   type: 'IMAGE',
@@ -80,5 +81,38 @@ export const imageTemplate: BlockTemplate = {
     // Children will be handled by code-generator
     
     return params;
+  },
+
+  generateMindboxHTML: (block: BlockInstance, childrenHTML?: string): string => {
+    if (!block.mindboxSettings?.enabled) {
+      return imageTemplate.generateHTML(block);
+    }
+
+    const name = block.mindboxSettings.blockName;
+    const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
+    
+    const imgTag = `<img src="\${editor.${name}_image}" alt="\${editor.${name}_alt}" style="display: block; max-width: 100%;" />`;
+    const imageContent = block.mindboxSettings.imageSettings?.url 
+      ? `<a href="\${editor.${name}_url}">${imgTag}</a>`
+      : imgTag;
+    
+    const content = htmlGen.generateBackgroundTD(imageContent + (childrenHTML || ''));
+    const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    
+    return htmlGen.generateDisplayToggle(wrapped);
+  },
+
+  generateMindboxJSON: (block: BlockInstance): any[] => {
+    if (!block.mindboxSettings?.enabled) return [];
+
+    const jsonGen = new MindboxJSONGenerator({ 
+      blockName: block.mindboxSettings.blockName, 
+      settings: block.mindboxSettings 
+    });
+    
+    return [
+      ...jsonGen.generateBaseSettings(),
+      ...jsonGen.generateImageSettings()
+    ];
   },
 };

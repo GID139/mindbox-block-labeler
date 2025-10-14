@@ -1,6 +1,7 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
 import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
+import { MindboxHTMLGenerator, MindboxJSONGenerator } from '../mindbox-generator-helpers';
 
 export const buttonTemplate: BlockTemplate = {
   type: 'BUTTON',
@@ -109,5 +110,34 @@ export const buttonTemplate: BlockTemplate = {
     // Children will be handled by code-generator
     
     return params;
+  },
+
+  generateMindboxHTML: (block: BlockInstance, childrenHTML?: string): string => {
+    if (!block.mindboxSettings?.enabled) {
+      return buttonTemplate.generateHTML(block);
+    }
+
+    const name = block.mindboxSettings.blockName;
+    const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
+    
+    const buttonContent = `<a href="\${editor.${name}_url}" style="\${editor.${name}_buttonStyles}">\${editor.${name}_buttonText}</a>`;
+    const content = htmlGen.generateBackgroundTD(buttonContent + (childrenHTML || ''));
+    const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    
+    return htmlGen.generateDisplayToggle(wrapped);
+  },
+
+  generateMindboxJSON: (block: BlockInstance): any[] => {
+    if (!block.mindboxSettings?.enabled) return [];
+
+    const jsonGen = new MindboxJSONGenerator({ 
+      blockName: block.mindboxSettings.blockName, 
+      settings: block.mindboxSettings 
+    });
+    
+    return [
+      ...jsonGen.generateBaseSettings(),
+      ...jsonGen.generateButtonSettings()
+    ];
   },
 };

@@ -1,6 +1,7 @@
 import { BlockTemplate, BlockInstance } from '@/types/visual-editor';
 import { getTemplate } from './index';
 import { getBackgroundStyle, getPaddingStyle } from '../background-utils';
+import { MindboxHTMLGenerator, MindboxJSONGenerator } from '../mindbox-generator-helpers';
 
 export const containerTemplate: BlockTemplate = {
   type: 'CONTAINER',
@@ -120,5 +121,30 @@ export const containerTemplate: BlockTemplate = {
     // Children params will be added by code-generator, not here
     
     return params;
+  },
+
+  generateMindboxHTML: (block: BlockInstance, childrenHTML?: string): string => {
+    if (!block.mindboxSettings?.enabled) {
+      return containerTemplate.generateHTML(block);
+    }
+
+    const name = block.mindboxSettings.blockName;
+    const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
+    
+    const content = htmlGen.generateBackgroundTD(childrenHTML || '');
+    const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
+    
+    return htmlGen.generateDisplayToggle(wrapped);
+  },
+
+  generateMindboxJSON: (block: BlockInstance): any[] => {
+    if (!block.mindboxSettings?.enabled) return [];
+
+    const jsonGen = new MindboxJSONGenerator({ 
+      blockName: block.mindboxSettings.blockName, 
+      settings: block.mindboxSettings 
+    });
+    
+    return jsonGen.generateBaseSettings();
   },
 };
