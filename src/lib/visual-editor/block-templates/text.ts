@@ -104,7 +104,7 @@ export const textTemplate: BlockTemplate = {
     const name = block.mindboxSettings.blockName;
     const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
     
-    const textContent = `<div style="\${editor.${name}_styles}">\${editor.${name}_text}</div>`;
+    const textContent = `<div style="\${editor.${name}Styles}">\${editor.${name}Text}</div>`;
     const content = htmlGen.generateBackgroundTD(textContent + (childrenHTML || ''));
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
     

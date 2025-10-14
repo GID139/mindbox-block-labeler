@@ -120,7 +120,7 @@ export const buttonTemplate: BlockTemplate = {
     const name = block.mindboxSettings.blockName;
     const htmlGen = new MindboxHTMLGenerator({ blockName: name, settings: block.mindboxSettings });
     
-    const buttonContent = `<a href="\${editor.${name}_url}" style="\${editor.${name}_buttonStyles}">\${editor.${name}_buttonText}</a>`;
+    const buttonContent = `<a href="\${editor.${name}Url}" style="\${editor.${name}ButtonStyles}">\${editor.${name}ButtonText}</a>`;
     const content = htmlGen.generateBackgroundTD(buttonContent + (childrenHTML || ''));
     const wrapped = htmlGen.generateWrapper(content, block.mindboxSettings.align);
     
