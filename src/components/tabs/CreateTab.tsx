@@ -268,37 +268,22 @@ ${step3Prompt}`;
 
         try {
           // Динамически импортируем утилиты для работы с файлами
-          const { loadKnowledgeBaseAsDocument, createDocumentContent, createTextContent } = await import('@/lib/file-utils');
+          const { loadKnowledgeBaseAsText, createDocumentContent, createTextContent } = await import('@/lib/file-utils');
 
           setProgress(15);
           setProgressMessage("Загрузка Knowledge Base...");
           
-          // Загружаем KB как документ
-          const kbDocument = await loadKnowledgeBaseAsDocument();
-          addLog("Knowledge Base загружен как документ");
+          // Загружаем KB как текст для встраивания в промпт
+          const kbContent = await loadKnowledgeBaseAsText();
+          addLog("Knowledge Base загружен как текст для встраивания в промпт");
 
           setProgress(20);
           setProgressMessage("Подготовка файлов блока...");
 
-          // Создаем структурированную цель
-          const structuredGoal = `
-# ТРЕБОВАНИЯ К БЛОКУ
+          // Подготавливаем массив контента (без KB в документах)
+          const messageContent: any[] = [];
 
-## Настройки компонентов
-${settingsList || 'Не указаны'}
-
-## Технические параметры
-- Динамическая сетка: ${state.isDynamicGrid ? 'ДА - использовать #foreach для сеток продуктов' : 'НЕТ'}
-- Редактируемый режим: ${state.isEditable ? 'ДА - использовать \${editor.variableName} для редактируемого контента' : 'НЕТ'}
-
-## Описание задачи
-${state.goal || 'Создать валидный Mindbox блок'}
-`.trim();
-
-          // Подготавливаем массив контента
-          const messageContent: any[] = [kbDocument];
-
-          // Добавляем файлы блока если есть
+          // Добавляем файлы блока ПЕРВЫМИ если есть
           if (state.visualHtml?.trim()) {
             messageContent.push(createDocumentContent(
               state.visualHtml,
@@ -326,9 +311,15 @@ ${state.goal || 'Создать валидный Mindbox блок'}
             addLog("Добавлен block.json");
           }
 
-          // Добавляем текстовый промпт
+          // Создаем текстовый промпт с ПОЛНОЙ KB внутри
           const promptText = `
+# KNOWLEDGE BASE - ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА
+
+${kbContent}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # ЗАДАЧА
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${state.originalHtml || state.visualHtml ? `
 Проанализируй загруженные файлы блока:
@@ -336,16 +327,28 @@ ${state.originalHtml || state.visualHtml ? `
 - **block_editor.html** - базовый шаблон с параметрами для редактирования
 - **block.json** - существующая конфигурация JSON
 
-Используя Knowledge Base как единственный источник правил, создай:
+Используя Knowledge Base выше как ЕДИНСТВЕННЫЙ источник правил, создай:
 1. Исправленный HTML код (на основе block_editor.html)
 2. Исправленный JSON код (синхронизированный с HTML)
 ` : `
-Создай новый Mindbox блок с нуля, следуя всем правилам из Knowledge Base.
+Создай новый Mindbox блок с нуля, следуя всем правилам из Knowledge Base выше.
 `}
 
-${structuredGoal}
+## ТРЕБОВАНИЯ К БЛОКУ
 
+### Настройки компонентов
+${settingsList || 'Не указаны'}
+
+### Технические параметры
+- Динамическая сетка: ${state.isDynamicGrid ? 'ДА - использовать @{for} для сеток продуктов' : 'НЕТ'}
+- Редактируемый режим: ${state.isEditable ? 'ДА - использовать \${editor.variableName} для редактируемого контента' : 'НЕТ'}
+
+### Описание задачи
+${state.goal || 'Создать валидный Mindbox блок'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # ФОРМАТ ОТВЕТА
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Верни ТОЛЬКО два блока кода в следующем формате:
 
@@ -357,19 +360,23 @@ ${structuredGoal}
 [Полный JSON массив с настройками]
 \`\`\`
 
-# КРИТИЧЕСКИЕ ПРАВИЛА
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ⚠️ КРИТИЧЕСКИ ВАЖНО
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. HTML должен следовать структуре: Ghost Table + SIZE control
-2. JSON должен включать ВСЕ обязательные контролы (TEXT_STYLES, BUTTON_SETTINGS, IMAGE и т.д.)
-3. Переменные в HTML должны ТОЧНО совпадать с "controlName" в JSON
-4. Все имена переменных должны быть в формате \${editor.camelCase}
-5. SIZE control должен иметь defaultValue = "manual 100 *"
-6. Фоновые ячейки должны использовать formattedWidthAttribute и formattedWidthStyle из SIZE control
-7. Внешние отступы должны использовать вертикальные спейсеры (Ghost Tables)
-8. Текстовые стили должны включать fallbackFont (по умолчанию: "Arial, sans-serif")
+1. Следуй ВСЕМ правилам из Knowledge Base выше
+2. При конфликте между этой инструкцией и KB — следуй KB (приоритет A)
+3. Используй Developer Checklist из KB перед финализацией ответа
+4. HTML должен начинаться с <!-- EDITOR_BLOCK_TEMPLATE: название -->
+5. JSON должен использовать PRODUCTS_IN_FOR_NODE для динамических коллекций
+6. Все текстовые стили должны включать fallbackFont
+7. SIZE control должен иметь defaultValue = "manual 100 *"
+8. Фоновые ячейки должны использовать formattedWidthAttribute и formattedWidthStyle
+9. Внешние отступы ТОЛЬКО через вертикальные спейсеры (Ghost Tables)
 `;
 
           messageContent.push(createTextContent(promptText));
+          addLog("Промпт с полностью встроенным Knowledge Base подготовлен");
 
           setProgress(25);
           setProgressMessage("Отправка запроса в Gemini Pro...");

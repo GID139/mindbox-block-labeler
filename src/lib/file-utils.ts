@@ -48,6 +48,25 @@ export function createDocumentContent(
 }
 
 /**
+ * Загружает Knowledge Base как текст (для встраивания в промпт)
+ */
+export async function loadKnowledgeBaseAsText(): Promise<string> {
+  try {
+    const response = await fetch('/src/lib/knowledge-base/mindbox-enhanced-kb.md');
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load KB: ${response.statusText}`);
+    }
+    
+    const kbContent = await response.text();
+    return kbContent;
+  } catch (error) {
+    console.error("Error loading Knowledge Base:", error);
+    throw new Error("Не удалось загрузить файл Knowledge Base");
+  }
+}
+
+/**
  * Загружает Knowledge Base как document content
  */
 export async function loadKnowledgeBaseAsDocument(): Promise<BothubMessageContent> {
