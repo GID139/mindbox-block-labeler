@@ -1,6 +1,6 @@
 # MINDBOX EMAIL BLOCKS — COMPLETE KNOWLEDGE BASE (ENHANCED)
 
-**Version:** 3.0.0  
+**Version:** 3.1.0  
 **Last Updated:** 2025-10-16  
 **Status:** Production-Ready
 
@@ -17,16 +17,22 @@
 4. [Variable Naming Rules](#variable-naming-rules)
 5. [Block Naming Rules](#block-naming-rules)
 6. [JSON Structure Requirements](#json-structure-requirements)
-7. [Content & Display Controls](#content-display-controls)
-8. [Styling Controls](#styling-controls)
-9. [Sizing & Spacing Controls](#sizing-spacing-controls)
-10. [Dynamic Content Controls](#dynamic-content-controls)
-11. [HTML Structure Rules](#html-structure-rules)
-12. [Advanced Patterns](#advanced-patterns)
-13. [Complete Examples](#complete-examples)
-14. [Developer Checklist](#developer-checklist)
-15. [AI Generation Prompts [B]](#ai-generation-prompts)
-16. [Russian Documentation [C]](#russian-documentation)
+7. [Workflow: Step-by-Step Process](#workflow-step-by-step-process)
+8. [Content & Display Controls](#content-display-controls)
+9. [Styling Controls](#styling-controls)
+10. [Sizing & Spacing Controls](#sizing-spacing-controls)
+11. [Dynamic Content Controls](#dynamic-content-controls)
+12. [HTML Structure Rules](#html-structure-rules)
+13. [Advanced Patterns](#advanced-patterns)
+    - [Gap/Spacer Between Blocks](#pattern-0-gapspacer-between-blocks)
+    - [Static vs Dynamic Product Grids](#pattern-01-static-vs-dynamic-product-grids)
+    - [Adaptive vs Fixed Layout](#pattern-02-adaptive-vs-fixed-layout)
+    - [Advanced Customization](#pattern-03-advanced-customization-logic-in-templates)
+14. [Complete Examples](#complete-examples)
+15. [Developer Checklist](#developer-checklist)
+16. [AI Generation Prompts [B]](#ai-generation-prompts)
+17. [Russian Documentation [C]](#russian-documentation)
+18. [Changelog](#changelog)
 
 ---
 
@@ -139,7 +145,9 @@ This knowledge base follows a strict priority hierarchy for conflict resolution:
 * **Unique across the entire project** (not just within one file)
 * **Permanent** — saved forever with the block
 * Re-uploading with the same name overwrites the previous version
-* Already inserted instances in emails remain unchanged
+* **Important:** Already inserted instances in emails remain unchanged even when block is updated
+* Consider using versioning in names (e.g., `header_v2`) for major changes
+* Use descriptive, semantic names (e.g., `product_grid_3col` not `block_1`)
 
 **Examples:**
 * ✅ `header_block`
@@ -200,6 +208,75 @@ Every JSON parameter object **MUST** include:
   "extra": { "label": "Button Text" }
 }
 ```
+
+---
+
+## Workflow: Step-by-Step Process
+
+Creating custom Mindbox blocks follows a two-stage workflow:
+
+### Stage 1: HTML Markup
+
+**Objective:** Create the HTML structure with Mindbox variables.
+
+**Steps:**
+1. **Add the mandatory first line:**
+   ```html
+   <!-- EDITOR_BLOCK_TEMPLATE: unique_block_name -->
+   ```
+   
+2. **Build the email-compatible HTML structure:**
+   - Use table-based layout for maximum email client compatibility
+   - Add Outlook ghost tables (`<!--[if mso | IE]>`)
+   - Use `role="presentation"` for layout tables
+   
+3. **Add visibility conditions:**
+   - Wrap each editable element in `@{if editor.shouldShow*}...@{end if}`
+   - This creates toggle controls in the editor
+   
+4. **Insert variables for content:**
+   - Text: `${editor.textVariable}`
+   - Images: `src="${editor.imageVariable}"`
+   - Links: `href="${editor.urlVariable}"`
+   - Styles: Use appropriate method properties (`.formattedWidthAttribute`, etc.)
+   
+5. **Add variables for styling:**
+   - Colors: `style="color: ${editor.textColor};"`
+   - Spacing: `style="padding: ${editor.blockPadding};"`
+   - Borders: `style="border: ${editor.blockBorder};"`
+   
+6. **Add dynamic collections (if needed):**
+   - Use `@{for row in Tablerows(editor.collection, 3)}` for fixed grids
+   - Use `@{for item in editor.collection}` for adaptive grids
+
+**Visual Examples:** See [official documentation](https://docs.mindbox.ru/docs/custom-blocks) for screenshots of block tagging.
+
+### Stage 2: JSON Configuration
+
+**Objective:** Define parameter properties for the Mindbox editor interface.
+
+**Steps:**
+1. **Upload HTML to Mindbox:**
+   - Navigate to Settings → Email → Block Gallery
+   - Upload your HTML file
+   - Mindbox will detect all `${editor.*}` variables
+   
+2. **Configure each variable's properties:**
+   - Select appropriate `type` from control types
+   - Set user-friendly `extra.label`
+   - Organize into logical `group` structures
+   - Define sensible `defaultValue`
+   
+3. **Test in constructor:**
+   - Insert block into a test email
+   - Verify all controls appear correctly
+   - Check that changes apply as expected
+   
+4. **Save and publish:**
+   - Save the block configuration
+   - Block is now available in the gallery
+
+**Visual Examples:** See [official documentation](https://docs.mindbox.ru/docs/editor-variables) for screenshots of the JSON configuration interface.
 
 ---
 
@@ -320,7 +397,11 @@ Alternative text for images (accessibility).
 | **defaultValue** | Descriptive text string |
 | **HTML** | `<img ... alt="${editor.imageAlt}">` |
 
-**JSON Example:**
+**⚠️ IMPORTANT for Dynamic Product Grids:**
+* In dynamic product grids using `COLLECTION`, ALT parameters **MUST** include `"role": "ProductTitle"`
+* Example: `"role": "ProductTitle"` to automatically populate from product data
+
+**JSON Example (Static Block):**
 ```json
 {
   "name": "imageAlt",
@@ -328,6 +409,18 @@ Alternative text for images (accessibility).
   "defaultValue": "Company Logo",
   "group": "Media",
   "extra": { "label": "Image Alt Text" }
+}
+```
+
+**JSON Example (Dynamic Product Grid):**
+```json
+{
+  "name": "productImageAlt",
+  "type": "ALT",
+  "role": "ProductTitle",
+  "defaultValue": "Product Name",
+  "group": "Product Card",
+  "extra": { "label": "Product Image Alt" }
 }
 ```
 
@@ -763,13 +856,13 @@ Internal padding (Top Right Bottom Left).
 
 ## Dynamic Content Controls
 
-### COLLECTION
+### PRODUCTS_IN_FOR_NODE
 
 Dropdown to select product feed for dynamic content.
 
 | Property | Value |
 |----------|-------|
-| **Type** | `"COLLECTION"` |
+| **Type** | `"PRODUCTS_IN_FOR_NODE"` |
 | **defaultValue** | One of the [Collection Types](#allowed-values-reference) |
 | **HTML** | Use with `@{for}...@{end for}` loop |
 
@@ -819,7 +912,7 @@ Dropdown to select product feed for dynamic content.
 ```json
 {
   "name": "productFeed",
-  "type": "COLLECTION",
+  "type": "PRODUCTS_IN_FOR_NODE",
   "defaultValue": "RECIPIENT_RECOMMENDATIONS",
   "size": 6,
   "group": "Dynamic Content",
@@ -986,6 +1079,260 @@ Tables used for layout (not data) should have:
 
 ## Advanced Patterns
 
+### Pattern 0: Gap/Spacer Between Blocks
+
+Use spacer elements to create vertical gaps between email blocks.
+
+**HTML:**
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: spacer_gap -->
+<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+  <tr>
+    <td>
+      <div style="height: ${editor.gapHeight}px; line-height: ${editor.gapHeight}px; font-size: 8px;">&nbsp;</div>
+    </td>
+  </tr>
+</table>
+```
+
+**JSON:**
+```json
+[
+  {
+    "name": "gapHeight",
+    "type": "NUMBER",
+    "defaultValue": "20",
+    "group": "Spacer",
+    "extra": { "label": "Gap Height (px)" }
+  }
+]
+```
+
+**Best Practices:**
+* Use `font-size: 8px` to prevent line-height expansion
+* Always use `&nbsp;` for invisible spacing
+* Set `line-height` equal to `height` for consistency
+
+---
+
+### Pattern 0.1: Static vs Dynamic Product Grids
+
+Choose the right approach based on your requirements:
+
+#### **Static Product Grid**
+
+**When to use:**
+* Fixed number of products (e.g., always 4 products)
+* Each product needs unique settings
+* Simple, straightforward implementation
+
+**Characteristics:**
+* Each product has individual variables (e.g., `product_1_title`, `product_2_title`)
+* No loops — each product is hardcoded
+* More JSON parameters but simpler HTML
+
+**Example HTML:**
+```html
+<!-- EDITOR_BLOCK_TEMPLATE: static_grid_4 -->
+<table width="100%" role="presentation">
+  <tr>
+    <td width="25%">
+      <img src="${editor.product1Image}" alt="${editor.product1Alt}">
+      <div>${editor.product1Title}</div>
+      <div>${editor.product1Price}</div>
+    </td>
+    <td width="25%">
+      <img src="${editor.product2Image}" alt="${editor.product2Alt}">
+      <div>${editor.product2Title}</div>
+      <div>${editor.product2Price}</div>
+    </td>
+    <!-- products 3 and 4 ... -->
+  </tr>
+</table>
+```
+
+#### **Dynamic Product Grid**
+
+**When to use:**
+* Variable number of products (e.g., 3-12 products)
+* Products populated from database/recommendations
+* Need for personalization
+
+**Characteristics:**
+* Uses `PRODUCTS_IN_FOR_NODE` type with `role` parameters
+* Loops through data: `@{for}...@{end for}` or `Tablerows()`
+* Fewer JSON parameters, more complex HTML
+
+**Two Approaches:**
+
+**1. Tablerows() — Fixed Column Grid:**
+* **Use when:** You need exact column count (e.g., always 3 columns)
+* **Layout:** Table-based, fixed structure
+* **Responsive:** No (same layout on all devices)
+
+```html
+@{for row in Tablerows(editor.productCollection, 3)}
+  <tr>
+    @{for cell in row.Cells}
+      <td>@{if cell.Value != null}...@{end if}</td>
+    @{end for}
+  </tr>
+@{end for}
+```
+
+**2. @{for} Loop — Adaptive Grid:**
+* **Use when:** You want flexible, responsive layout
+* **Layout:** Div-based or hybrid
+* **Responsive:** Yes (adapts to screen width)
+
+```html
+@{for item in editor.productCollection}
+  <div>
+    <img src="${editor.productImage}">
+    <div>${editor.productTitle}</div>
+  </div>
+@{end for}
+```
+
+**Comparison Table:**
+
+| Feature | Static Grid | Dynamic (Tablerows) | Dynamic (@{for}) |
+|---------|-------------|---------------------|------------------|
+| **Product Count** | Fixed | Fixed columns, variable rows | Fully variable |
+| **Data Source** | Manual entry | Database/API | Database/API |
+| **Personalization** | No | Yes | Yes |
+| **Complexity** | Low | Medium | Medium-High |
+| **JSON Params** | Many | Few | Few |
+| **Mobile Layout** | Same as desktop | Same as desktop | Adapts |
+| **Best For** | Curated selections | Product catalogs | Recommendations |
+
+---
+
+### Pattern 0.2: Adaptive vs Fixed Layout
+
+Understanding the difference between adaptive and fixed layouts:
+
+#### **Fixed Layout (TABLE-based)**
+
+**Characteristics:**
+* Uses `<table>` with fixed `width` attributes or percentages
+* Displays identically on desktop and mobile
+* Outlook/MSO compatible
+* Column structure doesn't change
+
+**When to use:**
+* Email clients with poor CSS support
+* Need consistent appearance everywhere
+* Product grids with fixed columns
+
+**Example:**
+```html
+<table width="100%" role="presentation">
+  <tr>
+    <td width="50%">Column 1</td>
+    <td width="50%">Column 2</td>
+  </tr>
+</table>
+```
+
+**Result:** Always 2 columns side-by-side, even on mobile (may require horizontal scrolling).
+
+#### **Adaptive Layout (DIV-based or Hybrid)**
+
+**Characteristics:**
+* Uses `<div>` with `display: inline-block` or similar CSS
+* Columns stack vertically on narrow screens
+* Better mobile experience
+* May not work in Outlook
+
+**When to use:**
+* Mobile-first design
+* Modern email clients (Gmail, Apple Mail, etc.)
+* Content that benefits from vertical stacking
+
+**Example:**
+```html
+<div>
+  @{for item in editor.products}
+    <div style="display: inline-block; width: 48%; vertical-align: top;">
+      <img src="${editor.productImage}">
+    </div>
+  @{end for}
+</div>
+```
+
+**Result:** 2 columns on desktop, 1 column on mobile (adapts automatically).
+
+**Recommendation:**
+* **Use Fixed** for maximum compatibility and predictable layout
+* **Use Adaptive** when mobile experience is priority and Outlook support isn't critical
+* **Hybrid Approach:** Use fixed table structure with media queries for adaptive behavior
+
+---
+
+### Pattern 0.3: Advanced Customization (Logic in Templates)
+
+Mindbox templates support complex logic for advanced use cases.
+
+#### **Conditional Display Based on Product Data**
+
+Show discount badge only if product has old price:
+
+```html
+@{if editor.productOldPrice != null && editor.productOldPrice != ""}
+  <div style="background: #FF0000; color: #FFFFFF; padding: 5px;">
+    SALE
+  </div>
+@{end if}
+```
+
+#### **Calculated Values**
+
+Calculate discount percentage:
+
+```html
+@{if editor.productOldPrice != null}
+  <div>
+    Save ${FormatDecimal((editor.productOldPrice - editor.productPrice) / editor.productOldPrice * 100, 0)}%
+  </div>
+@{end if}
+```
+
+#### **Conditional Styling**
+
+Change button color based on product status:
+
+```html
+<td style="background-color: ${if(editor.productInStock = true, '#00AA00', '#CCCCCC')};">
+  ${if(editor.productInStock = true, 'Add to Cart', 'Out of Stock')}
+</td>
+```
+
+#### **Available Functions**
+
+Common Mindbox template functions:
+
+* `FormatDecimal(value, decimals)` — Format number with specific decimal places
+* `FormatDate(date, format)` — Format date/time
+* `Substring(text, start, length)` — Extract substring
+* `Contains(text, searchText)` — Check if text contains substring
+* `Replace(text, oldValue, newValue)` — Replace text
+* `Upper(text)` / `Lower(text)` — Change case
+
+**Example: Format Price**
+```html
+<div>$${FormatDecimal(editor.productPrice, 2)}</div>
+```
+Output: `$99.99`
+
+**Best Practices:**
+* Keep logic simple and readable
+* Test thoroughly across email clients
+* Document complex expressions with HTML comments
+* Consider performance with large loops
+
+---
+
 ### Pattern 1: Dynamic Product Grid (3 Columns, Fixed)
 
 **HTML:**
@@ -1024,7 +1371,7 @@ Tables used for layout (not data) should have:
 [
   {
     "name": "productCollection",
-    "type": "COLLECTION",
+    "type": "PRODUCTS_IN_FOR_NODE",
     "defaultValue": "RECIPIENT_RECOMMENDATIONS",
     "size": 6,
     "group": "Product Grid",
@@ -1724,10 +2071,11 @@ Perform a sequential review of the code against the following master checklist.
 -   [ ] HTML block centering uses the `align="center"` on parent `<td>` method.
 
 #### **C. Dynamic Content Rules (if applicable)**
--   [ ] `COLLECTION` type is used (not deprecated types).
+-   [ ] `PRODUCTS_IN_FOR_NODE` type is used (not deprecated `COLLECTION` type).
 -   [ ] Dynamic parameters have `"role"` key.
 -   [ ] Role parameters have `defaultValue` with sample/placeholder data.
 -   [ ] Role values match allowed roles exactly.
+-   [ ] ALT parameters in dynamic grids have `"role": "ProductTitle"`.
 
 ### Step 3: Synchronization and Goal Conformance Audit [CRITICAL STEP]
 1. **HTML-to-JSON Sync**:
@@ -1989,7 +2337,7 @@ Your final output MUST consist of three parts:
 ```json
 {
   "name": "productCollection",
-  "type": "COLLECTION",
+  "type": "PRODUCTS_IN_FOR_NODE",
   "defaultValue": "RECIPIENT_RECOMMENDATIONS",
   "size": 6,
   "group": "Товарная сетка",
@@ -2069,4 +2417,34 @@ Your final output MUST consist of three parts:
 
 ---
 
-**End of Enhanced Knowledge Base v3.0.0**
+## Changelog
+
+### Version 3.1.0 (2025-10-16)
+
+**Critical Fixes:**
+* Changed `COLLECTION` type to correct `PRODUCTS_IN_FOR_NODE` type throughout documentation
+* Added `role` requirement for ALT parameters in dynamic product grids
+* Enhanced ALT type documentation with dynamic grid examples
+
+**New Sections Added:**
+* **Workflow: Step-by-Step Process** — Complete guide to creating Mindbox blocks (Stage 1: HTML + Stage 2: JSON)
+* **Gap/Spacer Pattern** — Proper implementation of vertical spacing between blocks
+* **Static vs Dynamic Product Grids** — Comprehensive comparison with decision matrix
+* **Adaptive vs Fixed Layout** — Explanation of TABLE-based vs DIV-based approaches
+* **Advanced Customization** — Complex logic examples and available template functions
+
+**Structure Improvements:**
+* Enhanced Block Naming Rules with versioning and semantic naming guidance
+* Added visual example references to official documentation
+* Updated Table of Contents with new sections
+* Improved checklist to include new validation rules
+
+**Documentation Quality:**
+* Standardized all examples to use correct type names
+* Added comparison tables for decision-making
+* Enhanced best practices sections
+* Added function reference for template logic
+
+---
+
+**End of Enhanced Knowledge Base v3.1.0**
