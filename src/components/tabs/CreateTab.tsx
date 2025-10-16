@@ -377,7 +377,7 @@ ${structuredGoal}
 
           const response = await callBothubAPI(
             [{ role: "user", content: messageContent }],
-            { model: "google/gemini-2.5-pro", signal: controller.signal }
+            { model: "gemini-2.5-pro", signal: controller.signal }
           );
 
           setProgress(70);
@@ -445,7 +445,7 @@ ${structuredGoal}
       
       const response1 = await callBothubAPI(
         [{ role: "user", content: step1Prompt }],
-        { model: "google/gemini-2.5-pro", signal: controller.signal }
+        { model: "gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(30);
@@ -476,7 +476,7 @@ ${structuredGoal}
       
       const response2 = await callBothubAPI(
         [{ role: "user", content: step2Prompt }],
-        { model: "google/gemini-2.5-pro", signal: controller.signal }
+        { model: "gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(60);
@@ -507,7 +507,7 @@ ${structuredGoal}
       
       const response3 = await callBothubAPI(
         [{ role: "user", content: step3Prompt }],
-        { model: "google/gemini-2.5-pro", signal: controller.signal }
+        { model: "gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(95);
