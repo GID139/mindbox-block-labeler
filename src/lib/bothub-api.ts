@@ -2,9 +2,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
-interface BothubMessage {
+export interface BothubMessageContent {
+  type: "text" | "document";
+  text?: string;
+  source?: {
+    type: "base64";
+    media_type: string;
+    data: string;
+  };
+}
+
+export interface BothubMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | BothubMessageContent[];
 }
 
 interface BothubAPIOptions {

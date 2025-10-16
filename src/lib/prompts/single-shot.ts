@@ -24,6 +24,19 @@ export function buildSingleShotPrompt({
   isEditable,
   settingsList = ''
 }: SingleShotParams): string {
+  // Старая функция для обратной совместимости
+  return buildSingleShotPromptText({ goal, html, json, visualHtml, isDynamicGrid, isEditable, settingsList });
+}
+
+export function buildSingleShotPromptText({ 
+  goal, 
+  html = '', 
+  json = '', 
+  visualHtml = '',
+  isDynamicGrid,
+  isEditable,
+  settingsList = ''
+}: SingleShotParams): string {
   const hasExistingCode = html.trim() || json.trim();
   
   return `# MINDBOX BLOCK GENERATION - FAST MODE (SINGLE REQUEST)

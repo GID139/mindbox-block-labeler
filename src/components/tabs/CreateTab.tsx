@@ -251,68 +251,185 @@ ${step3Prompt}`;
 
     try {
       // ============================================================
-      // БЫСТРЫЙ РЕЖИМ: 1 ЗАПРОС С ПОЛНЫМ KB
+      // БЫСТРЫЙ РЕЖИМ: 1 ЗАПРОС С ФАЙЛАМИ
       // ============================================================
       if (state.fastMode) {
+        // Валидация перед отправкой
+        if (!state.originalHtml.trim() && !state.originalJson.trim()) {
+          toast.error("Загрузите ZIP с файлами блока или заполните поля вручную");
+          setIsProcessing(false);
+          return;
+        }
+
         setCurrentStep(1);
         setProgress(10);
-        setProgressMessage("Генерация в быстром режиме...");
-        addLog("Быстрый режим: отправка единого запроса с полным Knowledge Base");
+        setProgressMessage("Подготовка файлов для отправки...");
+        addLog("Быстрый режим: подготовка KB и файлов блока");
 
-        const singlePrompt = buildSingleShotPrompt({
-          goal: state.goal,
-          html: state.originalHtml,
-          json: state.originalJson,
-          visualHtml: state.visualHtml,
-          isDynamicGrid: state.isDynamicGrid,
-          isEditable: state.isEditable,
-          settingsList
-        });
+        try {
+          // Динамически импортируем утилиты для работы с файлами
+          const { loadKnowledgeBaseAsDocument, createDocumentContent, createTextContent } = await import('@/lib/file-utils');
 
-        setProgress(20);
-        setProgressMessage("Отправка запроса в AI модель...");
+          setProgress(15);
+          setProgressMessage("Загрузка Knowledge Base...");
+          
+          // Загружаем KB как документ
+          const kbDocument = await loadKnowledgeBaseAsDocument();
+          addLog("Knowledge Base загружен как документ");
 
-        const response = await callBothubAPI(
-          [{ role: "user", content: singlePrompt }],
-          { model: "claude-sonnet-4", signal: controller.signal }
-        );
+          setProgress(20);
+          setProgressMessage("Подготовка файлов блока...");
 
-        setProgress(60);
-        setProgressMessage("Обработка полученного кода...");
+          // Создаем структурированную цель
+          const structuredGoal = `
+# ТРЕБОВАНИЯ К БЛОКУ
 
-        const { html, json } = parseCodeBlocks(response);
-        
-        updateState({ 
-          html, 
-          json,
-          fixedHtml: html,
-          fixedJson: json,
-          reportMarkdown: '✅ Быстрая генерация завершена (1 запрос)'
-        });
+## Настройки компонентов
+${settingsList || 'Не указаны'}
 
-        setProgress(100);
-        setProgressMessage("✅ Быстрая генерация завершена!");
-        addLog("Быстрая генерация завершена");
+## Технические параметры
+- Динамическая сетка: ${state.isDynamicGrid ? 'ДА - использовать #foreach для сеток продуктов' : 'НЕТ'}
+- Редактируемый режим: ${state.isEditable ? 'ДА - использовать \${editor.variableName} для редактируемого контента' : 'НЕТ'}
 
-        // Сохраняем в историю
-        saveToHistory("Автосохранение (быстрый режим)", {
-          goal: state.goal,
-          originalHtml: state.originalHtml,
-          originalJson: state.originalJson,
-          html,
-          json,
-          fixedHtml: html,
-          fixedJson: json,
-          reportMarkdown: '✅ Быстрая генерация завершена'
-        });
+## Описание задачи
+${state.goal || 'Создать валидный Mindbox блок'}
+`.trim();
 
-        toast.success("Генерация завершена (быстрый режим)");
-        
-        setTimeout(() => {
-          setActiveTab('fixed');
-        }, 500);
+          // Подготавливаем массив контента
+          const messageContent: any[] = [kbDocument];
 
-        return;
+          // Добавляем файлы блока если есть
+          if (state.visualHtml?.trim()) {
+            messageContent.push(createDocumentContent(
+              state.visualHtml,
+              "block.html",
+              "text/html"
+            ));
+            addLog("Добавлен block.html (визуальный референс)");
+          }
+
+          if (state.originalHtml?.trim()) {
+            messageContent.push(createDocumentContent(
+              state.originalHtml,
+              "block_editor.html",
+              "text/html"
+            ));
+            addLog("Добавлен block_editor.html (редактируемый шаблон)");
+          }
+
+          if (state.originalJson?.trim()) {
+            messageContent.push(createDocumentContent(
+              state.originalJson,
+              "block.json",
+              "application/json"
+            ));
+            addLog("Добавлен block.json");
+          }
+
+          // Добавляем текстовый промпт
+          const promptText = `
+# ЗАДАЧА
+
+${state.originalHtml || state.visualHtml ? `
+Проанализируй загруженные файлы блока:
+- **block.html** (если есть) - визуальный референс того, как должен выглядеть блок
+- **block_editor.html** - базовый шаблон с параметрами для редактирования
+- **block.json** - существующая конфигурация JSON
+
+Используя Knowledge Base как единственный источник правил, создай:
+1. Исправленный HTML код (на основе block_editor.html)
+2. Исправленный JSON код (синхронизированный с HTML)
+` : `
+Создай новый Mindbox блок с нуля, следуя всем правилам из Knowledge Base.
+`}
+
+${structuredGoal}
+
+# ФОРМАТ ОТВЕТА
+
+Верни ТОЛЬКО два блока кода в следующем формате:
+
+\`\`\`html
+[Полный HTML код блока]
+\`\`\`
+
+\`\`\`json
+[Полный JSON массив с настройками]
+\`\`\`
+
+# КРИТИЧЕСКИЕ ПРАВИЛА
+
+1. HTML должен следовать структуре: Ghost Table + SIZE control
+2. JSON должен включать ВСЕ обязательные контролы (TEXT_STYLES, BUTTON_SETTINGS, IMAGE и т.д.)
+3. Переменные в HTML должны ТОЧНО совпадать с "controlName" в JSON
+4. Все имена переменных должны быть в формате \${editor.camelCase}
+5. SIZE control должен иметь defaultValue = "manual 100 *"
+6. Фоновые ячейки должны использовать formattedWidthAttribute и formattedWidthStyle из SIZE control
+7. Внешние отступы должны использовать вертикальные спейсеры (Ghost Tables)
+8. Текстовые стили должны включать fallbackFont (по умолчанию: "Arial, sans-serif")
+`;
+
+          messageContent.push(createTextContent(promptText));
+
+          setProgress(25);
+          setProgressMessage("Отправка запроса в Claude...");
+          addLog("Отправка единого запроса с файлами в Claude Sonnet 4");
+
+          const response = await callBothubAPI(
+            [{ role: "user", content: messageContent }],
+            { model: "claude-sonnet-4", signal: controller.signal }
+          );
+
+          setProgress(70);
+          setProgressMessage("Обработка полученного кода...");
+
+          const { html, json } = parseCodeBlocks(response);
+          
+          if (!html || !json) {
+            throw new Error("AI не вернул валидный HTML или JSON");
+          }
+
+          updateState({ 
+            html, 
+            json,
+            fixedHtml: html,
+            fixedJson: json,
+            reportMarkdown: '✅ Быстрая генерация завершена (1 запрос с файлами)'
+          });
+
+          setProgress(100);
+          setProgressMessage("✅ Быстрая генерация завершена!");
+          addLog("Быстрая генерация завершена успешно");
+
+          // Сохраняем в историю
+          saveToHistory("Автосохранение (быстрый режим с файлами)", {
+            goal: state.goal,
+            originalHtml: state.originalHtml,
+            originalJson: state.originalJson,
+            html,
+            json,
+            fixedHtml: html,
+            fixedJson: json,
+            reportMarkdown: '✅ Быстрая генерация завершена с использованием файлов KB'
+          });
+
+          toast.success("Генерация завершена (быстрый режим)");
+          
+          setTimeout(() => {
+            setActiveTab('fixed');
+          }, 500);
+
+          return;
+        } catch (error) {
+          logger.error("Fast mode file processing error", "CreateTab", { 
+            error: error instanceof Error ? error.message : error 
+          });
+          
+          if (error instanceof Error && error.message !== 'Request cancelled') {
+            toast.error(`Ошибка: ${error.message}`);
+          }
+          throw error;
+        }
       }
 
       // ============================================================
