@@ -2,6 +2,17 @@
 
 export const HTML_RULES_KB = `## HTML Structure Rules
 
+### Rule 0: MANDATORY First Line (CRITICAL)
+**EVERY HTML block MUST start with the EDITOR_BLOCK_TEMPLATE comment as the very first line:**
+
+\`\`\`html
+<!-- EDITOR_BLOCK_TEMPLATE: block_name_here -->
+\`\`\`
+
+**This is NON-NEGOTIABLE.** Without this line, the block will not be recognized by Mindbox editor.
+- Replace \`block_name_here\` with a descriptive name for your block (e.g., "Product Card", "Hero Banner", "Footer")
+- This must be the absolute first line of the HTML file, before any other code
+
 ### Rule 1: Block Structure (NON-NEGOTIABLE)
 Every logical block MUST follow this exact structure:
 

@@ -372,12 +372,12 @@ ${structuredGoal}
           messageContent.push(createTextContent(promptText));
 
           setProgress(25);
-          setProgressMessage("Отправка запроса в Claude...");
-          addLog("Отправка единого запроса с файлами в Claude Sonnet 4");
+          setProgressMessage("Отправка запроса в Gemini Pro...");
+          addLog("Отправка единого запроса с файлами в Gemini 2.5 Pro");
 
           const response = await callBothubAPI(
             [{ role: "user", content: messageContent }],
-            { model: "claude-sonnet-4", signal: controller.signal }
+            { model: "google/gemini-2.5-pro", signal: controller.signal }
           );
 
           setProgress(70);
@@ -445,7 +445,7 @@ ${structuredGoal}
       
       const response1 = await callBothubAPI(
         [{ role: "user", content: step1Prompt }],
-        { model: "claude-sonnet-4", signal: controller.signal }
+        { model: "google/gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(30);
@@ -476,7 +476,7 @@ ${structuredGoal}
       
       const response2 = await callBothubAPI(
         [{ role: "user", content: step2Prompt }],
-        { model: "claude-sonnet-4", signal: controller.signal }
+        { model: "google/gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(60);
@@ -507,7 +507,7 @@ ${structuredGoal}
       
       const response3 = await callBothubAPI(
         [{ role: "user", content: step3Prompt }],
-        { model: "claude-sonnet-4", signal: controller.signal }
+        { model: "google/gemini-2.5-pro", signal: controller.signal }
       );
       
       setProgress(95);
