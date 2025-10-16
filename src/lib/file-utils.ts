@@ -53,7 +53,7 @@ export function createDocumentContent(
 export async function loadKnowledgeBaseAsDocument(): Promise<BothubMessageContent> {
   try {
     // Загружаем файл KB
-    const response = await fetch('/src/lib/knowledge-base/mindbox-complete-kb.md');
+    const response = await fetch('/src/lib/knowledge-base/mindbox-enhanced-kb.md');
     
     if (!response.ok) {
       throw new Error(`Failed to load KB: ${response.statusText}`);
@@ -63,7 +63,7 @@ export async function loadKnowledgeBaseAsDocument(): Promise<BothubMessageConten
     
     return createDocumentContent(
       kbContent,
-      "mindbox-complete-kb.md",
+      "mindbox-enhanced-kb.md",
       "text/markdown"
     );
   } catch (error) {
