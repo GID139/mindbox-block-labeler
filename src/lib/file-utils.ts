@@ -14,17 +14,14 @@ export interface BothubMessageContent {
  * Конвертирует текстовый контент в base64
  */
 export function textToBase64(text: string): string {
-  // Используем TextEncoder для корректной работы с UTF-8
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  
-  // Конвертируем в base64
-  let binary = '';
-  data.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  
-  return btoa(binary);
+  // Правильная конвертация UTF-8 → base64
+  // Кодируем UTF-8 символы через URI компоненты, затем декодируем в latin1 для btoa
+  return btoa(
+    encodeURIComponent(text).replace(
+      /%([0-9A-F]{2})/g,
+      (match, p1) => String.fromCharCode(parseInt(p1, 16))
+    )
+  );
 }
 
 /**
